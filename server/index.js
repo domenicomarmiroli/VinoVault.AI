@@ -1,6 +1,7 @@
 
 import express from 'express';
-import pg from 'pg';
+import pkg from 'pg';
+const { Pool } = pkg;
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -19,7 +20,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Increased limit for base64 images
 
 // Database Connection
-const pool = new pg.Pool({
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
@@ -66,7 +67,6 @@ const initDb = async () => {
     console.log("Database tables checked/created successfully.");
   } catch (error) {
     console.error("Error initializing database tables:", error);
-    // Non blocchiamo il server se fallisce, potrebbe essere un problema temporaneo o siamo in build
   }
 };
 
