@@ -25,10 +25,15 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, onClose, onCons
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center md:p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full h-[95dvh] md:h-auto md:max-h-[90vh] md:max-w-2xl md:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
+      {/* 
+          MODIFICHE MOBILE: 
+          1. h-[85dvh] invece di 95dvh per lasciare spazio sotto (barra browser)
+          2. rounded-t-2xl per effetto "foglio" che esce dal basso
+      */}
+      <div className="bg-white w-full h-[85dvh] md:h-auto md:max-h-[90vh] md:max-w-2xl md:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
         
-        {/* Header Immagine e Titolo */}
-        <div className="relative h-64 md:h-72 bg-gray-100 flex-shrink-0">
+        {/* Header Immagine e Titolo - MODIFICA: h-48 su mobile (invece di h-64) per salvare spazio */}
+        <div className="relative h-48 md:h-72 bg-gray-100 flex-shrink-0">
            {wine.imageUrl ? (
               <>
                 <img src={wine.imageUrl} alt={wine.name} className="w-full h-full object-cover blur-sm opacity-50 absolute inset-0" />
