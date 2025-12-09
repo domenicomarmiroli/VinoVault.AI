@@ -1,0 +1,7 @@
+{
+  "name": "VinoVault AI",
+  "description": "Un sommelier virtuale e gestore di cantina intelligente. Tieni traccia dei tuoi vini, analizza le etichette con l'IA e ricevi suggerimenti di abbinamento per le tue cene.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
