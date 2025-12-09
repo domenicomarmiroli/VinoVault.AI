@@ -29,7 +29,9 @@ const App: React.FC = () => {
   const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
 
   // Helper per fetch autenticate
-  const API_BASE = window.location.hostname === 'localhost' ? '' : 'https://vinovault-app.onrender.com';
+  // UPDATE: Uso stringa vuota per usare percorsi relativi (es. /api/wines)
+  // Questo funziona sia in Dev (grazie al proxy vite) che in Prod (express serve static + api)
+  const API_BASE = '';
 
   const authFetch = async (url: string, options: RequestInit = {}) => {
       const headers = {
@@ -37,7 +39,7 @@ const App: React.FC = () => {
           ...(options.headers || {}),
           'Authorization': `Bearer ${token}`
       };
-      // Use absolute path for Android/Production safety
+      // Costruzione URL sicura
       const fullUrl = url.startsWith('/api') ? `${API_BASE}${url}` : url;
       return fetch(fullUrl, { ...options, headers });
   };
