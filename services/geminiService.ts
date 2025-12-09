@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Wine, WineType, PairingSuggestion, PurchaseAnalysis } from "../types";
+import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, WineDeal } from "../types";
 
 // Helper to remove base64 prefix
 const cleanBase64 = (base64: string) => {
@@ -224,5 +224,64 @@ export const analyzePurchase = async (
         return JSON.parse(cleanJson(text));
     } catch (err: any) {
         throw new Error(err.message || "Errore Shop Advisor");
+    }
+}
+
+/**
+ * Uses Google Search Grounding to find real-time best deals for a wine.
+ */
+export const findBestDeals = async (name: string, producer: string, year: string): Promise<WineDeal[]> => {
+    if (!apiKey) throw new Error("Chiave API mancante.");
+
+    const model = "gemini-2.5-flash";
+    const query = `Prezzo ${producer} ${name} ${year} vendita online Italia`;
+
+    const systemInstruction = `
+        Sei un Personal Shopper di vini esperto.
+        Usa Google Search per trovare i PREZZI REALI ATTUALI di questo vino.
+        Cerca nei principali e-commerce italiani (es. Tannico, Callmewine, Bernabei, Vino.com, Vivino, Xtrawine).
+        
+        Estrai 3-5 opzioni migliori.
+        Ignora aste o privati.
+        Se non trovi l'annata esatta, cerca l'annata più vicina disponibile specificandolo nel nome.
+        
+        Restituisci ESCLUSIVAMENTE un array JSON.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: query,
+            config: {
+                systemInstruction,
+                tools: [{ googleSearch: {} }], // Enable real-time web search
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            merchant: { type: Type.STRING, description: "Nome del negozio (es. Tannico)" },
+                            price: { type: Type.NUMBER, description: "Prezzo in Euro" },
+                            currency: { type: Type.STRING, description: "EUR" },
+                            link: { type: Type.STRING, description: "URL diretto all'offerta" }
+                        },
+                        required: ["merchant", "price", "link"]
+                    }
+                }
+            }
+        });
+        
+        const text = response.text;
+        // Search Grounding responses might contain extra text, clean strictly
+        if (!text) throw new Error("Nessun risultato trovato");
+        
+        // Sometimes with tools the response might not be strictly JSON only if grounding metadata is attached loosely,
+        // but responseMimeType usually forces it.
+        return JSON.parse(cleanJson(text));
+
+    } catch (err: any) {
+        console.error("Deal Search Error:", err);
+        throw new Error("Impossibile trovare offerte al momento.");
     }
 }

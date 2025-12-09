@@ -80,3 +80,10 @@ export interface PurchaseAnalysis {
     reasoning: string;
   };
 }
+
+export interface WineDeal {
+    merchant: string;
+    price: number;
+    currency: string;
+    link: string;
+}

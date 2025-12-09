@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { HistoryEntry } from '../types';
+import { HistoryEntry, WineDeal } from '../types';
 import { StarIcon, ShoppingCartIcon, ExternalLinkIcon } from './Icons';
+import { findBestDeals } from '../services/geminiService';
 
 interface RateWineModalProps {
   entry: HistoryEntry | null;
@@ -10,25 +11,25 @@ interface RateWineModalProps {
   onSave: (id: string, rating: number, notes: string) => void;
 }
 
-const getRestockLinks = (name: string, producer: string, year: string) => {
-    const query = encodeURIComponent(`${producer} ${name} ${year}`);
-    return [
-        { name: 'Google Shopping', url: `https://www.google.com/search?tbm=shop&q=${query}`, color: 'bg-blue-600' },
-        { name: 'Trovaprezzi', url: `https://www.trovaprezzi.it/prezzi_vini-liquori-bevande?q=${query}`, color: 'bg-orange-500' },
-        { name: 'Tannico', url: `https://www.tannico.it/catalogsearch/result/?q=${query}`, color: 'bg-red-800' },
-        { name: 'Vivino', url: `https://www.vivino.com/search/wines?q=${query}`, color: 'bg-purple-600' },
-        { name: 'Callmewine', url: `https://www.callmewine.com/cerca.html?search_text=${query}`, color: 'bg-wine-700' },
-    ];
-};
-
 const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave }) => {
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState('');
+  
+  // Deal Search State
+  const [deals, setDeals] = useState<WineDeal[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
     if (entry) {
         setRating(entry.rating || 0);
         setNotes(entry.notes || '');
+        // Reset search state on new entry
+        setDeals([]);
+        setIsSearching(false);
+        setSearchError('');
+        setHasSearched(false);
     }
   }, [entry]);
 
@@ -40,7 +41,21 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave })
       onClose();
   };
 
-  const links = getRestockLinks(entry.name, entry.producer, entry.year);
+  const handleSearchDeals = async () => {
+      setIsSearching(true);
+      setSearchError('');
+      setDeals([]);
+      
+      try {
+          const results = await findBestDeals(entry.name, entry.producer, entry.year);
+          setDeals(results);
+      } catch (err: any) {
+          setSearchError("Non sono riuscito a trovare offerte aggiornate al momento.");
+      } finally {
+          setIsSearching(false);
+          setHasSearched(true);
+      }
+  };
 
   const content = (
     <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
@@ -54,7 +69,7 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave })
         </div>
 
         <div className="overflow-y-auto p-6 space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Rating Stars */}
                 <div className="flex flex-col items-center justify-center space-y-2">
                     <label className="text-xs font-bold uppercase text-gray-500 tracking-wider">Punteggio</label>
@@ -85,6 +100,70 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave })
                     />
                 </div>
 
+                {/* AI Deal Search Section - MOVED INSIDE FORM AND ABOVE SAVE BUTTON */}
+                <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
+                    <h4 className="text-xs font-bold uppercase text-indigo-800 tracking-wider mb-3 flex items-center gap-2">
+                        <ShoppingCartIcon className="w-4 h-4" filled />
+                        Ricompralo al Miglior Prezzo
+                    </h4>
+
+                    {!hasSearched && !isSearching && (
+                        <button 
+                            type="button"
+                            onClick={handleSearchDeals}
+                            className="w-full py-2.5 bg-white text-indigo-600 font-bold rounded-lg border border-indigo-200 hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
+                        >
+                            🔍 Cerca Offerte con AI
+                        </button>
+                    )}
+
+                    {isSearching && (
+                        <div className="flex flex-col items-center justify-center py-4 space-y-2">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+                            <p className="text-xs text-indigo-500 animate-pulse">L'AI sta cercando i prezzi migliori...</p>
+                        </div>
+                    )}
+
+                    {searchError && (
+                        <div className="p-2 bg-red-50 text-red-600 text-xs rounded-lg text-center mb-2 border border-red-100">
+                            {searchError}
+                            <button type="button" onClick={handleSearchDeals} className="block w-full mt-1 font-bold underline">Riprova</button>
+                        </div>
+                    )}
+
+                    {deals.length > 0 && (
+                        <div className="space-y-2 animate-in slide-in-from-bottom duration-300 mt-2">
+                            {deals.map((deal, idx) => (
+                                <a 
+                                    key={idx} 
+                                    href={deal.link} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-between p-2.5 bg-white hover:bg-gray-50 rounded-lg border border-indigo-100 transition-all group shadow-sm"
+                                >
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-gray-800">{deal.merchant}</span>
+                                        <span className="text-[10px] text-gray-400">Offerta Online</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded border border-green-100">
+                                            €{deal.price.toFixed(2)}
+                                        </span>
+                                        <ExternalLinkIcon className="w-3 h-3 text-gray-400" />
+                                    </div>
+                                </a>
+                            ))}
+                            <p className="text-[9px] text-gray-400 text-center mt-1">Powered by Google Search Grounding</p>
+                        </div>
+                    )}
+                    
+                    {hasSearched && deals.length === 0 && !isSearching && !searchError && (
+                         <div className="text-center py-2 text-gray-400 text-xs italic">
+                             Nessuna offerta trovata.
+                         </div>
+                    )}
+                </div>
+
                 <button 
                     type="submit" 
                     className="w-full py-3 bg-wine-600 text-white font-bold rounded-xl hover:bg-wine-700 transition-colors shadow-lg shadow-wine-100"
@@ -92,28 +171,6 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave })
                     Salva Recensione
                 </button>
             </form>
-
-            {/* Restock Section */}
-            <div className="pt-4 border-t border-gray-100">
-                <h4 className="text-xs font-bold uppercase text-gray-500 tracking-wider mb-3 flex items-center gap-2">
-                    <ShoppingCartIcon className="w-4 h-4" />
-                    Ricompralo Online
-                </h4>
-                <div className="space-y-2">
-                    {links.map((link) => (
-                        <a 
-                            key={link.name} 
-                            href={link.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 transition-colors group"
-                        >
-                            <span className="text-sm font-medium text-gray-700">{link.name}</span>
-                            <ExternalLinkIcon className="w-4 h-4 text-gray-400 group-hover:text-wine-600" />
-                        </a>
-                    ))}
-                </div>
-            </div>
         </div>
       </div>
     </div>
