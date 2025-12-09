@@ -253,16 +253,41 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT Update Quantity (User Scoped)
+// PUT Update Wine (Quantity, Location, etc.)
 app.put('/api/wines/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
-  const { quantity } = req.body;
+  const { quantity, location } = req.body;
+  
   try {
-    if (quantity <= 0) {
+    // If quantity is explicitly 0 or less, delete
+    if (quantity !== undefined && quantity <= 0) {
       await pool.query('DELETE FROM wines WHERE id = $1 AND user_id = $2', [id, req.user.userId]);
-    } else {
-      await pool.query('UPDATE wines SET quantity = $1 WHERE id = $2 AND user_id = $3', [quantity, id, req.user.userId]);
+      return res.json({ message: 'Deleted' });
     }
+
+    // Dynamic update query
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (quantity !== undefined) {
+        fields.push(`quantity = $${idx++}`);
+        values.push(quantity);
+    }
+    if (location !== undefined) {
+        fields.push(`location = $${idx++}`);
+        values.push(location);
+    }
+
+    if (fields.length === 0) return res.json({ message: 'Nothing to update' });
+
+    values.push(id);
+    values.push(req.user.userId);
+
+    const query = `UPDATE wines SET ${fields.join(', ')} WHERE id = $${idx++} AND user_id = $${idx++}`;
+    
+    await pool.query(query, values);
+
     res.json({ message: 'Updated' });
   } catch (err) {
     console.error(err);

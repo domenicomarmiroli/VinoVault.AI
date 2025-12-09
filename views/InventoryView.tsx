@@ -189,7 +189,8 @@ const InventoryView: React.FC<InventoryViewProps> = ({
 
       {/* Detail Modal */}
       <WineDetailModal 
-        wine={selectedWine} 
+        wine={selectedWine}
+        locations={locations}
         onClose={() => setSelectedWine(null)}
         onConsume={onConsume}
         onUpdateWine={onUpdateWine}

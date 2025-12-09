@@ -123,13 +123,16 @@ const App: React.FC = () => {
 
       if (!isOfflineMode) {
           try {
-              // Assuming backend PUT endpoint updates quantity
+              // Send updated fields (quantity and location support)
               await authFetch(`/api/wines/${updatedWine.id}`, {
                   method: 'PUT',
-                  body: JSON.stringify({ quantity: updatedWine.quantity })
+                  body: JSON.stringify({ 
+                      quantity: updatedWine.quantity,
+                      location: updatedWine.location 
+                  })
               });
           } catch (e) {
-              console.error("Errore aggiornamento quantità", e);
+              console.error("Errore aggiornamento vino", e);
           }
       }
   };
