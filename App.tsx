@@ -5,6 +5,7 @@ import InventoryView from './views/InventoryView';
 import SommelierView from './views/SommelierView';
 import HistoryView from './views/HistoryView';
 import AuthForm from './components/AuthForm';
+import RateWineModal from './components/RateWineModal';
 import { WineIcon, ChefIcon, HistoryIcon } from './components/Icons';
 
 // Helper per generare ID sicuri anche su mobile/http
@@ -21,6 +22,9 @@ const App: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+  
+  // Instant Review State
+  const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
 
   // Helper per fetch autenticate
   const authFetch = async (url: string, options: RequestInit = {}) => {
@@ -132,6 +136,9 @@ const App: React.FC = () => {
         if (w.id === wine.id) return { ...w, quantity: w.quantity - 1 };
         return w;
     }).filter(w => w.quantity > 0));
+    
+    // Trigger Instant Review Modal
+    setRatingModalEntry(historyEntry);
 
     if (!isOfflineMode) {
         try {
@@ -308,6 +315,13 @@ const App: React.FC = () => {
           <span className="text-[10px] font-medium uppercase tracking-wide">Storico</span>
         </button>
       </nav>
+
+      {/* Instant Review Modal */}
+      <RateWineModal 
+        entry={ratingModalEntry}
+        onClose={() => setRatingModalEntry(null)}
+        onSave={handleUpdateHistoryEntry}
+      />
     </div>
   );
 };

@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Wine, WineType } from '../types';
-import { ThermometerIcon, ClockIcon, BoxIcon, WineIcon } from './Icons';
+import { ThermometerIcon, ClockIcon, BoxIcon, WineIcon, StarIcon } from './Icons';
 
 interface WineDetailModalProps {
   wine: Wine | null;
@@ -160,7 +161,7 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, onClose, onCons
                }}
                className="py-3.5 px-4 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl font-medium transition-colors text-center"
              >
-               Elimina Vino
+               Elimina
              </button>
              <button 
                onClick={() => {
@@ -169,8 +170,8 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, onClose, onCons
                }}
                className="py-3.5 px-4 bg-wine-600 text-white hover:bg-wine-700 rounded-xl font-bold shadow-lg shadow-wine-200 transition-colors flex items-center justify-center gap-2"
              >
-               <BoxIcon className="w-5 h-5" />
-               Apri Bottiglia
+               <StarIcon className="w-5 h-5" filled={false} />
+               Stappa e Vota
              </button>
         </div>
 
