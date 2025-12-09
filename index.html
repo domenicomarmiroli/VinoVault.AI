@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VinoVault AI</title>
+    <!-- Manteniamo Tailwind CDN per semplicità in questo setup veloce, 
+         in produzione si consiglierebbe di installarlo via npm -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -31,15 +33,25 @@
   <script type="importmap">
 {
   "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.1",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
     "react/": "https://aistudiocdn.com/react@^19.2.1/",
-    "react": "https://aistudiocdn.com/react@^19.2.1",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.32.0"
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.32.0",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.2",
+    "vite": "https://aistudiocdn.com/vite@^7.2.7",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "dotenv": "https://aistudiocdn.com/dotenv@^17.2.3",
+    "cors": "https://aistudiocdn.com/cors@^2.8.5",
+    "express": "https://aistudiocdn.com/express@^5.2.1",
+    "pg": "https://aistudiocdn.com/pg@^8.16.3",
+    "url": "https://aistudiocdn.com/url@^0.11.4"
   }
 }
 </script>
 </head>
   <body class="bg-gray-50 text-gray-900 h-screen overflow-hidden">
     <div id="root" class="h-full flex flex-col"></div>
+    <!-- Entry point esplicito per Vite -->
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Wine } from '../types';
 import WineCard from '../components/WineCard';
@@ -6,23 +7,14 @@ import { PlusIcon } from '../components/Icons';
 
 interface InventoryViewProps {
   wines: Wine[];
-  setWines: React.Dispatch<React.SetStateAction<Wine[]>>;
+  onAddWine: (wine: Wine) => void;
   onConsume: (wine: Wine) => void;
+  onDelete: (id: string) => void;
 }
 
-const InventoryView: React.FC<InventoryViewProps> = ({ wines, setWines, onConsume }) => {
+const InventoryView: React.FC<InventoryViewProps> = ({ wines, onAddWine, onConsume, onDelete }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-
-  const handleAddWine = (newWine: Wine) => {
-    setWines(prev => [newWine, ...prev]);
-  };
-
-  const handleDelete = (id: string) => {
-    if(confirm("Sei sicuro di voler rimuovere questo vino dalla cantina?")) {
-        setWines(prev => prev.filter(w => w.id !== id));
-    }
-  };
 
   const filteredWines = wines.filter(w => 
     w.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -84,7 +76,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ wines, setWines, onConsum
               key={wine.id} 
               wine={wine} 
               onConsume={onConsume} 
-              onDelete={handleDelete}
+              onDelete={onDelete}
             />
           ))
         )}
@@ -93,7 +85,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ wines, setWines, onConsum
       <AddWineModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onAdd={handleAddWine}
+        onAdd={onAddWine}
       />
     </div>
   );

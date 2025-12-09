@@ -53,7 +53,8 @@ export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Win
           servingTemp: { type: Type.STRING, description: "Temperatura di servizio ideale" },
           servingAdvice: { type: Type.STRING, description: "Consigli precisi su quando aprire (es. 1 ora prima, scaraffare)" },
           foodPairings: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 abbinamenti cibi ideali" },
-          estimatedPrice: { type: Type.NUMBER, description: "Prezzo stimato di mercato in Euro" }
+          // Changed from estimatedPrice to price to match Wine interface
+          price: { type: Type.NUMBER, description: "Prezzo stimato di mercato in Euro" }
         },
         required: ["name", "producer", "type", "storageTemp", "servingAdvice", "storageAdvice"]
       },
