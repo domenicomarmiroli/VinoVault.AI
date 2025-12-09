@@ -76,7 +76,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newWine: Wine = {
-      id: generateId(), // Sostituito crypto.randomUUID
+      id: generateId(),
       name: formData.name || 'Sconosciuto',
       producer: formData.producer || 'Sconosciuto',
       year: formData.year || 'N/A',
@@ -111,19 +111,18 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center md:p-4 backdrop-blur-sm">
-      {/* 
-         Su mobile: w-full h-full (full screen), no rounded corners.
-         Su desktop: max-w-lg max-h-[90vh], rounded corners.
-      */}
-      <div className="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-lg md:rounded-2xl overflow-y-auto shadow-xl flex flex-col">
-        <div className="p-6 flex-1">
-          <div className="flex justify-between items-center mb-6">
+      <div className="bg-white w-full h-[100dvh] md:h-auto md:max-h-[90vh] md:max-w-lg md:rounded-2xl shadow-xl flex flex-col relative overflow-hidden">
+        
+        {/* Header Fissa */}
+        <div className="p-6 pb-0 md:pb-6 flex-shrink-0 flex justify-between items-center">
              <h2 className="text-2xl font-bold text-gray-900 font-serif">Aggiungi Vino</h2>
-             <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 md:hidden">
+             <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 md:hidden p-2">
                ✕
              </button>
-          </div>
+        </div>
 
+        {/* Content Scrollabile */}
+        <div className="p-6 pt-4 flex-1 overflow-y-auto pb-32 md:pb-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wine-600"></div>
@@ -163,7 +162,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4 pb-12 md:pb-0">
+            <form id="add-wine-form" onSubmit={handleSubmit} className="space-y-4">
               {imagePreview && (
                 <div className="w-32 h-32 mx-auto mb-4 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
@@ -246,18 +245,22 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
                       <input type="text" value={formData.servingAdvice} onChange={e => setFormData({...formData, servingAdvice: e.target.value})} className="w-full p-2 text-sm bg-white border border-gray-200 rounded-lg" />
                   </div>
               </div>
-
-              <div className="flex gap-3 pt-4 sticky bottom-0 bg-white md:relative p-2 md:p-0 border-t md:border-t-0 border-gray-100">
-                <button type="button" onClick={handleClose} className="flex-1 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">
-                  Annulla
-                </button>
-                <button type="submit" className="flex-1 py-3 bg-wine-600 text-white font-medium rounded-xl hover:bg-wine-700 shadow-lg shadow-wine-200 transition-all">
-                  Salva in Cantina
-                </button>
-              </div>
             </form>
           )}
         </div>
+
+        {/* Footer Actions Fixed/Absolute */}
+        {step === 'verify' && (
+             <div className="absolute bottom-0 left-0 right-0 md:relative bg-white p-4 border-t border-gray-100 flex gap-3 z-20"
+                  style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+                <button type="button" onClick={handleClose} className="flex-1 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">
+                  Annulla
+                </button>
+                <button type="submit" form="add-wine-form" className="flex-1 py-3 bg-wine-600 text-white font-medium rounded-xl hover:bg-wine-700 shadow-lg shadow-wine-200 transition-all">
+                  Salva in Cantina
+                </button>
+            </div>
+        )}
       </div>
     </div>
   );

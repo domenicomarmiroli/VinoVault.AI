@@ -26,13 +26,14 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, onClose, onCons
   return (
     <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center md:p-4 backdrop-blur-sm animate-in fade-in duration-200">
       {/* 
-          MODIFICHE MOBILE: 
-          1. h-full w-full (Full Screen) su mobile per evitare problemi di scrolling/footer nascosto
-          2. md:h-auto md:max-h-[90vh] per desktop
+          LAYOUT MOBILE ROBUSTO:
+          - h-[100dvh]: Occupa esattamente l'altezza visibile (gestisce URL bar browser)
+          - relative: Container per il footer assoluto
+          - overflow-hidden: Evita scroll del body principale
       */}
-      <div className="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-2xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
+      <div className="bg-white w-full h-[100dvh] md:h-auto md:max-h-[90vh] md:max-w-2xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 relative">
         
-        {/* Header Immagine e Titolo - Ridotto altezza per dare più spazio al contenuto */}
+        {/* Header Immagine */}
         <div className="relative h-48 md:h-64 bg-gray-100 flex-shrink-0 group">
            {wine.imageUrl ? (
               <>
@@ -56,8 +57,8 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, onClose, onCons
            </button>
         </div>
 
-        {/* Contenuto Scrollabile */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-white">
+        {/* Contenuto Scrollabile con Extra Padding Finale */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-white pb-32 md:pb-6">
             
             {/* Intestazione */}
             <div>
@@ -151,13 +152,11 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, onClose, onCons
                      <span className="font-semibold text-gray-900">€ {wine.price.toFixed(2)}</span>
                 </div>
             </div>
-            
-            <div className="h-6"></div> {/* Extra spacer at bottom of content */}
         </div>
 
-        {/* Footer Actions - Sticky Bottom */}
+        {/* Footer Actions - POSIZIONAMENTO ASSOLUTO SU MOBILE */}
         <div 
-            className="p-4 border-t border-gray-100 bg-white grid grid-cols-2 gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:pb-4"
+            className="absolute bottom-0 left-0 right-0 md:relative bg-white border-t border-gray-100 p-4 grid grid-cols-2 gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
         >
              <button 
