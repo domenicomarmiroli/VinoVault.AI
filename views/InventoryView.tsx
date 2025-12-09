@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Wine, WineType, Location } from '../types';
 import WineCard from '../components/WineCard';
@@ -10,6 +11,7 @@ interface InventoryViewProps {
   wines: Wine[];
   locations: Location[];
   onAddWine: (wine: Wine) => void;
+  onUpdateWine: (wine: Wine) => void;
   onConsume: (wine: Wine) => void;
   onDelete: (id: string) => void;
   onAddLocation: (name: string) => void;
@@ -20,7 +22,7 @@ interface InventoryViewProps {
 type FilterType = 'all' | WineType | 'still';
 
 const InventoryView: React.FC<InventoryViewProps> = ({ 
-    wines, locations, onAddWine, onConsume, onDelete, onAddLocation, onDeleteLocation, onLogout 
+    wines, locations, onAddWine, onUpdateWine, onConsume, onDelete, onAddLocation, onDeleteLocation, onLogout 
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLocManagerOpen, setIsLocManagerOpen] = useState(false);
@@ -190,6 +192,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         wine={selectedWine} 
         onClose={() => setSelectedWine(null)}
         onConsume={onConsume}
+        onUpdateWine={onUpdateWine}
         onDelete={onDelete}
       />
     </div>

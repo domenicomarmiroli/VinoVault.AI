@@ -117,6 +117,23 @@ const App: React.FC = () => {
      }
   };
 
+  const handleUpdateWine = async (updatedWine: Wine) => {
+      // Update local state immediately (Optimistic UI)
+      setWines(prev => prev.map(w => w.id === updatedWine.id ? updatedWine : w));
+
+      if (!isOfflineMode) {
+          try {
+              // Assuming backend PUT endpoint updates quantity
+              await authFetch(`/api/wines/${updatedWine.id}`, {
+                  method: 'PUT',
+                  body: JSON.stringify({ quantity: updatedWine.quantity })
+              });
+          } catch (e) {
+              console.error("Errore aggiornamento quantità", e);
+          }
+      }
+  };
+
   const handleConsume = async (wine: Wine) => {
     const historyEntry: HistoryEntry = {
       id: generateId(),
@@ -267,6 +284,7 @@ const App: React.FC = () => {
                     wines={wines} 
                     locations={locations}
                     onAddWine={handleAddWine}
+                    onUpdateWine={handleUpdateWine}
                     onConsume={handleConsume} 
                     onDelete={handleDelete}
                     onAddLocation={handleAddLocation}

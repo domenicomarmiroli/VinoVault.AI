@@ -52,16 +52,14 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
                 ...prev,
                 ...analysis,
                 price: analysis.price || prev.price,
-                // Ensure quantity defaults to 1 if not found
                 quantity: 1,
-                // AI cannot detect location, keep previous or empty
                 location: prev.location 
             }));
             setStep('verify');
         } catch (err) {
             console.error("Analysis failed", err);
             alert("Errore durante l'analisi dell'immagine. Inserisci i dati manualmente.");
-            setStep('verify'); // Go to manual entry on fail
+            setStep('verify');
         } finally {
             setLoading(false);
         }
@@ -110,19 +108,19 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center md:p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm">
       <div className="bg-white w-full h-[100dvh] md:h-auto md:max-h-[90vh] md:max-w-lg md:rounded-2xl shadow-xl flex flex-col relative overflow-hidden">
         
         {/* Header Fissa */}
-        <div className="p-6 pb-0 md:pb-6 flex-shrink-0 flex justify-between items-center">
-             <h2 className="text-2xl font-bold text-gray-900 font-serif">Aggiungi Vino</h2>
-             <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 md:hidden p-2">
+        <div className="p-4 border-b border-gray-100 flex-shrink-0 flex justify-between items-center bg-white">
+             <h2 className="text-xl font-bold text-gray-900 font-serif">Aggiungi Vino</h2>
+             <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 p-2">
                ✕
              </button>
         </div>
 
         {/* Content Scrollabile */}
-        <div className="p-6 pt-4 flex-1 overflow-y-auto pb-32 md:pb-6">
+        <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wine-600"></div>
@@ -132,7 +130,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
             <div className="space-y-4 pt-4">
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-wine-300 rounded-xl p-8 flex flex-col items-center justify-center hover:bg-wine-50 transition-colors group"
+                className="w-full border-2 border-dashed border-wine-300 rounded-xl p-8 flex flex-col items-center justify-center hover:bg-wine-50 transition-colors group bg-white"
               >
                 <div className="bg-wine-100 p-4 rounded-full mb-3 group-hover:scale-110 transition-transform">
                     <CameraIcon className="w-8 h-8 text-wine-600" />
@@ -156,7 +154,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
 
               <button 
                 onClick={() => setStep('verify')}
-                className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
+                className="w-full py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
               >
                 Inserisci Manualmente
               </button>
@@ -172,22 +170,22 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
               <div className="grid grid-cols-2 gap-4">
                   <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Nome</label>
-                      <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
+                      <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
                   </div>
                   <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Produttore</label>
-                      <input required type="text" value={formData.producer} onChange={e => setFormData({...formData, producer: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
+                      <input required type="text" value={formData.producer} onChange={e => setFormData({...formData, producer: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
                   </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                   <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Annata</label>
-                      <input type="text" value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
+                      <input type="text" value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
                   </div>
                   <div className="col-span-2">
                       <label className="block text-xs font-medium text-gray-500 mb-1">Tipologia</label>
-                      <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as WineType})} className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all">
+                      <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as WineType})} className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all">
                           {Object.values(WineType).map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                   </div>
@@ -196,25 +194,35 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
               <div className="grid grid-cols-2 gap-4">
                    <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Prezzo (€)</label>
-                      <input type="number" step="0.01" value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
+                      <input type="number" step="0.01" value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
                    </div>
                    <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Quantità</label>
-                      <input type="number" min="1" value={formData.quantity} onChange={e => setFormData({...formData, quantity: parseInt(e.target.value)})} className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
+                      <div className="flex items-center">
+                          <button type="button" onClick={() => setFormData({...formData, quantity: Math.max(1, (formData.quantity || 1) - 1)})} className="w-10 h-11 bg-white border border-gray-300 rounded-l-lg text-gray-600 font-bold">-</button>
+                          <input 
+                              type="number" 
+                              min="1" 
+                              value={formData.quantity} 
+                              onChange={e => setFormData({...formData, quantity: parseInt(e.target.value)})} 
+                              className="w-full p-3 border-y border-gray-300 text-center bg-white outline-none h-11" 
+                          />
+                          <button type="button" onClick={() => setFormData({...formData, quantity: (formData.quantity || 1) + 1})} className="w-10 h-11 bg-white border border-gray-300 rounded-r-lg text-wine-600 font-bold">+</button>
+                      </div>
                    </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Data Acquisto</label>
-                    <input type="date" value={formData.purchaseDate} onChange={e => setFormData({...formData, purchaseDate: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
+                    <input type="date" value={formData.purchaseDate} onChange={e => setFormData({...formData, purchaseDate: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
                 </div>
                 <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Posizione</label>
                     <select 
                         value={formData.location} 
                         onChange={e => setFormData({...formData, location: e.target.value})} 
-                        className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all"
+                        className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all"
                     >
                         <option value="" disabled>Seleziona...</option>
                         {locations.map(loc => (
@@ -224,35 +232,34 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
                 </div>
               </div>
 
-              <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3">
+              <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-3">
                   <h4 className="text-xs font-bold uppercase text-stone-500 mb-2">Dati Sommelier (Modificabili)</h4>
                   <div className="grid grid-cols-2 gap-3">
                       <div>
                           <label className="block text-xs text-gray-500">Temp. Conservazione</label>
-                          <input type="text" value={formData.storageTemp} onChange={e => setFormData({...formData, storageTemp: e.target.value})} className="w-full p-2 text-sm bg-white border border-gray-200 rounded-lg" />
+                          <input type="text" value={formData.storageTemp} onChange={e => setFormData({...formData, storageTemp: e.target.value})} className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg" />
                       </div>
                       <div>
                           <label className="block text-xs text-gray-500">Temp. Servizio</label>
-                          <input type="text" value={formData.servingTemp} onChange={e => setFormData({...formData, servingTemp: e.target.value})} className="w-full p-2 text-sm bg-white border border-gray-200 rounded-lg" />
+                          <input type="text" value={formData.servingTemp} onChange={e => setFormData({...formData, servingTemp: e.target.value})} className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg" />
                       </div>
                   </div>
                   <div>
                       <label className="block text-xs text-gray-500">Consigli Conservazione</label>
-                      <input type="text" value={formData.storageAdvice} onChange={e => setFormData({...formData, storageAdvice: e.target.value})} className="w-full p-2 text-sm bg-white border border-gray-200 rounded-lg" />
+                      <input type="text" value={formData.storageAdvice} onChange={e => setFormData({...formData, storageAdvice: e.target.value})} className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg" />
                   </div>
                   <div>
                       <label className="block text-xs text-gray-500">Quando aprire</label>
-                      <input type="text" value={formData.servingAdvice} onChange={e => setFormData({...formData, servingAdvice: e.target.value})} className="w-full p-2 text-sm bg-white border border-gray-200 rounded-lg" />
+                      <input type="text" value={formData.servingAdvice} onChange={e => setFormData({...formData, servingAdvice: e.target.value})} className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg" />
                   </div>
               </div>
             </form>
           )}
         </div>
 
-        {/* Footer Actions Fixed/Absolute */}
+        {/* Footer Actions Fixed */}
         {step === 'verify' && (
-             <div className="absolute bottom-0 left-0 right-0 md:relative bg-white p-4 border-t border-gray-100 flex gap-3 z-20"
-                  style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+             <div className="shrink-0 bg-white p-4 border-t border-gray-100 flex gap-3 pb-safe">
                 <button type="button" onClick={handleClose} className="flex-1 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">
                   Annulla
                 </button>
