@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Wine, PairingSuggestion } from '../types';
 import { suggestPairing } from '../services/geminiService';
-import { ChefIcon, WineIcon } from '../components/Icons';
+import { ChefIcon, WineIcon, LogoutIcon } from '../components/Icons';
 
 interface SommelierViewProps {
   inventory: Wine[];
+  onLogout: () => void;
 }
 
-const SommelierView: React.FC<SommelierViewProps> = ({ inventory }) => {
+const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout }) => {
   const [menuText, setMenuText] = useState('');
   const [guests, setGuests] = useState(2);
   const [style, setStyle] = useState<'single' | 'multiple'>('multiple');
@@ -36,14 +37,23 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory }) => {
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden">
        {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10">
-        <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
-            <ChefIcon className="w-8 h-8 text-wine-600" />
-            Sommelier Virtuale
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-            Inserisci il menu e lascia che l'IA trovi il vino perfetto nella tua cantina.
-        </p>
+      <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
+        <div>
+            <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
+                <ChefIcon className="w-8 h-8 text-wine-600" />
+                Sommelier Virtuale
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+                Inserisci il menu e lascia che l'IA trovi il vino perfetto nella tua cantina.
+            </p>
+        </div>
+        <button 
+            onClick={onLogout}
+            className="text-gray-400 hover:text-wine-700 p-2"
+            title="Esci"
+        >
+            <LogoutIcon className="w-6 h-6" />
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 pb-24">

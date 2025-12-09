@@ -4,7 +4,7 @@ import WineCard from '../components/WineCard';
 import AddWineModal from '../components/AddWineModal';
 import WineDetailModal from '../components/WineDetailModal';
 import LocationManagerModal from '../components/LocationManagerModal';
-import { PlusIcon, CogIcon } from '../components/Icons';
+import { PlusIcon, CogIcon, LogoutIcon } from '../components/Icons';
 
 interface InventoryViewProps {
   wines: Wine[];
@@ -14,12 +14,13 @@ interface InventoryViewProps {
   onDelete: (id: string) => void;
   onAddLocation: (name: string) => void;
   onDeleteLocation: (id: string) => void;
+  onLogout: () => void;
 }
 
 type FilterType = 'all' | WineType | 'still';
 
 const InventoryView: React.FC<InventoryViewProps> = ({ 
-    wines, locations, onAddWine, onConsume, onDelete, onAddLocation, onDeleteLocation 
+    wines, locations, onAddWine, onConsume, onDelete, onAddLocation, onDeleteLocation, onLogout 
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLocManagerOpen, setIsLocManagerOpen] = useState(false);
@@ -72,6 +73,13 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-serif font-bold text-gray-900">La Mia Cantina</h1>
           <div className="flex gap-2">
+             <button 
+                onClick={onLogout}
+                className="bg-gray-100 text-wine-700 p-2.5 rounded-full hover:bg-wine-50 transition-colors"
+                title="Esci"
+            >
+                <LogoutIcon className="w-6 h-6" />
+            </button>
             <button 
                 onClick={() => setIsLocManagerOpen(true)}
                 className="bg-gray-100 text-gray-600 p-2.5 rounded-full hover:bg-gray-200 transition-colors"

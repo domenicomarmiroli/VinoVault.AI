@@ -93,6 +93,8 @@ const initDb = async () => {
         price DECIMAL,
         image_url TEXT,
         consumed_date TEXT,
+        rating INTEGER DEFAULT 0,
+        notes TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -106,11 +108,15 @@ const initDb = async () => {
       );
     `);
 
-    // 5. Add user_id column if missing (Migration for existing tables)
+    // 5. Add columns if missing (Migration for existing tables)
     try {
         await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id);`);
         await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id);`);
         await pool.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id);`);
+        
+        // History Reviews Migration
+        await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT 0;`);
+        await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS notes TEXT;`);
     } catch (e) {
         console.log("Migration columns already exist or skipped");
     }
@@ -291,7 +297,9 @@ app.get('/api/history', authenticateToken, async (req, res) => {
       year: row.year,
       price: parseFloat(row.price),
       imageUrl: row.image_url,
-      consumedDate: row.consumed_date
+      consumedDate: row.consumed_date,
+      rating: row.rating,
+      notes: row.notes
     }));
     res.json(history);
   } catch (err) {
@@ -314,6 +322,22 @@ app.post('/api/history', authenticateToken, async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'History insert error' });
   }
+});
+
+// PUT Update History (Rating & Notes)
+app.put('/api/history/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { rating, notes } = req.body;
+    try {
+        await pool.query(
+            'UPDATE history SET rating = $1, notes = $2 WHERE id = $3 AND user_id = $4',
+            [rating, notes, id, req.user.userId]
+        );
+        res.json({ message: 'History updated' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Update failed' });
+    }
 });
 
 // DELETE Clear History (User Scoped)

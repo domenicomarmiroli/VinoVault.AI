@@ -121,7 +121,9 @@ const App: React.FC = () => {
       year: wine.year,
       price: wine.price,
       imageUrl: wine.imageUrl,
-      consumedDate: new Date().toISOString()
+      consumedDate: new Date().toISOString(),
+      rating: 0,
+      notes: ''
     };
     
     // Optimistic Update
@@ -146,6 +148,25 @@ const App: React.FC = () => {
         } catch (e) {
             console.error(e);
             alert("Errore sincronizzazione.");
+        }
+    }
+  };
+
+  const handleUpdateHistoryEntry = async (id: string, rating: number, notes: string) => {
+    // Optimistic Update
+    setHistory(prev => prev.map(h => 
+        h.id === id ? { ...h, rating, notes } : h
+    ));
+
+    if (!isOfflineMode) {
+        try {
+            await authFetch(`/api/history/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ rating, notes })
+            });
+        } catch (e) {
+            console.error(e);
+            alert("Errore salvataggio recensione.");
         }
     }
   };
@@ -232,14 +253,6 @@ const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-hidden relative">
-        {/* Logout Button (Floating) */}
-        <button 
-            onClick={handleLogout}
-            className="absolute top-4 right-4 z-50 bg-white/80 backdrop-blur text-xs px-2 py-1 rounded-full text-wine-700 shadow-sm border border-wine-100 hover:bg-wine-50"
-        >
-            Esci
-        </button>
-
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'inventory' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
              {activeTab === 'inventory' && (
                 <InventoryView 
@@ -250,14 +263,22 @@ const App: React.FC = () => {
                     onDelete={handleDelete}
                     onAddLocation={handleAddLocation}
                     onDeleteLocation={handleDeleteLocation}
+                    onLogout={handleLogout}
                 />
              )}
         </div>
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'sommelier' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             {activeTab === 'sommelier' && <SommelierView inventory={wines} />}
+             {activeTab === 'sommelier' && <SommelierView inventory={wines} onLogout={handleLogout} />}
         </div>
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             {activeTab === 'history' && <HistoryView history={history} onClearHistory={handleClearHistory} />}
+             {activeTab === 'history' && (
+                <HistoryView 
+                    history={history} 
+                    onClearHistory={handleClearHistory} 
+                    onLogout={handleLogout}
+                    onUpdateHistoryEntry={handleUpdateHistoryEntry}
+                />
+             )}
         </div>
       </main>
 

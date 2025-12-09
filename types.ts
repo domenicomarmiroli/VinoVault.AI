@@ -1,3 +1,4 @@
+
 export enum WineType {
   RED = 'Rosso',
   WHITE = 'Bianco',
@@ -40,6 +41,8 @@ export interface HistoryEntry {
   consumedDate: string;
   price: number;
   imageUrl?: string;
+  rating?: number; // 1-5
+  notes?: string; // Tasting notes
 }
 
 export interface Location {
