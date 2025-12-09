@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Wine, WineType, PairingSuggestion } from "../types";
+import { Wine, WineType, PairingSuggestion, PurchaseAnalysis } from "../types";
 
 // Helper to remove base64 prefix
 const cleanBase64 = (base64: string) => {
@@ -13,12 +13,10 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
  * Analyzes a wine label image to extract details and provide professional advice.
  */
 export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Wine>> => {
-  const model = "gemini-2.5-flash"; // Use generic model which handles images well
+  const model = "gemini-2.5-flash"; 
   
   const systemInstruction = `Sei un sommelier professionista e un gestore di cantina meticoloso. 
-  Analizza l'immagine dell'etichetta di vino per estrarre TUTTI i dati tecnici visibili o deducibili (incluso Vitigno, Regione, Alcol) e fornire consigli operativi precisi.
-  Se l'etichetta non mostra esplicitamente il vitigno, deducilo dalla denominazione (es. Chianti -> Sangiovese).
-  Fornisci suggerimenti dettagliati su conservazione e servizio.
+  Analizza l'immagine dell'etichetta di vino per estrarre TUTTI i dati tecnici visibili o deducibili.
   Rispondi SEMPRE in formato JSON valido secondo lo schema fornito.`;
 
   const response = await ai.models.generateContent({
@@ -32,7 +30,7 @@ export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Win
           },
         },
         {
-          text: "Analizza questa etichetta. Estrai: Nome, Produttore, Anno, Tipo, Regione, Vitigno (Grape), Gradazione Alcolica. Fornisci temperature e abbinamenti. Se il prezzo non è noto, stima un valore medio di mercato in Italia.",
+          text: "Analizza questa etichetta. Estrai dati tecnici e consigli.",
         },
       ],
     },
@@ -42,19 +40,19 @@ export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Win
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          name: { type: Type.STRING, description: "Nome del vino" },
-          producer: { type: Type.STRING, description: "Cantina o produttore" },
-          year: { type: Type.STRING, description: "Annata" },
-          type: { type: Type.STRING, enum: Object.values(WineType), description: "Tipologia esatta" },
-          region: { type: Type.STRING, description: "Regione geografica e denominazione (es. Toscana DOCG)" },
-          grape: { type: Type.STRING, description: "Vitigno principale (es. Sangiovese, Chardonnay). Se blend, elencali." },
-          alcohol: { type: Type.STRING, description: "Gradazione alcolica (es. 13.5%)" },
-          storageTemp: { type: Type.STRING, description: "Temperatura ideale di conservazione (es. 12-14°C)" },
-          storageAdvice: { type: Type.STRING, description: "Consigli specifici sulla conservazione (es. coricata, al buio)" },
-          servingTemp: { type: Type.STRING, description: "Temperatura di servizio ideale" },
-          servingAdvice: { type: Type.STRING, description: "Consigli precisi su quando aprire (es. 1 ora prima, scaraffare)" },
-          foodPairings: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 abbinamenti cibi ideali" },
-          price: { type: Type.NUMBER, description: "Prezzo stimato di mercato in Euro" }
+          name: { type: Type.STRING },
+          producer: { type: Type.STRING },
+          year: { type: Type.STRING },
+          type: { type: Type.STRING, enum: Object.values(WineType) },
+          region: { type: Type.STRING },
+          grape: { type: Type.STRING },
+          alcohol: { type: Type.STRING },
+          storageTemp: { type: Type.STRING },
+          storageAdvice: { type: Type.STRING },
+          servingTemp: { type: Type.STRING },
+          servingAdvice: { type: Type.STRING },
+          foodPairings: { type: Type.ARRAY, items: { type: Type.STRING } },
+          price: { type: Type.NUMBER }
         },
         required: ["name", "producer", "type", "storageTemp", "servingAdvice", "storageAdvice", "grape"]
       },
@@ -78,44 +76,34 @@ export const suggestPairing = async (
 ): Promise<PairingSuggestion[]> => {
   const model = "gemini-2.5-flash";
 
-  // Create a simplified inventory string to save tokens and focus on relevance
   const inventoryList = inventory.map(w => 
     `ID: ${w.id}, Nome: ${w.name} (${w.year}), Tipo: ${w.type}, Vitigno: ${w.grape}, Qta: ${w.quantity}`
   ).join("\n");
 
   const prompt = `
-    Ho un pranzo/cena per ${guests} persone.
-    Ecco il menu:
-    "${menu}"
-
-    Vorrei servire ${style === 'single' ? "un solo tipo di vino per tutto il pasto" : "vini diversi per ogni portata principale"}.
-
-    Ecco la mia cantina attuale (Inventory):
+    Menu: "${menu}" (${guests} persone).
+    Cantina Utente:
     ${inventoryList}
-
-    Compito:
-    Suggerisci gli abbinamenti come un sommelier esperto. 
-    1. Se ho un vino adatto in cantina (Inventory), DEVI suggerire quello indicando il suo ID.
-    2. Se non ho un vino adatto, suggerisci una tipologia generica (fallbackWineName) da comprare.
-    3. Analizza il menu e dividilo in portate logiche (es. Aperitivo, Primo, Secondo).
+    
+    Suggerisci abbinamenti. Privilegia la cantina utente.
   `;
 
   const response = await ai.models.generateContent({
     model,
     contents: prompt,
     config: {
-      systemInstruction: "Sei un sommelier di alto livello. Suggerisci abbinamenti armonici. Privilegia i vini presenti nell'inventario dell'utente se compatibili.",
+      systemInstruction: "Sei un sommelier di alto livello.",
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.ARRAY,
         items: {
           type: Type.OBJECT,
           properties: {
-            courseName: { type: Type.STRING, description: "Es. Aperitivo, Antipasto, Portata Principale" },
-            dishName: { type: Type.STRING, description: "Il piatto del menu a cui si riferisce" },
-            reasoning: { type: Type.STRING, description: "Perché questo abbinamento funziona" },
-            suggestedWineId: { type: Type.STRING, description: "ID del vino dall'inventario (se presente), altrimenti null o stringa vuota", nullable: true },
-            fallbackWineName: { type: Type.STRING, description: "Nome del vino o tipologia da comprare se non presente in inventario" }
+            courseName: { type: Type.STRING },
+            dishName: { type: Type.STRING },
+            reasoning: { type: Type.STRING },
+            suggestedWineId: { type: Type.STRING, nullable: true },
+            fallbackWineName: { type: Type.STRING }
           },
           required: ["courseName", "dishName", "reasoning", "fallbackWineName"]
         }
@@ -128,3 +116,76 @@ export const suggestPairing = async (
 
   return JSON.parse(text);
 };
+
+
+/**
+ * Analyzes a potential purchase considering the price and the current user's cellar.
+ */
+export const analyzePurchase = async (
+    base64Image: string, 
+    inputPrice: number, 
+    inventory: Wine[]
+): Promise<PurchaseAnalysis> => {
+    const model = "gemini-2.5-flash";
+
+    // Summarize inventory for context
+    const inventorySummary = inventory.map(w => `${w.quantity}x ${w.name} (${w.type}, ${w.region})`).join(", ");
+
+    const systemInstruction = `Sei un Advisor di investimenti vinicoli e Sommelier.
+    Analizza la foto del vino e il prezzo inserito dall'utente (€${inputPrice}).
+    1. Identifica il vino.
+    2. Stima il prezzo medio di mercato.
+    3. Valuta se il prezzo inserito è un affare.
+    4. Analizza la cantina attuale dell'utente e decidi se questo vino è una buona aggiunta (diversificazione) o se è ridondante.
+    Cantina Attuale: [${inventorySummary}]
+    `;
+
+    const response = await ai.models.generateContent({
+        model,
+        contents: {
+            parts: [
+                { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } },
+                { text: `Prezzo offerta: ${inputPrice}€. Analizza questo vino. È un buon acquisto? Completa la mia cantina?` }
+            ]
+        },
+        config: {
+            systemInstruction,
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    wineDetails: {
+                        type: Type.OBJECT,
+                        properties: {
+                            name: { type: Type.STRING },
+                            producer: { type: Type.STRING },
+                            year: { type: Type.STRING },
+                            type: { type: Type.STRING, enum: Object.values(WineType) },
+                            region: { type: Type.STRING },
+                            grape: { type: Type.STRING },
+                            alcohol: { type: Type.STRING },
+                        }
+                    },
+                    marketPriceEstimate: { type: Type.NUMBER, description: "Prezzo medio online" },
+                    isGoodDeal: { type: Type.BOOLEAN },
+                    dealRating: { type: Type.STRING, enum: ['Bad', 'Fair', 'Good', 'Excellent'] },
+                    qualityScore: { type: Type.NUMBER, description: "Punteggio 1-100 basato su critica internazionale" },
+                    sommelierNotes: { type: Type.STRING, description: "Descrizione breve gusto e naso" },
+                    cellarFit: {
+                        type: Type.OBJECT,
+                        properties: {
+                            isRecommended: { type: Type.BOOLEAN },
+                            reasoning: { type: Type.STRING, description: "Spiega perché comprarlo o no basandoti sulla cantina attuale" }
+                        }
+                    }
+                },
+                required: ["marketPriceEstimate", "dealRating", "cellarFit", "wineDetails", "qualityScore"]
+            }
+        }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("Nessuna risposta da Gemini");
+
+    return JSON.parse(text);
+}

@@ -63,3 +63,16 @@ export interface PairingSuggestion {
   suggestedWineId?: string; // If found in inventory
   fallbackWineName: string; // If not in inventory
 }
+
+export interface PurchaseAnalysis {
+  wineDetails: Partial<Wine>;
+  marketPriceEstimate: number;
+  isGoodDeal: boolean;
+  dealRating: 'Bad' | 'Fair' | 'Good' | 'Excellent';
+  qualityScore: number; // 1-100
+  sommelierNotes: string; // Taste profile
+  cellarFit: {
+    isRecommended: boolean;
+    reasoning: string; // "You have 0 whites, this is a good addition" or "You have too many Chianti"
+  };
+}

@@ -1,18 +1,44 @@
 
 import React from 'react';
 
-export const WineIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3a1.5 1.5 0 0 1 3 0V7.5h-3V3ZM3 15.75c0 1.516.48 2.923 1.303 4.072a2.49 2.49 0 0 1 3.511 2.928h8.372a2.49 2.49 0 0 1 3.511-2.928A6.732 6.732 0 0 0 21 15.75V7.5H3v8.25Z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5v8.25" />
+export const WineIcon = ({ className, filled }: { className?: string, filled?: boolean }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? 0 : 1.5} className={className}>
+    {filled ? (
+        <path d="M9.375 3a1.875 1.875 0 0 0 0 3.75h1.875v4.5H3.375A1.875 1.875 0 0 1 1.5 9.375v-.75c0-1.036.84-1.875 1.875-1.875h3.193A3.375 3.375 0 0 1 12 2.753a3.375 3.375 0 0 1 5.432 4.027h3.193c1.035 0 1.875.84 1.875 1.875v.75c0 1.035-.84 1.875-1.875 1.875H12.75v-4.5h1.875a1.875 1.875 0 0 0 1.875-1.875V3h-7.125ZM12 12.75a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Zm-2.25 2.25a3.375 3.375 0 0 0-3.375 3.375v.375C6.375 20.336 7.719 21.75 9.375 21.75h5.25c1.656 0 3-1.414 3-3v-.375a3.375 3.375 0 0 0-3.375-3.375h-4.5Z" />
+    ) : (
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3a1.5 1.5 0 0 1 3 0V7.5h-3V3ZM3 15.75c0 1.516.48 2.923 1.303 4.072a2.49 2.49 0 0 1 3.511 2.928h8.372a2.49 2.49 0 0 1 3.511-2.928A6.732 6.732 0 0 0 21 15.75V7.5H3v8.25Z" />
+    )}
+    {!filled && <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5v8.25" />}
   </svg>
 );
 
-export const ChefIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+export const ChefIcon = ({ className, filled }: { className?: string, filled?: boolean }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? 0 : 1.5} className={className}>
+     {filled ? (
+        <path d="M11.7 2.805a.75.75 0 0 1 .6 0A6.065 6.065 0 0 1 16.5 8.25v.75H21a.75.75 0 0 1 0 1.5h-4.5v.75a6.002 6.002 0 0 1-4.99 5.913 2.99 2.99 0 0 1 1.99 2.837v1.5a.75.75 0 0 1-1.5 0v-1.5A1.5 1.5 0 0 0 10.5 18v-1.5a.75.75 0 0 1-1.5 0v1.5A1.5 1.5 0 0 0 10.5 19.5v1.5a.75.75 0 0 1-1.5 0v-1.5A2.99 2.99 0 0 1 10.99 17.163a6.002 6.002 0 0 1-4.99-5.913v-.75H1.5a.75.75 0 0 1 0-1.5h4.5v-.75a6.065 6.065 0 0 1 4.2-5.445Z" />
+     ) : (
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+     )}
   </svg>
 );
+
+export const HistoryIcon = ({ className, filled }: { className?: string, filled?: boolean }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? 0 : 1.5} className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0Z" />
+  </svg>
+);
+
+export const ShopIcon = ({ className, filled }: { className?: string, filled?: boolean }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? 0 : 1.5} className={className}>
+    {filled ? (
+        <path fillRule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.865 1.679l-1.263 12A1.875 1.875 0 0 0 4.25 22.5h15.5a1.875 1.875 0 0 0 1.865-2.071l-1.263-12a1.875 1.875 0 0 0-1.865-1.679H16.5V6a4.5 4.5 0 1 0-9 0ZM12 3a3 3 0 0 0-3 3v.75h6V6a3 3 0 0 0-3-3Zm-3 8.25a3 3 0 1 0 6 0v-.75a.75.75 0 0 1 1.5 0v.75a4.5 4.5 0 1 1-9 0v-.75a.75.75 0 0 1 1.5 0v.75Z" clipRule="evenodd" />
+    ) : (
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+    )}
+  </svg>
+);
+
 
 export const PlusIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
@@ -33,14 +59,8 @@ export const ThermometerIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-export const ClockIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-  </svg>
-);
-
-export const HistoryIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+export const ClockIcon = ({ className, filled }: { className?: string, filled?: boolean }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill={filled ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={filled? 0 : 1.5} stroke="currentColor" className={className}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0Z" />
   </svg>
