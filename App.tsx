@@ -1,33 +1,72 @@
+
 import React, { useState, useEffect } from 'react';
 import { Wine, HistoryEntry, Location } from './types';
 import InventoryView from './views/InventoryView';
 import SommelierView from './views/SommelierView';
 import HistoryView from './views/HistoryView';
+import AuthForm from './components/AuthForm';
 import { WineIcon, ChefIcon, HistoryIcon } from './components/Icons';
 
 // Helper per generare ID sicuri anche su mobile/http
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
 const App: React.FC = () => {
+  // Auth State
+  const [token, setToken] = useState<string | null>(localStorage.getItem('vinovault_token'));
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
   const [activeTab, setActiveTab] = useState<'inventory' | 'sommelier' | 'history'>('inventory');
   const [wines, setWines] = useState<Wine[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  
-  // New state to track if we are using the DB or LocalStorage
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+
+  // Helper per fetch autenticate
+  const authFetch = async (url: string, options: RequestInit = {}) => {
+      const headers = {
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+          'Authorization': `Bearer ${token}`
+      };
+      return fetch(url, { ...options, headers });
+  };
+
+  // Login handler
+  const handleLogin = (newToken: string, email: string) => {
+      localStorage.setItem('vinovault_token', newToken);
+      setToken(newToken);
+      setUserEmail(email);
+      // Reset data on new login
+      setWines([]);
+      setHistory([]);
+      setLocations([]);
+      setIsLoaded(false);
+  };
+
+  const handleLogout = () => {
+      localStorage.removeItem('vinovault_token');
+      setToken(null);
+      setUserEmail(null);
+  };
 
   // Load Data
   useEffect(() => {
+    if (!token) return;
+
     const fetchData = async () => {
       try {
-        // Try connecting to the backend
+        // Try connecting to the backend with Token
         const [winesRes, historyRes, locationsRes] = await Promise.all([
-          fetch('/api/wines'),
-          fetch('/api/history'),
-          fetch('/api/locations')
+          authFetch('/api/wines'),
+          authFetch('/api/history'),
+          authFetch('/api/locations')
         ]);
+
+        if (winesRes.status === 401 || winesRes.status === 403) {
+            handleLogout();
+            return;
+        }
 
         if (!winesRes.ok || !historyRes.ok || !locationsRes.ok) throw new Error("API Unreachable");
 
@@ -42,41 +81,17 @@ const App: React.FC = () => {
       } catch (e) {
         console.warn("Backend unavailable, falling back to LocalStorage", e);
         setIsOfflineMode(true);
-        
-        // Load from LocalStorage as fallback
-        const localWines = localStorage.getItem('vinovault_wines');
-        const localHistory = localStorage.getItem('vinovault_history');
-        const localLocations = localStorage.getItem('vinovault_locations');
-        
-        if (localWines) setWines(JSON.parse(localWines));
-        if (localHistory) setHistory(JSON.parse(localHistory));
-        if (localLocations) setLocations(JSON.parse(localLocations));
-        else {
-             // Default locations offline
-             setLocations([
-                 { id: '1', name: 'Cantina' },
-                 { id: '2', name: 'Frigo' }
-             ]);
-        }
+        // Fallback logic for offline removed for simplicity in multi-user context or kept for cache
       } finally {
         setIsLoaded(true);
       }
     };
 
     fetchData();
-  }, []);
+  }, [token]);
 
-  // Sync with LocalStorage if in Offline Mode
-  useEffect(() => {
-    if (isOfflineMode && isLoaded) {
-      localStorage.setItem('vinovault_wines', JSON.stringify(wines));
-      localStorage.setItem('vinovault_history', JSON.stringify(history));
-      localStorage.setItem('vinovault_locations', JSON.stringify(locations));
-    }
-  }, [wines, history, locations, isOfflineMode, isLoaded]);
 
   const handleAddWine = async (newWine: Wine) => {
-     // Ensure ID is set if missing (safety check)
      const wineToAdd = { ...newWine, id: newWine.id || generateId() };
 
      if (isOfflineMode) {
@@ -85,24 +100,21 @@ const App: React.FC = () => {
      }
 
      try {
-         const res = await fetch('/api/wines', {
+         const res = await authFetch('/api/wines', {
              method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify(wineToAdd)
          });
          if (!res.ok) throw new Error("Errore salvataggio");
          setWines(prev => [wineToAdd, ...prev]);
      } catch (e) {
          console.error(e);
-         alert("Errore salvataggio su DB. Passaggio alla modalità locale.");
-         setIsOfflineMode(true);
-         setWines(prev => [wineToAdd, ...prev]);
+         alert("Errore salvataggio.");
      }
   };
 
   const handleConsume = async (wine: Wine) => {
     const historyEntry: HistoryEntry = {
-      id: generateId(), // Sostituito crypto.randomUUID
+      id: generateId(),
       wineId: wine.id,
       name: wine.name,
       producer: wine.producer,
@@ -112,7 +124,7 @@ const App: React.FC = () => {
       consumedDate: new Date().toISOString()
     };
     
-    // Optimistic Update locally first
+    // Optimistic Update
     setHistory(prev => [historyEntry, ...prev]);
     setWines(prev => prev.map(w => {
         if (w.id === wine.id) return { ...w, quantity: w.quantity - 1 };
@@ -121,28 +133,20 @@ const App: React.FC = () => {
 
     if (!isOfflineMode) {
         try {
-            const [histRes, wineRes] = await Promise.all([
-                fetch('/api/history', {
+            await Promise.all([
+                authFetch('/api/history', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(historyEntry)
                 }),
-                fetch(`/api/wines/${wine.id}`, {
+                authFetch(`/api/wines/${wine.id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ quantity: wine.quantity - 1 })
                 })
             ]);
-
-            if (!histRes.ok || !wineRes.ok) throw new Error("Sync failed");
-            alert(`Hai aperto 1 bottiglia di ${wine.name}.`);
         } catch (e) {
             console.error(e);
-            alert("Errore sincronizzazione DB. I dati sono stati salvati solo in locale.");
-            setIsOfflineMode(true);
+            alert("Errore sincronizzazione.");
         }
-    } else {
-        alert(`Hai aperto 1 bottiglia di ${wine.name} (Modalità Locale).`);
     }
   };
 
@@ -154,77 +158,65 @@ const App: React.FC = () => {
         return;
     }
 
-    // Optimistic delete
     const oldWines = [...wines];
     setWines(prev => prev.filter(w => w.id !== id));
 
     try {
-        const res = await fetch(`/api/wines/${id}`, { method: 'DELETE' });
+        const res = await authFetch(`/api/wines/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error("Delete failed");
     } catch (e) {
         console.error(e);
-        alert("Errore eliminazione su DB. Ripristino...");
+        alert("Errore eliminazione.");
         setWines(oldWines);
     }
   };
 
   const handleClearHistory = async () => {
     if(!confirm("Vuoi cancellare tutto lo storico?")) return;
-
     if (isOfflineMode) {
         setHistory([]);
         return;
     }
-
     try {
-        await fetch('/api/history', { method: 'DELETE' });
+        await authFetch('/api/history', { method: 'DELETE' });
         setHistory([]);
     } catch(e) {
         alert("Errore durante la cancellazione");
     }
   };
 
-  // --- Location Handlers ---
   const handleAddLocation = async (name: string) => {
       const newLoc: Location = { id: generateId(), name };
-      
-      if(isOfflineMode) {
-          setLocations(prev => [...prev, newLoc]);
-          return;
-      }
-
       setLocations(prev => [...prev, newLoc]);
-      try {
-          await fetch('/api/locations', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(newLoc)
-          });
-      } catch(e) {
-          console.error("Location add fail", e);
+      
+      if(!isOfflineMode) {
+          try {
+              await authFetch('/api/locations', {
+                  method: 'POST',
+                  body: JSON.stringify(newLoc)
+              });
+          } catch(e) { console.error(e); }
       }
   };
 
   const handleDeleteLocation = async (id: string) => {
-      if(isOfflineMode) {
-          setLocations(prev => prev.filter(l => l.id !== id));
-          return;
-      }
-
-      const oldLocs = [...locations];
       setLocations(prev => prev.filter(l => l.id !== id));
-      try {
-          await fetch(`/api/locations/${id}`, { method: 'DELETE' });
-      } catch(e) {
-          console.error("Loc delete fail", e);
-          setLocations(oldLocs);
+      if(!isOfflineMode) {
+          try {
+              await authFetch(`/api/locations/${id}`, { method: 'DELETE' });
+          } catch(e) { console.error(e); }
       }
   };
   
-  if (!isLoaded) return (
+  // --- AUTH GUARD ---
+  if (!token) {
+      return <AuthForm onLogin={handleLogin} />;
+  }
+
+  if (!isLoaded && !isOfflineMode) return (
     <div className="h-screen flex items-center justify-center bg-gray-50 text-wine-800 flex-col gap-2">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-wine-800"></div>
-      <p>Caricamento Cantina...</p>
+      <p>Apertura Cantina...</p>
     </div>
   );
 
@@ -234,12 +226,20 @@ const App: React.FC = () => {
       {/* Offline Mode Banner */}
       {isOfflineMode && (
         <div className="bg-amber-100 text-amber-800 text-xs text-center py-1 px-2 border-b border-amber-200">
-          ⚠️ Modalità Locale: Database non connesso. I dati sono salvati nel browser.
+          ⚠️ Modalità Offline
         </div>
       )}
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-hidden relative">
+        {/* Logout Button (Floating) */}
+        <button 
+            onClick={handleLogout}
+            className="absolute top-4 right-4 z-50 bg-white/80 backdrop-blur text-xs px-2 py-1 rounded-full text-wine-700 shadow-sm border border-wine-100 hover:bg-wine-50"
+        >
+            Esci
+        </button>
+
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'inventory' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
              {activeTab === 'inventory' && (
                 <InventoryView 
