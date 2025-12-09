@@ -245,7 +245,16 @@ export const findBestDeals = async (name: string, producer: string, year: string
         Ignora aste o privati.
         Se non trovi l'annata esatta, cerca l'annata più vicina disponibile specificandolo nel nome.
         
-        Restituisci ESCLUSIVAMENTE un array JSON.
+        IMPORTANTE: Restituisci la risposta ESCLUSIVAMENTE come un array JSON grezzo, senza markdown (no \`\`\`json).
+        Il formato deve essere:
+        [
+          {
+            "merchant": "Nome Negozio",
+            "price": 25.50,
+            "currency": "EUR",
+            "link": "https://..."
+          }
+        ]
     `;
 
     try {
@@ -255,29 +264,13 @@ export const findBestDeals = async (name: string, producer: string, year: string
             config: {
                 systemInstruction,
                 tools: [{ googleSearch: {} }], // Enable real-time web search
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            merchant: { type: Type.STRING, description: "Nome del negozio (es. Tannico)" },
-                            price: { type: Type.NUMBER, description: "Prezzo in Euro" },
-                            currency: { type: Type.STRING, description: "EUR" },
-                            link: { type: Type.STRING, description: "URL diretto all'offerta" }
-                        },
-                        required: ["merchant", "price", "link"]
-                    }
-                }
+                // Removed responseSchema and responseMimeType to prevent conflict with tools
             }
         });
         
         const text = response.text;
-        // Search Grounding responses might contain extra text, clean strictly
         if (!text) throw new Error("Nessun risultato trovato");
         
-        // Sometimes with tools the response might not be strictly JSON only if grounding metadata is attached loosely,
-        // but responseMimeType usually forces it.
         return JSON.parse(cleanJson(text));
 
     } catch (err: any) {
