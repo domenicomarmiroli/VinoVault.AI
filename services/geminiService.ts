@@ -16,8 +16,9 @@ export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Win
   const model = "gemini-2.5-flash"; // Use generic model which handles images well
   
   const systemInstruction = `Sei un sommelier professionista e un gestore di cantina meticoloso. 
-  Analizza l'immagine dell'etichetta di vino per estrarre i dati tecnici e fornire consigli operativi precisi.
-  Fornisci suggerimenti dettagliati su conservazione (luce, posizione) e servizio (apertura, decanter).
+  Analizza l'immagine dell'etichetta di vino per estrarre TUTTI i dati tecnici visibili o deducibili (incluso Vitigno, Regione, Alcol) e fornire consigli operativi precisi.
+  Se l'etichetta non mostra esplicitamente il vitigno, deducilo dalla denominazione (es. Chianti -> Sangiovese).
+  Fornisci suggerimenti dettagliati su conservazione e servizio.
   Rispondi SEMPRE in formato JSON valido secondo lo schema fornito.`;
 
   const response = await ai.models.generateContent({
@@ -31,7 +32,7 @@ export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Win
           },
         },
         {
-          text: "Analizza questa etichetta. Estrai i dati e fornisci consigli. Se l'anno non è visibile, metti 'N/A'. Se il prezzo non è noto, stima un valore medio di mercato in Italia.",
+          text: "Analizza questa etichetta. Estrai: Nome, Produttore, Anno, Tipo, Regione, Vitigno (Grape), Gradazione Alcolica. Fornisci temperature e abbinamenti. Se il prezzo non è noto, stima un valore medio di mercato in Italia.",
         },
       ],
     },
@@ -44,19 +45,18 @@ export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Win
           name: { type: Type.STRING, description: "Nome del vino" },
           producer: { type: Type.STRING, description: "Cantina o produttore" },
           year: { type: Type.STRING, description: "Annata" },
-          type: { type: Type.STRING, enum: Object.values(WineType), description: "Tipologia" },
-          region: { type: Type.STRING, description: "Regione geografica e denominazione (es. DOCG)" },
-          grape: { type: Type.STRING, description: "Vitigno principale" },
-          alcohol: { type: Type.STRING, description: "Gradazione alcolica" },
+          type: { type: Type.STRING, enum: Object.values(WineType), description: "Tipologia esatta" },
+          region: { type: Type.STRING, description: "Regione geografica e denominazione (es. Toscana DOCG)" },
+          grape: { type: Type.STRING, description: "Vitigno principale (es. Sangiovese, Chardonnay). Se blend, elencali." },
+          alcohol: { type: Type.STRING, description: "Gradazione alcolica (es. 13.5%)" },
           storageTemp: { type: Type.STRING, description: "Temperatura ideale di conservazione (es. 12-14°C)" },
-          storageAdvice: { type: Type.STRING, description: "Consigli specifici sulla conservazione (es. coricata, al buio, umidità)" },
+          storageAdvice: { type: Type.STRING, description: "Consigli specifici sulla conservazione (es. coricata, al buio)" },
           servingTemp: { type: Type.STRING, description: "Temperatura di servizio ideale" },
           servingAdvice: { type: Type.STRING, description: "Consigli precisi su quando aprire (es. 1 ora prima, scaraffare)" },
           foodPairings: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 abbinamenti cibi ideali" },
-          // Changed from estimatedPrice to price to match Wine interface
           price: { type: Type.NUMBER, description: "Prezzo stimato di mercato in Euro" }
         },
-        required: ["name", "producer", "type", "storageTemp", "servingAdvice", "storageAdvice"]
+        required: ["name", "producer", "type", "storageTemp", "servingAdvice", "storageAdvice", "grape"]
       },
     },
   });
@@ -80,7 +80,7 @@ export const suggestPairing = async (
 
   // Create a simplified inventory string to save tokens and focus on relevance
   const inventoryList = inventory.map(w => 
-    `ID: ${w.id}, Nome: ${w.name} (${w.year}), Tipo: ${w.type}, Qta: ${w.quantity}`
+    `ID: ${w.id}, Nome: ${w.name} (${w.year}), Tipo: ${w.type}, Vitigno: ${w.grape}, Qta: ${w.quantity}`
   ).join("\n");
 
   const prompt = `
