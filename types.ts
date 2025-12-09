@@ -42,6 +42,11 @@ export interface HistoryEntry {
   imageUrl?: string;
 }
 
+export interface Location {
+    id: string;
+    name: string;
+}
+
 export interface MenuRequest {
   menuText: string;
   guests: number;

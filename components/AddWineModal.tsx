@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Wine, WineType } from '../types';
+import { Wine, WineType, Location } from '../types';
 import { analyzeWineLabel } from '../services/geminiService';
 import { CameraIcon, PlusIcon } from './Icons';
 
@@ -10,9 +10,10 @@ interface AddWineModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (wine: Wine) => void;
+  locations: Location[];
 }
 
-const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd }) => {
+const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, locations }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'upload' | 'verify'>('upload');
@@ -51,7 +52,9 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd }) =
                 ...analysis,
                 price: analysis.price || prev.price,
                 // Ensure quantity defaults to 1 if not found
-                quantity: 1 
+                quantity: 1,
+                // AI cannot detect location, keep previous or empty
+                location: prev.location 
             }));
             setStep('verify');
         } catch (err) {
@@ -83,7 +86,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd }) =
       purchaseDate: formData.purchaseDate || new Date().toISOString(),
       price: formData.price || 0,
       quantity: formData.quantity || 1,
-      location: formData.location || 'Cantina',
+      location: formData.location || (locations.length > 0 ? locations[0].name : 'Cantina'),
       storageTemp: formData.storageTemp || '12-16°C',
       storageAdvice: formData.storageAdvice || 'Conservare al riparo dalla luce',
       servingTemp: formData.servingTemp || '16-18°C',
@@ -208,7 +211,16 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd }) =
                 </div>
                 <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Posizione</label>
-                    <input type="text" placeholder="Es. Scaffale A" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
+                    <select 
+                        value={formData.location} 
+                        onChange={e => setFormData({...formData, location: e.target.value})} 
+                        className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all"
+                    >
+                        <option value="" disabled>Seleziona...</option>
+                        {locations.map(loc => (
+                            <option key={loc.id} value={loc.name}>{loc.name}</option>
+                        ))}
+                    </select>
                 </div>
               </div>
 

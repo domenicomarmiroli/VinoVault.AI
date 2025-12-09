@@ -62,8 +62,25 @@ const initDb = async () => {
         consumed_date TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS locations (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL
+      );
     `;
     await pool.query(queryText);
+    
+    // Seed Default Locations if empty
+    const locCheck = await pool.query('SELECT COUNT(*) FROM locations');
+    if (parseInt(locCheck.rows[0].count) === 0) {
+        await pool.query(`
+            INSERT INTO locations (id, name) VALUES 
+            ('loc_1', 'Cantina'),
+            ('loc_2', 'Frigo Cucina'),
+            ('loc_3', 'Scaffale')
+        `);
+    }
+
     console.log("Database tables checked/created successfully.");
   } catch (error) {
     console.error("Error initializing database tables:", error);
@@ -204,6 +221,36 @@ app.delete('/api/history', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'History clear error' });
   }
+});
+
+// --- LOCATIONS API ---
+app.get('/api/locations', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM locations ORDER BY name ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.post('/api/locations', async (req, res) => {
+    const { id, name } = req.body;
+    try {
+        await pool.query('INSERT INTO locations (id, name) VALUES ($1, $2)', [id, name]);
+        res.status(201).json({ message: 'Location added' });
+    } catch(err) {
+        res.status(500).json({ error: 'Insert error' });
+    }
+});
+
+app.delete('/api/locations/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM locations WHERE id = $1', [req.params.id]);
+        res.json({ message: 'Deleted' });
+    } catch(err) {
+        res.status(500).json({ error: 'Delete error' });
+    }
 });
 
 // --- SERVE FRONTEND ---

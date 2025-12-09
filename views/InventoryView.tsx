@@ -1,24 +1,32 @@
 import React, { useState } from 'react';
-import { Wine, WineType } from '../types';
+import { Wine, WineType, Location } from '../types';
 import WineCard from '../components/WineCard';
 import AddWineModal from '../components/AddWineModal';
 import WineDetailModal from '../components/WineDetailModal';
-import { PlusIcon } from '../components/Icons';
+import LocationManagerModal from '../components/LocationManagerModal';
+import { PlusIcon, CogIcon } from '../components/Icons';
 
 interface InventoryViewProps {
   wines: Wine[];
+  locations: Location[];
   onAddWine: (wine: Wine) => void;
   onConsume: (wine: Wine) => void;
   onDelete: (id: string) => void;
+  onAddLocation: (name: string) => void;
+  onDeleteLocation: (id: string) => void;
 }
 
 type FilterType = 'all' | WineType | 'still';
 
-const InventoryView: React.FC<InventoryViewProps> = ({ wines, onAddWine, onConsume, onDelete }) => {
+const InventoryView: React.FC<InventoryViewProps> = ({ 
+    wines, locations, onAddWine, onConsume, onDelete, onAddLocation, onDeleteLocation 
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLocManagerOpen, setIsLocManagerOpen] = useState(false);
   const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [locationFilter, setLocationFilter] = useState<string>('all');
 
   const filters: { label: string, value: FilterType }[] = [
     { label: 'Tutti', value: 'all' },
@@ -45,7 +53,13 @@ const InventoryView: React.FC<InventoryViewProps> = ({ wines, onAddWine, onConsu
         }
     }
 
-    return matchesSearch && matchesFilter;
+    // Location Filter
+    let matchesLocation = true;
+    if (locationFilter !== 'all') {
+        matchesLocation = w.location === locationFilter;
+    }
+
+    return matchesSearch && matchesFilter && matchesLocation;
   });
 
   const totalBottles = wines.reduce((acc, curr) => acc + curr.quantity, 0);
@@ -57,12 +71,20 @@ const InventoryView: React.FC<InventoryViewProps> = ({ wines, onAddWine, onConsu
       <div className="bg-white px-4 pt-4 pb-2 sticky top-0 z-10 shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-serif font-bold text-gray-900">La Mia Cantina</h1>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="bg-wine-600 text-white p-2.5 rounded-full shadow-lg hover:bg-wine-700 transition-colors active:scale-95 flex items-center justify-center"
-          >
-            <PlusIcon className="w-6 h-6" />
-          </button>
+          <div className="flex gap-2">
+            <button 
+                onClick={() => setIsLocManagerOpen(true)}
+                className="bg-gray-100 text-gray-600 p-2.5 rounded-full hover:bg-gray-200 transition-colors"
+            >
+                <CogIcon className="w-6 h-6" />
+            </button>
+            <button 
+                onClick={() => setIsModalOpen(true)}
+                className="bg-wine-600 text-white p-2.5 rounded-full shadow-lg hover:bg-wine-700 transition-colors active:scale-95 flex items-center justify-center"
+            >
+                <PlusIcon className="w-6 h-6" />
+            </button>
+          </div>
         </div>
         
         {/* Quick Stats */}
@@ -83,14 +105,26 @@ const InventoryView: React.FC<InventoryViewProps> = ({ wines, onAddWine, onConsu
             </div>
         </div>
 
-        {/* Search Bar */}
-        <input 
-          type="text" 
-          placeholder="Cerca vino, produttore..." 
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-gray-100 border-none rounded-xl py-2.5 px-4 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none mb-3"
-        />
+        {/* Search Bar & Location Filter */}
+        <div className="flex gap-2 mb-3">
+             <input 
+                type="text" 
+                placeholder="Cerca..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 bg-gray-100 border-none rounded-xl py-2.5 px-4 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none"
+            />
+            <select
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+                className="bg-gray-100 border-none rounded-xl py-2.5 px-2 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none max-w-[100px] truncate"
+            >
+                <option value="all">Tutte le posizioni</option>
+                {locations.map(loc => (
+                    <option key={loc.id} value={loc.name}>{loc.name}</option>
+                ))}
+            </select>
+        </div>
 
         {/* Filter Pills - Horizontal Scroll */}
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar -mx-4 px-4">
@@ -132,6 +166,15 @@ const InventoryView: React.FC<InventoryViewProps> = ({ wines, onAddWine, onConsu
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onAdd={onAddWine}
+        locations={locations}
+      />
+
+      <LocationManagerModal 
+        isOpen={isLocManagerOpen}
+        onClose={() => setIsLocManagerOpen(false)}
+        locations={locations}
+        onAddLocation={onAddLocation}
+        onDeleteLocation={onDeleteLocation}
       />
 
       {/* Detail Modal */}

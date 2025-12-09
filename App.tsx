@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wine, HistoryEntry } from './types';
+import { Wine, HistoryEntry, Location } from './types';
 import InventoryView from './views/InventoryView';
 import SommelierView from './views/SommelierView';
 import HistoryView from './views/HistoryView';
@@ -12,6 +12,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'inventory' | 'sommelier' | 'history'>('inventory');
   const [wines, setWines] = useState<Wine[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   
   // New state to track if we are using the DB or LocalStorage
@@ -22,18 +23,21 @@ const App: React.FC = () => {
     const fetchData = async () => {
       try {
         // Try connecting to the backend
-        const [winesRes, historyRes] = await Promise.all([
+        const [winesRes, historyRes, locationsRes] = await Promise.all([
           fetch('/api/wines'),
-          fetch('/api/history')
+          fetch('/api/history'),
+          fetch('/api/locations')
         ]);
 
-        if (!winesRes.ok || !historyRes.ok) throw new Error("API Unreachable");
+        if (!winesRes.ok || !historyRes.ok || !locationsRes.ok) throw new Error("API Unreachable");
 
         const winesData = await winesRes.json();
         const historyData = await historyRes.json();
+        const locationsData = await locationsRes.json();
 
         setWines(winesData);
         setHistory(historyData);
+        setLocations(locationsData);
         setIsOfflineMode(false);
       } catch (e) {
         console.warn("Backend unavailable, falling back to LocalStorage", e);
@@ -42,8 +46,18 @@ const App: React.FC = () => {
         // Load from LocalStorage as fallback
         const localWines = localStorage.getItem('vinovault_wines');
         const localHistory = localStorage.getItem('vinovault_history');
+        const localLocations = localStorage.getItem('vinovault_locations');
+        
         if (localWines) setWines(JSON.parse(localWines));
         if (localHistory) setHistory(JSON.parse(localHistory));
+        if (localLocations) setLocations(JSON.parse(localLocations));
+        else {
+             // Default locations offline
+             setLocations([
+                 { id: '1', name: 'Cantina' },
+                 { id: '2', name: 'Frigo' }
+             ]);
+        }
       } finally {
         setIsLoaded(true);
       }
@@ -57,8 +71,9 @@ const App: React.FC = () => {
     if (isOfflineMode && isLoaded) {
       localStorage.setItem('vinovault_wines', JSON.stringify(wines));
       localStorage.setItem('vinovault_history', JSON.stringify(history));
+      localStorage.setItem('vinovault_locations', JSON.stringify(locations));
     }
-  }, [wines, history, isOfflineMode, isLoaded]);
+  }, [wines, history, locations, isOfflineMode, isLoaded]);
 
   const handleAddWine = async (newWine: Wine) => {
      // Ensure ID is set if missing (safety check)
@@ -98,9 +113,6 @@ const App: React.FC = () => {
     };
     
     // Optimistic Update locally first
-    const oldWines = [...wines];
-    const oldHistory = [...history];
-
     setHistory(prev => [historyEntry, ...prev]);
     setWines(prev => prev.map(w => {
         if (w.id === wine.id) return { ...w, quantity: w.quantity - 1 };
@@ -128,7 +140,6 @@ const App: React.FC = () => {
             console.error(e);
             alert("Errore sincronizzazione DB. I dati sono stati salvati solo in locale.");
             setIsOfflineMode(true);
-            // We keep the local state updates because we switched to offline mode
         }
     } else {
         alert(`Hai aperto 1 bottiglia di ${wine.name} (Modalità Locale).`);
@@ -172,6 +183,43 @@ const App: React.FC = () => {
         alert("Errore durante la cancellazione");
     }
   };
+
+  // --- Location Handlers ---
+  const handleAddLocation = async (name: string) => {
+      const newLoc: Location = { id: generateId(), name };
+      
+      if(isOfflineMode) {
+          setLocations(prev => [...prev, newLoc]);
+          return;
+      }
+
+      setLocations(prev => [...prev, newLoc]);
+      try {
+          await fetch('/api/locations', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(newLoc)
+          });
+      } catch(e) {
+          console.error("Location add fail", e);
+      }
+  };
+
+  const handleDeleteLocation = async (id: string) => {
+      if(isOfflineMode) {
+          setLocations(prev => prev.filter(l => l.id !== id));
+          return;
+      }
+
+      const oldLocs = [...locations];
+      setLocations(prev => prev.filter(l => l.id !== id));
+      try {
+          await fetch(`/api/locations/${id}`, { method: 'DELETE' });
+      } catch(e) {
+          console.error("Loc delete fail", e);
+          setLocations(oldLocs);
+      }
+  };
   
   if (!isLoaded) return (
     <div className="h-screen flex items-center justify-center bg-gray-50 text-wine-800 flex-col gap-2">
@@ -196,9 +244,12 @@ const App: React.FC = () => {
              {activeTab === 'inventory' && (
                 <InventoryView 
                     wines={wines} 
+                    locations={locations}
                     onAddWine={handleAddWine}
                     onConsume={handleConsume} 
                     onDelete={handleDelete}
+                    onAddLocation={handleAddLocation}
+                    onDeleteLocation={handleDeleteLocation}
                 />
              )}
         </div>
