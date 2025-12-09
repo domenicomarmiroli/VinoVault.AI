@@ -35,8 +35,8 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
       try {
           const result = await analyzePurchase(image, Number(price), inventory);
           setAnalysis(result);
-      } catch (error) {
-          alert("Errore durante l'analisi. Riprova.");
+      } catch (error: any) {
+          alert(`Errore analisi: ${error.message || "Riprova più tardi."}`);
           console.error(error);
       } finally {
           setLoading(false);

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Wine, PairingSuggestion } from '../types';
 import { suggestPairing } from '../services/geminiService';
@@ -24,9 +25,9 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout }) =>
     try {
       const results = await suggestPairing(menuText, guests, inventory, style);
       setSuggestions(results);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Il Sommelier è occupato al momento (Errore API). Riprova.");
+      alert(`Errore Sommelier: ${error.message || "Riprova più tardi."}`);
     } finally {
       setLoading(false);
     }

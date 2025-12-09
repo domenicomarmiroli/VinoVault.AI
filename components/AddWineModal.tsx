@@ -1,10 +1,11 @@
 
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Wine, WineType, Location } from '../types';
 import { analyzeWineLabel } from '../services/geminiService';
 import { CameraIcon, PlusIcon } from './Icons';
 
-// Helper per generare ID univoci (sostituisce crypto.randomUUID per compatibilità)
+// Helper per generare ID univoci
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
 interface AddWineModalProps {
@@ -56,9 +57,10 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
                 location: prev.location 
             }));
             setStep('verify');
-        } catch (err) {
+        } catch (err: any) {
             console.error("Analysis failed", err);
-            alert("Errore durante l'analisi dell'immagine. Inserisci i dati manualmente.");
+            // Mostra l'errore reale
+            alert(`Errore: ${err.message || "Impossibile analizzare l'immagine"}`);
             setStep('verify');
         } finally {
             setLoading(false);
@@ -107,9 +109,9 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm">
-      <div className="bg-white w-full h-[100dvh] md:h-auto md:max-h-[90vh] md:max-w-lg md:rounded-2xl shadow-xl flex flex-col relative overflow-hidden">
+  const content = (
+    <div className="fixed inset-0 bg-black/70 z-[200] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white w-full h-[100dvh] md:h-auto md:max-h-[90vh] md:max-w-lg md:rounded-2xl shadow-xl flex flex-col relative overflow-hidden rounded-none">
         
         {/* Header Fissa */}
         <div className="p-4 border-b border-gray-100 flex-shrink-0 flex justify-between items-center bg-white">
@@ -120,7 +122,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
         </div>
 
         {/* Content Scrollabile */}
-        <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-4 bg-gray-50 pb-32">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wine-600"></div>
@@ -198,16 +200,16 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
                    </div>
                    <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Quantità</label>
-                      <div className="flex items-center">
-                          <button type="button" onClick={() => setFormData({...formData, quantity: Math.max(1, (formData.quantity || 1) - 1)})} className="w-10 h-11 bg-white border border-gray-300 rounded-l-lg text-gray-600 font-bold">-</button>
+                      <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => setFormData({...formData, quantity: Math.max(1, (formData.quantity || 1) - 1)})} className="w-12 h-11 bg-white border border-gray-300 rounded-lg text-gray-600 font-bold hover:bg-gray-50">-</button>
                           <input 
                               type="number" 
                               min="1" 
                               value={formData.quantity} 
                               onChange={e => setFormData({...formData, quantity: parseInt(e.target.value)})} 
-                              className="w-full p-3 border-y border-gray-300 text-center bg-white outline-none h-11" 
+                              className="flex-1 p-3 border border-gray-300 rounded-lg text-center bg-white outline-none h-11" 
                           />
-                          <button type="button" onClick={() => setFormData({...formData, quantity: (formData.quantity || 1) + 1})} className="w-10 h-11 bg-white border border-gray-300 rounded-r-lg text-wine-600 font-bold">+</button>
+                          <button type="button" onClick={() => setFormData({...formData, quantity: (formData.quantity || 1) + 1})} className="w-12 h-11 bg-white border border-gray-300 rounded-lg text-wine-600 font-bold hover:bg-gray-50">+</button>
                       </div>
                    </div>
               </div>
@@ -259,7 +261,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
 
         {/* Footer Actions Fixed */}
         {step === 'verify' && (
-             <div className="shrink-0 bg-white p-4 border-t border-gray-100 flex gap-3 pb-safe">
+             <div className="shrink-0 bg-white p-4 border-t border-gray-100 flex gap-3 pb-8 md:pb-4 safe-area-pb">
                 <button type="button" onClick={handleClose} className="flex-1 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">
                   Annulla
                 </button>
@@ -271,6 +273,8 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 };
 
 export default AddWineModal;
