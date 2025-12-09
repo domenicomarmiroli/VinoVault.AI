@@ -5,9 +5,10 @@ import InventoryView from './views/InventoryView';
 import SommelierView from './views/SommelierView';
 import HistoryView from './views/HistoryView';
 import ShopView from './views/ShopView';
+import AnalyticsView from './views/AnalyticsView';
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
-import { WineIcon, ChefIcon, HistoryIcon, ShopIcon } from './components/Icons';
+import { WineIcon, ChefIcon, HistoryIcon, ShopIcon, ChartBarIcon } from './components/Icons';
 
 // Helper per generare ID sicuri anche su mobile/http
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
@@ -17,7 +18,7 @@ const App: React.FC = () => {
   const [token, setToken] = useState<string | null>(localStorage.getItem('vinovault_token'));
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'inventory' | 'sommelier' | 'shop' | 'history'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'sommelier' | 'shop' | 'history' | 'analytics'>('inventory');
   const [wines, setWines] = useState<Wine[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -28,13 +29,17 @@ const App: React.FC = () => {
   const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
 
   // Helper per fetch autenticate
+  const API_BASE = window.location.hostname === 'localhost' ? '' : 'https://vinovault-app.onrender.com';
+
   const authFetch = async (url: string, options: RequestInit = {}) => {
       const headers = {
           'Content-Type': 'application/json',
           ...(options.headers || {}),
           'Authorization': `Bearer ${token}`
       };
-      return fetch(url, { ...options, headers });
+      // Use absolute path for Android/Production safety
+      const fullUrl = url.startsWith('/api') ? `${API_BASE}${url}` : url;
+      return fetch(fullUrl, { ...options, headers });
   };
 
   // Login handler
@@ -321,40 +326,58 @@ const App: React.FC = () => {
                 />
              )}
         </div>
+
+        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'analytics' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+             {activeTab === 'analytics' && (
+                <AnalyticsView 
+                    inventory={wines} 
+                    history={history}
+                    onLogout={handleLogout}
+                />
+             )}
+        </div>
       </main>
 
       {/* Bottom Navigation */}
       <nav className="bg-white border-t border-gray-200 flex justify-around p-2 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
         <button 
           onClick={() => setActiveTab('inventory')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-20 ${activeTab === 'inventory' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'inventory' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
         >
           <WineIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'inventory'} />
-          <span className={`text-[10px] font-bold uppercase tracking-wider ${activeTab === 'inventory' ? 'opacity-100' : 'opacity-70'}`}>Cantina</span>
+          <span className={`text-[9px] font-bold uppercase tracking-wider ${activeTab === 'inventory' ? 'opacity-100' : 'opacity-70'}`}>Cantina</span>
         </button>
 
         <button 
           onClick={() => setActiveTab('shop')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-20 ${activeTab === 'shop' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'shop' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
         >
           <ShopIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'shop'} />
-          <span className={`text-[10px] font-bold uppercase tracking-wider ${activeTab === 'shop' ? 'opacity-100' : 'opacity-70'}`}>Acquista</span>
+          <span className={`text-[9px] font-bold uppercase tracking-wider ${activeTab === 'shop' ? 'opacity-100' : 'opacity-70'}`}>Shop</span>
         </button>
 
         <button 
           onClick={() => setActiveTab('sommelier')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-20 ${activeTab === 'sommelier' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'sommelier' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
         >
           <ChefIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'sommelier'} />
-          <span className={`text-[10px] font-bold uppercase tracking-wider ${activeTab === 'sommelier' ? 'opacity-100' : 'opacity-70'}`}>Sommelier</span>
+          <span className={`text-[9px] font-bold uppercase tracking-wider ${activeTab === 'sommelier' ? 'opacity-100' : 'opacity-70'}`}>Chef</span>
+        </button>
+        
+        <button 
+          onClick={() => setActiveTab('analytics')}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'analytics' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
+        >
+          <ChartBarIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'analytics'} />
+          <span className={`text-[9px] font-bold uppercase tracking-wider ${activeTab === 'analytics' ? 'opacity-100' : 'opacity-70'}`}>Dati</span>
         </button>
 
         <button 
           onClick={() => setActiveTab('history')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-20 ${activeTab === 'history' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'history' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
         >
           <HistoryIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'history'} />
-          <span className={`text-[10px] font-bold uppercase tracking-wider ${activeTab === 'history' ? 'opacity-100' : 'opacity-70'}`}>Storico</span>
+          <span className={`text-[9px] font-bold uppercase tracking-wider ${activeTab === 'history' ? 'opacity-100' : 'opacity-70'}`}>Storico</span>
         </button>
       </nav>
 

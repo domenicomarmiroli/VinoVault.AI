@@ -26,6 +26,10 @@ export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Win
   
   const systemInstruction = `Sei un sommelier professionista e un gestore di cantina meticoloso. 
   Analizza l'immagine dell'etichetta di vino per estrarre TUTTI i dati tecnici visibili o deducibili.
+  
+  Per "drinkWindow", stima l'intervallo di anni ideale per bere il vino (es. "2026-2030") basandoti su annata, vitigno e regione.
+  Per "marketPrice", stima il valore attuale medio in Euro di questa bottiglia specifica.
+  
   Rispondi SEMPRE SOLTANTO con un JSON valido (senza markdown) secondo lo schema fornito.`;
 
   try {
@@ -40,7 +44,7 @@ export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Win
               },
             },
             {
-              text: "Analizza questa etichetta. Estrai dati tecnici e consigli.",
+              text: "Analizza questa etichetta. Estrai dati tecnici, finestra di bevibilità e stima valore mercato.",
             },
           ],
         },
@@ -62,9 +66,11 @@ export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Win
               servingTemp: { type: Type.STRING },
               servingAdvice: { type: Type.STRING },
               foodPairings: { type: Type.ARRAY, items: { type: Type.STRING } },
-              price: { type: Type.NUMBER }
+              price: { type: Type.NUMBER },
+              drinkWindow: { type: Type.STRING, description: "Year range e.g. 2026-2030" },
+              marketPrice: { type: Type.NUMBER, description: "Estimated market value in EUR" }
             },
-            required: ["name", "producer", "type", "storageTemp", "servingAdvice", "storageAdvice", "grape"]
+            required: ["name", "producer", "type", "storageTemp", "servingAdvice", "storageAdvice", "grape", "drinkWindow", "marketPrice"]
           },
         },
       });

@@ -65,7 +65,9 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           servingTemp: '16-18°C',
           servingAdvice: 'Aprire prima',
           foodPairings: [],
-          imageUrl: image || undefined
+          imageUrl: image || undefined,
+          drinkWindow: `${new Date().getFullYear()}-${new Date().getFullYear() + 3}`,
+          marketPrice: analysis.marketPriceEstimate || Number(price)
       };
       
       onAddToInventory(newWine);

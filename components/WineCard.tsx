@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { Wine, WineType } from '../types';
+import DrinkabilityBadge from './DrinkabilityBadge';
 
 interface WineCardProps {
   wine: Wine;
@@ -44,9 +46,12 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onClick }) => {
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${getTypeColor(wine.type)}`}>
                   {wine.type}
                 </span>
-                <span className="text-[10px] text-gray-400 font-mono">
-                    {wine.year}
-                </span>
+                <div className="flex items-center gap-1">
+                   <DrinkabilityBadge drinkWindow={wine.drinkWindow} />
+                   <span className="text-[10px] text-gray-400 font-mono ml-1">
+                     {wine.year}
+                   </span>
+                </div>
               </div>
               <h3 className="text-base font-bold text-gray-900 truncate leading-tight mb-0.5">{wine.name}</h3>
               <p className="text-xs text-gray-600 truncate">{wine.producer}</p>

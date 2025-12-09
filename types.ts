@@ -20,16 +20,20 @@ export interface Wine {
   purchaseDate: string;
   price: number;
   quantity: number;
-  location: string; // e.g., "Scaffale A, Ripiano 2"
+  location: string;
   
   // AI Generated Advice
   storageTemp: string;
-  storageAdvice: string; // New: Specific storage tips
+  storageAdvice: string;
   servingTemp: string;
-  servingAdvice: string; // Decanting, when to open
+  servingAdvice: string;
   foodPairings: string[];
   
-  imageUrl?: string; // Base64
+  // Analytics & Smart Features
+  drinkWindow: string; // Format "2025-2028"
+  marketPrice: number; // Estimated current value
+
+  imageUrl?: string;
 }
 
 export interface HistoryEntry {
@@ -41,8 +45,8 @@ export interface HistoryEntry {
   consumedDate: string;
   price: number;
   imageUrl?: string;
-  rating?: number; // 1-5
-  notes?: string; // Tasting notes
+  rating?: number;
+  notes?: string;
 }
 
 export interface Location {
@@ -53,15 +57,15 @@ export interface Location {
 export interface MenuRequest {
   menuText: string;
   guests: number;
-  courseCount: 'single' | 'multiple'; // 1 wine for all vs pairing per course
+  courseCount: 'single' | 'multiple';
 }
 
 export interface PairingSuggestion {
-  courseName: string; // e.g., "Aperitivo", "Primo"
-  dishName: string; // Extracted from menu
+  courseName: string;
+  dishName: string;
   reasoning: string;
-  suggestedWineId?: string; // If found in inventory
-  fallbackWineName: string; // If not in inventory
+  suggestedWineId?: string;
+  fallbackWineName: string;
 }
 
 export interface PurchaseAnalysis {
@@ -69,10 +73,10 @@ export interface PurchaseAnalysis {
   marketPriceEstimate: number;
   isGoodDeal: boolean;
   dealRating: 'Bad' | 'Fair' | 'Good' | 'Excellent';
-  qualityScore: number; // 1-100
-  sommelierNotes: string; // Taste profile
+  qualityScore: number;
+  sommelierNotes: string;
   cellarFit: {
     isRecommended: boolean;
-    reasoning: string; // "You have 0 whites, this is a good addition" or "You have too many Chianti"
+    reasoning: string;
   };
 }

@@ -77,6 +77,8 @@ const initDb = async () => {
         serving_advice TEXT,
         food_pairings TEXT[],
         image_url TEXT,
+        drink_window TEXT,
+        market_price DECIMAL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -117,6 +119,10 @@ const initDb = async () => {
         // History Reviews Migration
         await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT 0;`);
         await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS notes TEXT;`);
+        
+        // Analytics Migration
+        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS drink_window TEXT;`);
+        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS market_price DECIMAL DEFAULT 0;`);
     } catch (e) {
         console.log("Migration columns already exist or skipped");
     }
@@ -220,7 +226,9 @@ app.get('/api/wines', authenticateToken, async (req, res) => {
       servingTemp: row.serving_temp,
       servingAdvice: row.serving_advice,
       foodPairings: row.food_pairings,
-      imageUrl: row.image_url
+      imageUrl: row.image_url,
+      drinkWindow: row.drink_window,
+      marketPrice: row.market_price ? parseFloat(row.market_price) : 0
     }));
     res.json(wines);
   } catch (err) {
@@ -237,13 +245,13 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
       INSERT INTO wines (
         id, user_id, name, producer, year, type, region, grape, alcohol, 
         purchase_date, price, quantity, location, storage_temp, storage_advice,
-        serving_temp, serving_advice, food_pairings, image_url
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+        serving_temp, serving_advice, food_pairings, image_url, drink_window, market_price
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
     `;
     const values = [
       w.id, req.user.userId, w.name, w.producer, w.year, w.type, w.region, w.grape, w.alcohol,
       w.purchaseDate, w.price, w.quantity, w.location, w.storageTemp, w.storageAdvice,
-      w.servingTemp, w.servingAdvice, w.foodPairings, w.imageUrl
+      w.servingTemp, w.servingAdvice, w.foodPairings, w.imageUrl, w.drinkWindow, w.marketPrice
     ];
     await pool.query(query, values);
     res.status(201).json({ message: 'Wine added' });

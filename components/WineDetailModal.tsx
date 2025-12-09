@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Wine, WineType, Location } from '../types';
-import { ThermometerIcon, ClockIcon, BoxIcon, WineIcon, StarIcon, PlusIcon } from './Icons';
+import { ThermometerIcon, ClockIcon, BoxIcon, WineIcon, StarIcon, PlusIcon, ChartBarIcon } from './Icons';
+import DrinkabilityBadge from './DrinkabilityBadge';
 
 interface WineDetailModalProps {
   wine: Wine | null;
@@ -37,13 +38,6 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
 
   const content = (
     <div className="fixed inset-0 bg-black/70 z-[200] flex items-end md:items-center justify-center animate-in fade-in duration-200 backdrop-blur-sm">
-      
-      {/* 
-         LAYOUT FULL SCREEN SU MOBILE:
-         - h-[100dvh] su mobile per coprire totalmente l'app
-         - rounded-t-2xl su mobile (sheet style) o rounded-none se preferiamo full screen totale
-         - md:max-h-[85vh] su desktop
-      */}
       <div className="bg-white w-full h-[100dvh] md:h-auto md:max-h-[85vh] md:max-w-2xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
         
         {/* 1. Header Immagine (Fisso) */}
@@ -119,6 +113,29 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
                     <span className="font-semibold text-gray-800">{wine.alcohol || 'N/D'}</span>
                 </div>
             </div>
+
+            {/* Analytics & Drinkability */}
+            {(wine.drinkWindow || wine.marketPrice > 0) && (
+                <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-3">
+                     <h3 className="text-xs font-bold uppercase text-indigo-800 flex items-center gap-2">
+                         <ChartBarIcon className="w-4 h-4" filled />
+                         Investimento & Evoluzione
+                     </h3>
+                     <div className="flex justify-between items-center">
+                         <div>
+                             <span className="block text-[10px] text-indigo-400 uppercase font-bold">Finestra Consumo</span>
+                             <div className="flex items-center gap-2 mt-0.5">
+                                 <span className="text-sm font-bold text-indigo-900">{wine.drinkWindow || 'N/A'}</span>
+                                 <DrinkabilityBadge drinkWindow={wine.drinkWindow} />
+                             </div>
+                         </div>
+                         <div className="text-right">
+                             <span className="block text-[10px] text-indigo-400 uppercase font-bold">Valore Stimato</span>
+                             <span className="text-lg font-bold text-indigo-900">€{wine.marketPrice?.toFixed(0) || wine.price}</span>
+                         </div>
+                     </div>
+                </div>
+            )}
 
             {/* Sezione Sommelier */}
             <div className="space-y-3">

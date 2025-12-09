@@ -30,7 +30,9 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
     quantity: 1,
     location: '',
     price: 0,
-    purchaseDate: new Date().toISOString().split('T')[0]
+    purchaseDate: new Date().toISOString().split('T')[0],
+    drinkWindow: '',
+    marketPrice: 0
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -93,7 +95,9 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
       servingTemp: formData.servingTemp || '16-18°C',
       servingAdvice: formData.servingAdvice || 'Aprire 30 min prima',
       foodPairings: formData.foodPairings || [],
-      imageUrl: imagePreview || undefined
+      imageUrl: imagePreview || undefined,
+      drinkWindow: formData.drinkWindow || `${new Date().getFullYear()}-${new Date().getFullYear() + 3}`,
+      marketPrice: formData.marketPrice || formData.price || 0
     };
     onAdd(newWine);
     handleClose();
@@ -233,6 +237,21 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
                         ))}
                     </select>
                 </div>
+              </div>
+
+               {/* Advanced Analytics Fields */}
+               <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-3">
+                  <h4 className="text-xs font-bold uppercase text-indigo-700 mb-2">Analytics & Investimento</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                      <div>
+                          <label className="block text-xs text-gray-500">Valore Mercato (€)</label>
+                          <input type="number" value={formData.marketPrice || formData.price} onChange={e => setFormData({...formData, marketPrice: parseFloat(e.target.value)})} className="w-full p-2 text-sm bg-white border border-indigo-200 rounded-lg" />
+                      </div>
+                      <div>
+                          <label className="block text-xs text-gray-500">Finestra Consumo (es. 2026-2028)</label>
+                          <input type="text" value={formData.drinkWindow} onChange={e => setFormData({...formData, drinkWindow: e.target.value})} className="w-full p-2 text-sm bg-white border border-indigo-200 rounded-lg" />
+                      </div>
+                  </div>
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-3">
