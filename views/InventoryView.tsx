@@ -6,6 +6,7 @@ import AddWineModal from '../components/AddWineModal';
 import WineDetailModal from '../components/WineDetailModal';
 import LocationManagerModal from '../components/LocationManagerModal';
 import { PlusIcon, CogIcon, LogoutIcon } from '../components/Icons';
+import { Logo } from '../components/Logo';
 
 interface InventoryViewProps {
   wines: Wine[];
@@ -73,7 +74,11 @@ const InventoryView: React.FC<InventoryViewProps> = ({
       {/* Header Stats & Search */}
       <div className="bg-white px-4 pt-4 pb-2 sticky top-0 z-10 shadow-sm">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-serif font-bold text-gray-900">La Mia Cantina</h1>
+          {/* Logo Brand */}
+          <div className="transform scale-90 origin-left">
+             <Logo className="w-10 h-10" />
+          </div>
+
           <div className="flex gap-2">
              <button 
                 onClick={onLogout}
@@ -119,7 +124,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         <div className="flex gap-2 mb-3">
              <input 
                 type="text" 
-                placeholder="Cerca..." 
+                placeholder="Cerca in cantina..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="flex-1 bg-gray-100 border-none rounded-xl py-2.5 px-4 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none"
@@ -129,7 +134,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                 onChange={(e) => setLocationFilter(e.target.value)}
                 className="bg-gray-100 border-none rounded-xl py-2.5 px-2 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none max-w-[100px] truncate"
             >
-                <option value="all">Tutte le posizioni</option>
+                <option value="all">Posizione</option>
                 {locations.map(loc => (
                     <option key={loc.id} value={loc.name}>{loc.name}</option>
                 ))}
