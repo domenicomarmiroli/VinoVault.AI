@@ -15,17 +15,20 @@ export const WineIcon = ({ className, filled }: { className?: string, filled?: b
 export const ChefIcon = ({ className, filled }: { className?: string, filled?: boolean }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? 0 : 1.5} className={className}>
      {filled ? (
-        <path d="M11.7 2.805a.75.75 0 0 1 .6 0A6.065 6.065 0 0 1 16.5 8.25v.75H21a.75.75 0 0 1 0 1.5h-4.5v.75a6.002 6.002 0 0 1-4.99 5.913 2.99 2.99 0 0 1 1.99 2.837v1.5a.75.75 0 0 1-1.5 0v-1.5A1.5 1.5 0 0 0 10.5 18v-1.5a.75.75 0 0 1-1.5 0v1.5A1.5 1.5 0 0 0 10.5 19.5v1.5a.75.75 0 0 1-1.5 0v-1.5A2.99 2.99 0 0 1 10.99 17.163a6.002 6.002 0 0 1-4.99-5.913v-.75H1.5a.75.75 0 0 1 0-1.5h4.5v-.75a6.065 6.065 0 0 1 4.2-5.445Z" />
+        <path fillRule="evenodd" d="M2 13.5V7.728A2.25 2.25 0 0 1 3.543 5.7L10.375 3.19a3.75 3.75 0 0 1 2.571 0l7.252 2.664a2.25 2.25 0 0 1 1.48 2.016V13.5h-19.356Zm3.879 4.5a3 3 0 0 0 5.684 0h1.229a3 3 0 0 0 5.684 0h1.874V15H2.375v3h3.504Z" clipRule="evenodd" />
      ) : (
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h19.5m-16.5 4.5h13.5m-13.5-4.5v-5.777c0-.853.565-1.602 1.382-1.83l7.07-1.972a1.875 1.875 0 0 1 1.018 0l7.07 1.973c.817.228 1.382.977 1.382 1.83V13.5m-15 4.5a3 3 0 0 0 6 0m6 0a3 3 0 0 0 6 0" />
      )}
   </svg>
 );
 
 export const HistoryIcon = ({ className, filled }: { className?: string, filled?: boolean }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? 0 : 1.5} className={className}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0Z" />
+     {filled ? (
+        <path d="M11.25 4.533A9.707 9.707 0 0 0 6 3a9.735 9.735 0 0 0-3.25.555.75.75 0 0 0-.5.707v14.25a.75.75 0 0 0 1 .707A8.237 8.237 0 0 1 6 18.75c1.995 0 3.823.707 5.25 1.886V4.533ZM12.75 20.636A8.214 8.214 0 0 1 18 18.75c.966 0 1.89.166 2.75.47a.75.75 0 0 0 1-.708V4.262a.75.75 0 0 0-.5-.707A9.735 9.735 0 0 0 18 3a9.707 9.707 0 0 0-5.25 1.533v16.103Z" />
+     ) : (
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+     )}
   </svg>
 );
 
@@ -42,9 +45,14 @@ export const ShopIcon = ({ className, filled }: { className?: string, filled?: b
 export const ChartBarIcon = ({ className, filled }: { className?: string, filled?: boolean }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? 0 : 1.5} className={className}>
       {filled ? (
-        <path fillRule="evenodd" d="M3 6a3 3 0 0 1 3-3h2.25a3 3 0 0 1 3 3v2.25a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6Zm9.75 0a3 3 0 0 1 3-3H18a3 3 0 0 1 3 3v2.25a3 3 0 0 1-3 3h-2.25a3 3 0 0 1-3-3V6ZM3 15.75a3 3 0 0 1 3-3h2.25a3 3 0 0 1 3 3V18a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-2.25Zm9.75 0a3 3 0 0 1 3-3H18a3 3 0 0 1 3 3V18a3 3 0 0 1-3 3h-2.25a3 3 0 0 1-3-3v-2.25Z" clipRule="evenodd" />
+        <path fillRule="evenodd" d="M2.25 13.5a8.25 8.25 0 0 1 8.25-8.25.75.75 0 0 1 .75.75v6.75H18a.75.75 0 0 1 .75.75 8.25 8.25 0 0 1-16.5 0Z" clipRule="evenodd" />
       ) : (
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
+      )}
+      {filled ? (
+          <path d="M12.75 3a.75.75 0 0 1 .75-.75 8.25 8.25 0 0 1 8.25 8.25.75.75 0 0 1-.75.75h-7.5a.75.75 0 0 1-.75-.75V3Z" />
+      ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
       )}
     </svg>
 );
