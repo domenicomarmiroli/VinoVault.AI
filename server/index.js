@@ -24,6 +24,52 @@ const pool = new pg.Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
+// --- DB INITIALIZATION ---
+const initDb = async () => {
+  try {
+    const queryText = `
+      CREATE TABLE IF NOT EXISTS wines (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        producer TEXT,
+        year TEXT,
+        type TEXT,
+        region TEXT,
+        grape TEXT,
+        alcohol TEXT,
+        purchase_date TEXT,
+        price DECIMAL,
+        quantity INTEGER DEFAULT 1,
+        location TEXT,
+        storage_temp TEXT,
+        storage_advice TEXT,
+        serving_temp TEXT,
+        serving_advice TEXT,
+        food_pairings TEXT[],
+        image_url TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS history (
+        id TEXT PRIMARY KEY,
+        wine_id TEXT,
+        name TEXT,
+        producer TEXT,
+        year TEXT,
+        price DECIMAL,
+        image_url TEXT,
+        consumed_date TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await pool.query(queryText);
+    console.log("Database tables checked/created successfully.");
+  } catch (error) {
+    console.error("Error initializing database tables:", error);
+    // Non blocchiamo il server se fallisce, potrebbe essere un problema temporaneo o siamo in build
+  }
+};
+
 // --- API ROUTES ---
 
 // GET All Wines
@@ -161,16 +207,21 @@ app.delete('/api/history', async (req, res) => {
 });
 
 // --- SERVE FRONTEND ---
-// Serve static files from the React app build directory
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
 app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on ${PORT}`);
-});
+// Start Server AFTER DB Init attempt
+const startServer = async () => {
+  if (process.env.DATABASE_URL) {
+    await initDb();
+  }
+  app.listen(PORT, () => {
+    console.log(`Server listening on ${PORT}`);
+  });
+};
+
+startServer();
