@@ -142,7 +142,8 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
               </button>
               <input 
                 type="file" 
-                accept="image/*" 
+                accept="image/*"
+                capture="environment" 
                 ref={fileInputRef} 
                 className="hidden" 
                 onChange={handleFileChange}

@@ -124,7 +124,14 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                             <span className="font-medium text-gray-600">Tocca per scattare foto</span>
                         </>
                     )}
-                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept="image/*"
+                        capture="environment" 
+                        onChange={handleFileChange} 
+                    />
                 </div>
 
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
