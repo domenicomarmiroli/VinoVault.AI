@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Wine, WineType, Location } from '../types';
 import { analyzeWineLabel } from '../services/geminiService';
@@ -109,7 +110,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center md:p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center md:p-4 backdrop-blur-sm">
       {/* 
          Su mobile: w-full h-full (full screen), no rounded corners.
          Su desktop: max-w-lg max-h-[90vh], rounded corners.

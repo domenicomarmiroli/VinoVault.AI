@@ -24,7 +24,7 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, onClose, onCons
   if (!wine) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center md:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center md:p-4 backdrop-blur-sm animate-in fade-in duration-200">
       {/* 
           MODIFICHE MOBILE: 
           1. h-full w-full (Full Screen) su mobile per evitare problemi di scrolling/footer nascosto
@@ -156,7 +156,10 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, onClose, onCons
         </div>
 
         {/* Footer Actions - Sticky Bottom */}
-        <div className="p-4 border-t border-gray-100 bg-white grid grid-cols-2 gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-safe">
+        <div 
+            className="p-4 border-t border-gray-100 bg-white grid grid-cols-2 gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:pb-4"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+        >
              <button 
                onClick={() => {
                    if(confirm("Eliminare definitivamente questo vino?")) {

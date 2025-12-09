@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Location } from '../types';
 import { TrashIcon, PlusIcon } from './Icons';
@@ -26,7 +27,7 @@ const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <h3 className="font-serif font-bold text-lg text-gray-900">Gestisci Posizioni</h3>
