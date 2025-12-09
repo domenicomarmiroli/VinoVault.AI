@@ -2,7 +2,7 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>VinoVault AI</title>
     <!-- Manteniamo Tailwind CDN per semplicità in questo setup veloce, 
          in produzione si consiglierebbe di installarlo via npm -->
@@ -49,8 +49,8 @@
 }
 </script>
 </head>
-  <body class="bg-gray-50 text-gray-900 h-screen overflow-hidden">
-    <div id="root" class="h-full flex flex-col"></div>
+  <body class="bg-gray-50 text-gray-900 h-[100dvh] overflow-hidden">
+    <div id="root" class="h-full flex flex-col w-full"></div>
     <!-- Entry point esplicito per Vite -->
     <script type="module" src="/index.tsx"></script>
   </body>

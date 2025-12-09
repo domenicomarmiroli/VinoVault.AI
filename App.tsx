@@ -5,6 +5,9 @@ import SommelierView from './views/SommelierView';
 import HistoryView from './views/HistoryView';
 import { WineIcon, ChefIcon, HistoryIcon } from './components/Icons';
 
+// Helper per generare ID sicuri anche su mobile/http
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'inventory' | 'sommelier' | 'history'>('inventory');
   const [wines, setWines] = useState<Wine[]>([]);
@@ -58,8 +61,11 @@ const App: React.FC = () => {
   }, [wines, history, isOfflineMode, isLoaded]);
 
   const handleAddWine = async (newWine: Wine) => {
+     // Ensure ID is set if missing (safety check)
+     const wineToAdd = { ...newWine, id: newWine.id || generateId() };
+
      if (isOfflineMode) {
-         setWines(prev => [newWine, ...prev]);
+         setWines(prev => [wineToAdd, ...prev]);
          return;
      }
 
@@ -67,21 +73,21 @@ const App: React.FC = () => {
          const res = await fetch('/api/wines', {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify(newWine)
+             body: JSON.stringify(wineToAdd)
          });
          if (!res.ok) throw new Error("Errore salvataggio");
-         setWines(prev => [newWine, ...prev]);
+         setWines(prev => [wineToAdd, ...prev]);
      } catch (e) {
          console.error(e);
          alert("Errore salvataggio su DB. Passaggio alla modalità locale.");
          setIsOfflineMode(true);
-         setWines(prev => [newWine, ...prev]);
+         setWines(prev => [wineToAdd, ...prev]);
      }
   };
 
   const handleConsume = async (wine: Wine) => {
     const historyEntry: HistoryEntry = {
-      id: crypto.randomUUID(),
+      id: generateId(), // Sostituito crypto.randomUUID
       wineId: wine.id,
       name: wine.name,
       producer: wine.producer,
@@ -175,7 +181,7 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col h-full max-w-md mx-auto bg-white shadow-2xl overflow-hidden md:border-x md:border-gray-200">
+    <div className="flex flex-col h-full w-full md:max-w-md mx-auto bg-white shadow-2xl overflow-hidden md:border-x md:border-gray-200">
       
       {/* Offline Mode Banner */}
       {isOfflineMode && (
