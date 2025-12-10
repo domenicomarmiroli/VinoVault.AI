@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Wine, HistoryEntry, Location } from './types';
 import InventoryView from './views/InventoryView';
@@ -7,9 +8,10 @@ import HistoryView from './views/HistoryView';
 import ShopView from './views/ShopView';
 import AnalyticsView from './views/AnalyticsView';
 import RestaurantView from './views/RestaurantView';
+import AdminView from './views/AdminView'; // New
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
-import { WineIcon, ChefIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon } from './components/Icons';
+import { WineIcon, ChefIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon } from './components/Icons';
 
 // Helper per generare ID sicuri anche su mobile/http
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
@@ -18,8 +20,9 @@ const App: React.FC = () => {
   // Auth State
   const [token, setToken] = useState<string | null>(localStorage.getItem('vinovault_token'));
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'user' | 'admin'>('user'); // New Role State
 
-  const [activeTab, setActiveTab] = useState<'inventory' | 'sommelier' | 'shop' | 'history' | 'analytics' | 'restaurant'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'sommelier' | 'shop' | 'history' | 'analytics' | 'restaurant' | 'admin'>('inventory');
   const [wines, setWines] = useState<Wine[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -30,8 +33,6 @@ const App: React.FC = () => {
   const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
 
   // Helper per fetch autenticate
-  // UPDATE: Uso stringa vuota per usare percorsi relativi (es. /api/wines)
-  // Questo funziona sia in Dev (grazie al proxy vite) che in Prod (express serve static + api)
   const API_BASE = '';
 
   const authFetch = async (url: string, options: RequestInit = {}) => {
@@ -50,22 +51,49 @@ const App: React.FC = () => {
       localStorage.setItem('vinovault_token', newToken);
       setToken(newToken);
       setUserEmail(email);
+      
+      // Decode JWT to get role without another request if possible, 
+      // but simpler is to trust the API response data if we pass it up from AuthForm.
+      // However, AuthForm only passes token and email. 
+      // Let's decode simply to check role or fetch it.
+      // For now, let's assume standard user, role will be fetched or we can decode token
+      try {
+        const payload = JSON.parse(atob(newToken.split('.')[1]));
+        if (payload.role) {
+            setUserRole(payload.role);
+        }
+      } catch (e) {
+          console.error("Token parse error", e);
+      }
+
       // Reset data on new login
       setWines([]);
       setHistory([]);
       setLocations([]);
       setIsLoaded(false);
+      setActiveTab('inventory');
   };
 
   const handleLogout = () => {
       localStorage.removeItem('vinovault_token');
       setToken(null);
       setUserEmail(null);
+      setUserRole('user');
   };
 
   // Load Data
   useEffect(() => {
     if (!token) return;
+
+    // Decode token to ensure role is set on page reload
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.role) {
+            setUserRole(payload.role);
+        }
+    } catch (e) {
+        console.error("Token parse error", e);
+    }
 
     const fetchData = async () => {
       try {
@@ -380,9 +408,20 @@ const App: React.FC = () => {
                 />
              )}
         </div>
+
+        {userRole === 'admin' && (
+            <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'admin' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                 {activeTab === 'admin' && (
+                    <AdminView 
+                        onLogout={handleLogout}
+                        token={token}
+                    />
+                 )}
+            </div>
+        )}
       </main>
 
-      {/* Bottom Navigation - Updated with Restaurant Icon */}
+      {/* Bottom Navigation */}
       <nav className="bg-white border-t border-gray-200 flex justify-between px-2 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] overflow-x-auto no-scrollbar">
         <button 
           onClick={() => setActiveTab('inventory')}
@@ -400,7 +439,6 @@ const App: React.FC = () => {
           <span className={`text-[8px] font-bold uppercase tracking-wider ${activeTab === 'shop' ? 'opacity-100' : 'opacity-70'}`}>Shop</span>
         </button>
 
-        {/* New Restaurant Tab */}
         <button 
           onClick={() => setActiveTab('restaurant')}
           className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === 'restaurant' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
@@ -432,6 +470,16 @@ const App: React.FC = () => {
           <HistoryIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'history'} />
           <span className={`text-[8px] font-bold uppercase tracking-wider ${activeTab === 'history' ? 'opacity-100' : 'opacity-70'}`}>Storico</span>
         </button>
+
+        {userRole === 'admin' && (
+            <button 
+                onClick={() => setActiveTab('admin')}
+                className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === 'admin' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+                <ShieldCheckIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'admin'} />
+                <span className={`text-[8px] font-bold uppercase tracking-wider ${activeTab === 'admin' ? 'opacity-100' : 'opacity-70'}`}>Admin</span>
+            </button>
+        )}
       </nav>
 
       {/* Instant Review Modal */}

@@ -1,4 +1,5 @@
 
+
 export enum WineType {
   RED = 'Rosso',
   WHITE = 'Bianco',
@@ -90,4 +91,12 @@ export interface RestaurantSuggestion {
     type: string;
     reasoning: string; // Perché sta bene col piatto
     matchScore: number; // 1-100
+}
+
+export interface User {
+  id: string;
+  email: string;
+  role: 'user' | 'admin';
+  created_at?: string;
+  last_login?: string;
 }

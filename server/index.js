@@ -1,4 +1,5 @@
 
+
 import express from 'express';
 import pkg from 'pg';
 const { Pool } = pkg;
@@ -44,15 +45,26 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+const authenticateAdmin = (req, res, next) => {
+    authenticateToken(req, res, () => {
+        if (req.user && req.user.role === 'admin') {
+            next();
+        } else {
+            res.status(403).json({ error: 'Access denied: Admins only' });
+        }
+    });
+};
+
 // --- DB INITIALIZATION ---
 const initDb = async () => {
   try {
-    // 1. Create Users Table
+    // 1. Create Users Table with ROLE
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
+        role TEXT DEFAULT 'user',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -61,7 +73,7 @@ const initDb = async () => {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS wines (
         id TEXT PRIMARY KEY,
-        user_id TEXT REFERENCES users(id),
+        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
         producer TEXT,
         year TEXT,
@@ -89,7 +101,7 @@ const initDb = async () => {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS history (
         id TEXT PRIMARY KEY,
-        user_id TEXT REFERENCES users(id),
+        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
         wine_id TEXT,
         name TEXT,
         producer TEXT,
@@ -108,17 +120,19 @@ const initDb = async () => {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS locations (
         id TEXT PRIMARY KEY,
-        user_id TEXT REFERENCES users(id),
+        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
         name TEXT NOT NULL
       );
     `);
 
     // 5. Add columns if missing (Migration for existing tables)
     try {
-        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id);`);
-        await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id);`);
-        await pool.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id);`);
+        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE;`);
+        await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE;`);
+        await pool.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE;`);
         
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user';`);
+
         // History Reviews Migration
         await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT 0;`);
         await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS notes TEXT;`);
@@ -129,6 +143,22 @@ const initDb = async () => {
         await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS market_price DECIMAL DEFAULT 0;`);
     } catch (e) {
         console.log("Migration columns already exist or skipped");
+    }
+
+    // 6. Create Default Admin User
+    try {
+        const adminEmail = 'admin@vinovault.ai';
+        const result = await pool.query('SELECT * FROM users WHERE email = $1', [adminEmail]);
+        if (result.rows.length === 0) {
+            const adminPassword = await bcrypt.hash('admin123', 10);
+            await pool.query(
+                "INSERT INTO users (id, email, password, role) VALUES ($1, $2, $3, 'admin')",
+                ['admin_001', adminEmail, adminPassword]
+            );
+            console.log("Default Admin user created.");
+        }
+    } catch(e) {
+        console.error("Error creating default admin", e);
     }
 
     console.log("Database tables checked/created successfully.");
@@ -176,7 +206,7 @@ app.post('/api/auth/google', async (req, res) => {
             const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
             await pool.query(
-                'INSERT INTO users (id, email, password) VALUES ($1, $2, $3)',
+                "INSERT INTO users (id, email, password, role) VALUES ($1, $2, $3, 'user')",
                 [userId, email, hashedPassword]
             );
 
@@ -188,11 +218,11 @@ app.post('/api/auth/google', async (req, res) => {
                 ($4, $2, 'Scaffale')
             `, [userId + '_l1', userId, userId + '_l2', userId + '_l3']);
 
-            user = { id: userId, email: email };
+            user = { id: userId, email: email, role: 'user' };
         }
 
-        const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, user: { id: user.id, email: user.email } });
+        const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+        res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
 
     } catch (err) {
         console.error("Google Auth Error:", err);
@@ -212,7 +242,7 @@ app.post('/api/auth/register', async (req, res) => {
 
         // Insert User
         await pool.query(
-            'INSERT INTO users (id, email, password) VALUES ($1, $2, $3)',
+            "INSERT INTO users (id, email, password, role) VALUES ($1, $2, $3, 'user')",
             [userId, email, hashedPassword]
         );
 
@@ -230,8 +260,8 @@ app.post('/api/auth/register', async (req, res) => {
         ]);
 
         // Generate Token
-        const token = jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, user: { id: userId, email } });
+        const token = jwt.sign({ userId, email, role: 'user' }, JWT_SECRET, { expiresIn: '30d' });
+        res.json({ token, user: { id: userId, email, role: 'user' } });
 
     } catch (err) {
         if (err.code === '23505') { // Unique violation
@@ -254,11 +284,57 @@ app.post('/api/auth/login', async (req, res) => {
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) return res.status(400).json({ error: 'Invalid password' });
 
-        const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, user: { id: user.id, email: user.email } });
+        const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+        res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+// --- ADMIN API ROUTES ---
+
+// GET All Users
+app.get('/api/users', authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, email, role, created_at FROM users ORDER BY created_at DESC');
+        res.json(result.rows);
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// DELETE User
+app.delete('/api/users/:id', authenticateAdmin, async (req, res) => {
+    const { id } = req.params;
+    // Prevent deleting self
+    if (id === req.user.userId) return res.status(400).json({ error: 'Cannot delete yourself' });
+
+    try {
+        await pool.query('DELETE FROM users WHERE id = $1', [id]);
+        // Cascading delete handles wines/history/locations due to schema
+        res.json({ message: 'User deleted' });
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to delete user' });
+    }
+});
+
+// PUT Reset Password
+app.put('/api/users/:id/reset-password', authenticateAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+    
+    if (!newPassword) return res.status(400).json({ error: 'New password required' });
+
+    try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, id]);
+        res.json({ message: 'Password reset successful' });
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to reset password' });
     }
 });
 

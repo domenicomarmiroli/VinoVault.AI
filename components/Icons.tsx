@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 
 export const WineIcon = ({ className, filled }: { className?: string, filled?: boolean }) => (
@@ -84,6 +85,16 @@ export const ChartBarIcon = ({ className, filled }: { className?: string, filled
     </svg>
 );
 
+
+export const ShieldCheckIcon = ({ className, filled }: { className?: string, filled?: boolean }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? 0 : 1.5} className={className}>
+    {filled ? (
+        <path fillRule="evenodd" d="M12.516 2.17a.75.75 0 0 0-1.032 0 11.209 11.209 0 0 1-7.877 3.08.75.75 0 0 0-.722.515A12.74 12.74 0 0 0 2.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 0 0 .374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.352-.272-2.636-.759-3.807a.75.75 0 0 0-.724-.516 11.209 11.209 0 0 1-7.75-3.256Zm-1.766 11.332a.75.75 0 0 1 1.06 0l1.72 1.72 5.824-7.749a.75.75 0 1 1 1.192.913l-6.48 8.618a.75.75 0 0 1-1.12.067l-2.196-2.196a.75.75 0 0 1 0-1.373Z" clipRule="evenodd" />
+    ) : (
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+    )}
+  </svg>
+);
 
 export const PlusIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
