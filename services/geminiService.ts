@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, WineDeal, RestaurantSuggestion } from "../types";
+import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, RestaurantSuggestion } from "../types";
 
 // Helper to remove base64 prefix
 const cleanBase64 = (base64: string) => {
@@ -224,88 +224,6 @@ export const analyzePurchase = async (
         return JSON.parse(cleanJson(text));
     } catch (err: any) {
         throw new Error(err.message || "Errore Shop Advisor");
-    }
-}
-
-// Lista di domini affidabili per la ricerca prezzi
-const TRUSTED_DOMAINS = [
-    'tannico.it',
-    'callmewine.com',
-    'vino.com',
-    'bernabei.it',
-    'xtrawine.com',
-    'signorvino.com',
-    'vivino.com',
-    'decanto.it',
-    'gallienoteca.it'
-];
-
-/**
- * Uses Google Search Grounding to find real-time best deals for a wine.
- * STRATEGIA WALLED GARDEN: Cerca SOLO nei siti affidabili per evitare link rotti.
- */
-export const findBestDeals = async (name: string, producer: string, year: string): Promise<WineDeal[]> => {
-    if (!apiKey) throw new Error("Chiave API mancante.");
-
-    const model = "gemini-2.5-flash";
-    const fullWineName = `${producer} ${name} ${year}`;
-    
-    // Costruiamo una query che forza Google a cercare SOLO nei siti affidabili
-    const siteFilters = TRUSTED_DOMAINS.map(d => `site:${d}`).join(' OR ');
-    const query = `(${siteFilters}) "${fullWineName}" prezzo acquista`;
-
-    const systemInstruction = `
-        Sei un Motore di Comparazione Prezzi Vini rigoroso.
-        Analizza i risultati di ricerca forniti dal tool Google Search.
-        
-        OBIETTIVO: Trovare link diretti all'acquisto per "${fullWineName}".
-        
-        REGOLE FERREE:
-        1. Estrai SOLO offerte dai domini: tannico.it, callmewine.com, vino.com, vivino.com, ecc.
-        2. Il campo "link" DEVE essere l'URL esatto della pagina prodotto trovato nei risultati.
-        3. SE NON TROVI UN LINK REALE NEI RISULTATI, NON INVENTARLO. Ignora quell'offerta.
-        4. Non includere risultati da blog, forum o siti di recensioni. Solo E-commerce.
-        
-        Rispondi ESCLUSIVAMENTE con un JSON Array:
-        [
-          { "merchant": "Tannico", "price": 20.50, "currency": "EUR", "link": "https://www.tannico.it/..." }
-        ]
-        Se non trovi nulla, restituisci array vuoto [].
-    `;
-
-    try {
-        const response = await ai.models.generateContent({
-            model,
-            contents: query,
-            config: {
-                systemInstruction,
-                tools: [{ googleSearch: {} }], 
-            }
-        });
-        
-        const text = response.text;
-        if (!text) return []; // Nessun risultato
-        
-        const jsonStr = cleanJson(text);
-        let deals: any[] = JSON.parse(jsonStr);
-
-        // Filtro di Sicurezza Finale
-        const validDeals: WineDeal[] = deals.filter(deal => {
-            if (!deal.link || !deal.price) return false;
-            // Accettiamo solo se il link contiene uno dei domini fidati
-            return TRUSTED_DOMAINS.some(domain => deal.link.includes(domain));
-        }).map(deal => ({
-            merchant: deal.merchant,
-            price: deal.price,
-            currency: deal.currency || 'EUR',
-            link: deal.link
-        }));
-
-        return validDeals;
-
-    } catch (err: any) {
-        console.error("Deal Search Error:", err);
-        throw new Error("Ricerca momentaneamente non disponibile.");
     }
 }
 

@@ -1,10 +1,9 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { createPortal } from 'react-dom';
-import { Wine, WineType, Location, WineDeal } from '../types';
-import { ThermometerIcon, ClockIcon, BoxIcon, WineIcon, StarIcon, PlusIcon, ChartBarIcon, ShoppingCartIcon, ExternalLinkIcon } from './Icons';
+import { Wine, WineType, Location } from '../types';
+import { ThermometerIcon, BoxIcon, WineIcon, StarIcon, ChartBarIcon } from './Icons';
 import DrinkabilityBadge from './DrinkabilityBadge';
-import { findBestDeals } from '../services/geminiService';
 
 interface WineDetailModalProps {
   wine: Wine | null;
@@ -26,20 +25,6 @@ const getTypeColor = (type: WineType) => {
 };
 
 const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onClose, onConsume, onUpdateWine, onDelete }) => {
-  // Local state for deals search inside the modal
-  const [deals, setDeals] = useState<WineDeal[]>([]);
-  const [isSearchingDeals, setIsSearchingDeals] = useState(false);
-  const [dealSearchError, setDealSearchError] = useState('');
-  const [hasSearchedDeals, setHasSearchedDeals] = useState(false);
-
-  // Reset state when wine changes
-  useEffect(() => {
-    setDeals([]);
-    setIsSearchingDeals(false);
-    setDealSearchError('');
-    setHasSearchedDeals(false);
-  }, [wine?.id]);
-
   if (!wine) return null;
 
   const handleQuantityChange = (delta: number) => {
@@ -49,22 +34,6 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
 
   const handleLocationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       onUpdateWine({ ...wine, location: e.target.value });
-  };
-
-  const handleSearchDeals = async () => {
-      setIsSearchingDeals(true);
-      setDealSearchError('');
-      setDeals([]);
-      
-      try {
-          const results = await findBestDeals(wine.name, wine.producer, wine.year);
-          setDeals(results);
-      } catch (err: any) {
-          setDealSearchError("Impossibile trovare offerte.");
-      } finally {
-          setIsSearchingDeals(false);
-          setHasSearchedDeals(true);
-      }
   };
 
   const content = (
@@ -163,60 +132,6 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
                          <span className="block text-[10px] text-indigo-400 uppercase font-bold">Valore Stimato</span>
                          <span className="text-lg font-bold text-indigo-900">€{wine.marketPrice?.toFixed(0) || wine.price}</span>
                      </div>
-                 </div>
-
-                 {/* DEAL FINDER BUTTON IN DETAIL MODAL */}
-                 <div className="pt-2 border-t border-indigo-100/50">
-                    {!hasSearchedDeals && !isSearchingDeals && (
-                        <button 
-                            onClick={handleSearchDeals}
-                            className="w-full py-2 bg-white text-indigo-600 text-xs font-bold rounded-lg border border-indigo-200 hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2 shadow-sm"
-                        >
-                            <ShoppingCartIcon className="w-3 h-3" />
-                            🔍 Cerca Prezzi Online
-                        </button>
-                    )}
-
-                    {isSearchingDeals && (
-                        <div className="flex justify-center py-2 gap-2 text-indigo-600 text-xs font-medium">
-                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
-                           Ricerca offerte con AI...
-                        </div>
-                    )}
-
-                    {dealSearchError && (
-                        <p className="text-xs text-red-500 text-center py-1">{dealSearchError}</p>
-                    )}
-
-                    {deals.length > 0 && (
-                        <div className="space-y-2 mt-2">
-                            {deals.map((deal, idx) => (
-                                <a 
-                                    key={idx} 
-                                    href={deal.link} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex items-center justify-between p-2 bg-white hover:bg-gray-50 rounded-lg border border-indigo-100 transition-all group shadow-sm"
-                                >
-                                    <div className="flex flex-col">
-                                        <span className="text-xs font-bold text-gray-800">{deal.merchant}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100">
-                                            €{deal.price.toFixed(2)}
-                                        </span>
-                                        <ExternalLinkIcon className="w-3 h-3 text-gray-400" />
-                                    </div>
-                                </a>
-                            ))}
-                        </div>
-                    )}
-
-                     {hasSearchedDeals && deals.length === 0 && !isSearchingDeals && !dealSearchError && (
-                         <div className="text-center py-1 text-gray-400 text-[10px] italic">
-                             Nessuna offerta trovata.
-                         </div>
-                    )}
                  </div>
             </div>
 

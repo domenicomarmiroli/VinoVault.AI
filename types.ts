@@ -81,13 +81,6 @@ export interface PurchaseAnalysis {
   };
 }
 
-export interface WineDeal {
-    merchant: string;
-    price: number;
-    currency: string;
-    link: string;
-}
-
 export interface RestaurantSuggestion {
     name: string;
     producer: string;
