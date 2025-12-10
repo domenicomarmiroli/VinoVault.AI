@@ -94,6 +94,7 @@ const initDb = async () => {
         name TEXT,
         producer TEXT,
         year TEXT,
+        type TEXT,
         price DECIMAL,
         image_url TEXT,
         consumed_date TEXT,
@@ -121,6 +122,7 @@ const initDb = async () => {
         // History Reviews Migration
         await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT 0;`);
         await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS notes TEXT;`);
+        await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS type TEXT;`); // NEW
         
         // Analytics Migration
         await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS drink_window TEXT;`);
@@ -383,6 +385,7 @@ app.get('/api/history', authenticateToken, async (req, res) => {
       name: row.name,
       producer: row.producer,
       year: row.year,
+      type: row.type, // Added
       price: parseFloat(row.price),
       imageUrl: row.image_url,
       consumedDate: row.consumed_date,
@@ -401,10 +404,10 @@ app.post('/api/history', authenticateToken, async (req, res) => {
   const h = req.body;
   try {
     const query = `
-      INSERT INTO history (id, user_id, wine_id, name, producer, year, price, image_url, consumed_date)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO history (id, user_id, wine_id, name, producer, year, type, price, image_url, consumed_date)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     `;
-    await pool.query(query, [h.id, req.user.userId, h.wineId, h.name, h.producer, h.year, h.price, h.imageUrl, h.consumedDate]);
+    await pool.query(query, [h.id, req.user.userId, h.wineId, h.name, h.producer, h.year, h.type, h.price, h.imageUrl, h.consumedDate]);
     res.status(201).json({ message: 'History added' });
   } catch (err) {
     console.error(err);

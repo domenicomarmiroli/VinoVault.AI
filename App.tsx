@@ -152,6 +152,7 @@ const App: React.FC = () => {
       name: wine.name,
       producer: wine.producer,
       year: wine.year,
+      type: wine.type, // Added type
       price: wine.price,
       imageUrl: wine.imageUrl,
       consumedDate: new Date().toISOString(),
@@ -196,6 +197,7 @@ const App: React.FC = () => {
           name: entryData.name || 'Sconosciuto',
           producer: entryData.producer || 'Sconosciuto',
           year: entryData.year || 'N/A',
+          type: entryData.type || 'Altro', // Added type
           price: entryData.price || 0,
           imageUrl: undefined, // Non abbiamo foto bottiglia dal ristorante solitamente
           consumedDate: entryData.consumedDate || new Date().toISOString(),

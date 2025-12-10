@@ -42,6 +42,7 @@ export interface HistoryEntry {
   name: string;
   producer: string;
   year: string;
+  type?: string; // Added for filtering
   consumedDate: string;
   price: number;
   imageUrl?: string;

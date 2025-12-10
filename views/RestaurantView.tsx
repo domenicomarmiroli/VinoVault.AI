@@ -69,6 +69,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
           name: selectedWine.name,
           producer: selectedWine.producer,
           year: selectedWine.year,
+          type: selectedWine.type, // Added type
           price: parseFloat(confirmPrice) || 0,
           consumedDate: new Date().toISOString()
       });
