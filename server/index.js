@@ -137,6 +137,14 @@ const initDb = async () => {
   }
 };
 
+// --- PUBLIC CONFIG ROUTE ---
+app.get('/api/config', (req, res) => {
+    // Espone solo configurazioni pubbliche sicure al frontend
+    res.json({
+        googleClientId: GOOGLE_CLIENT_ID || ''
+    });
+});
+
 // --- AUTH ROUTES ---
 
 // Google Login

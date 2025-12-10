@@ -20,19 +20,30 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Per testing: permette di inserire il Client ID manualmente se non presente in env
+  // State per il Client ID (gestito automaticamente)
   const [googleClientId, setGoogleClientId] = useState('');
-  const [showGoogleConfig, setShowGoogleConfig] = useState(false);
 
+  // 1. Fetch Config from Backend (Runtime environment variable)
   useEffect(() => {
-      // Prova a leggere il Client ID dalle variabili d'ambiente (se iniettate dal backend o build)
-      // Nota: in un'app React pura, process.env è accessibile al build time. 
-      // Qui lo gestiamo dinamicamente o tramite input utente.
-      const envClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '';
-      if (envClientId) setGoogleClientId(envClientId);
+      const fetchConfig = async () => {
+          try {
+              const res = await fetch('/api/config');
+              if (res.ok) {
+                  const data = await res.json();
+                  if (data.googleClientId) {
+                      setGoogleClientId(data.googleClientId);
+                  } else {
+                      console.warn("Google Client ID non configurato sul server.");
+                  }
+              }
+          } catch (e) {
+              console.log("Config fetch failed", e);
+          }
+      };
+      fetchConfig();
   }, []);
 
-  // Initialize Google Button
+  // 2. Initialize Google Button
   useEffect(() => {
     if (window.google && googleClientId) {
         try {
@@ -109,30 +120,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
             <Logo className="w-20 h-20 mb-4" />
         </div>
 
-        {/* Google Sign In Section */}
-        <div className="mb-6">
-             <div id="googleSignInBtn" className="w-full h-[40px] flex justify-center"></div>
-             {!googleClientId && (
-                 <div className="text-center mt-2">
-                     <button 
-                        type="button" 
-                        onClick={() => setShowGoogleConfig(!showGoogleConfig)}
-                        className="text-xs text-gray-400 hover:text-wine-600 underline"
-                     >
-                         Configura Google Client ID
-                     </button>
-                     {showGoogleConfig && (
-                         <input 
-                            type="text" 
-                            placeholder="Inserisci Google Client ID..."
-                            value={googleClientId}
-                            onChange={(e) => setGoogleClientId(e.target.value)}
-                            className="w-full mt-2 p-2 border border-gray-200 rounded text-xs"
-                         />
-                     )}
-                 </div>
-             )}
-        </div>
+        {/* Google Sign In Section - Appare solo se ID è configurato */}
+        {googleClientId && (
+            <div className="mb-6">
+                <div id="googleSignInBtn" className="w-full h-[40px] flex justify-center"></div>
+            </div>
+        )}
 
         <div className="relative flex py-2 items-center mb-6">
             <div className="flex-grow border-t border-gray-100"></div>
