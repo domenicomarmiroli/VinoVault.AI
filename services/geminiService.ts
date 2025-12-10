@@ -228,6 +228,7 @@ export const analyzePurchase = async (
 }
 
 // Mappa dei pattern di ricerca per i principali e-commerce (Smart Links)
+// Usata SOLO come fallback se l'AI non trova il link diretto
 const MERCHANT_PATTERNS: Record<string, string> = {
     'tannico': 'https://www.tannico.it/catalogsearch/result/?q=',
     'callmewine': 'https://www.callmewine.com/ricerca.html?keys=',
@@ -258,7 +259,6 @@ const generateSmartLink = (merchantName: string, query: string): string => {
 
 /**
  * Uses Google Search Grounding to find real-time best deals for a wine.
- * Uses Hybrid Approach: AI finds merchant/price, Code generates the link.
  */
 export const findBestDeals = async (name: string, producer: string, year: string): Promise<WineDeal[]> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
@@ -266,25 +266,28 @@ export const findBestDeals = async (name: string, producer: string, year: string
     const model = "gemini-2.5-flash";
     const fullWineName = `${producer} ${name} ${year}`;
     
-    // Query mirata per trovare negozi e prezzi
-    const query = `cerca il prezzo attuale di "${fullWineName}" su tannico, callmewine, vivino, vino.com, bernabei, xtrawine.`;
+    // Query molto specifica per attivare la ricerca prodotti
+    const query = `trova prezzo acquisto online bottiglia "${fullWineName}"`;
 
     const systemInstruction = `
         Sei un Personal Shopper di vini esperto.
-        Usa Google Search per trovare CHI vende questo vino e a QUANTO.
+        Usa Google Search per trovare le migliori offerte reali.
         
-        IMPORTANTE:
-        1. Identifica il nome del negozio (es. Tannico, Callmewine).
-        2. Estrai il prezzo attuale.
-        3. Ignora link rotti o non funzionanti, mi servono solo Negozio e Prezzo, il link lo trovo io.
+        Il tuo compito è estrarre l'URL PRECISO della pagina del prodotto dai risultati di ricerca.
         
-        Restituisci la risposta ESCLUSIVAMENTE come un array JSON grezzo.
-        Formato:
+        Regole:
+        1. Identifica Negozio e Prezzo.
+        2. COPIA L'URL esatto dai risultati di ricerca (grounding) che punta alla pagina di vendita.
+        3. Se non trovi un URL diretto, lascia il campo "link" vuoto.
+        4. NON INVENTARE URL.
+        
+        Restituisci ESCLUSIVAMENTE un array JSON:
         [
           {
             "merchant": "Nome Negozio",
             "price": 25.50,
-            "currency": "EUR"
+            "currency": "EUR",
+            "link": "https://www.tannico.it/..." 
           }
         ]
     `;
@@ -305,15 +308,27 @@ export const findBestDeals = async (name: string, producer: string, year: string
         const jsonStr = cleanJson(text);
         let deals: any[] = JSON.parse(jsonStr);
 
-        // HYBRID APPROACH: Generate Smart Links programmatically
-        const smartDeals: WineDeal[] = deals.map(deal => ({
-            merchant: deal.merchant,
-            price: deal.price,
-            currency: deal.currency || 'EUR',
-            link: generateSmartLink(deal.merchant, fullWineName)
-        }));
+        // HYBRID APPROACH IMPROVED: Prefer Real Link, Fallback to Smart Link
+        const validDeals: WineDeal[] = deals.map(deal => {
+            let finalLink = deal.link;
 
-        return smartDeals.filter(d => d.price > 0);
+            // Validazione base del link: deve esistere e iniziare con http
+            const isValidUrl = finalLink && typeof finalLink === 'string' && finalLink.startsWith('http');
+            
+            if (!isValidUrl) {
+                // Se l'AI non ha trovato il link diretto, usiamo il generatore sicuro
+                finalLink = generateSmartLink(deal.merchant, fullWineName);
+            }
+
+            return {
+                merchant: deal.merchant,
+                price: deal.price,
+                currency: deal.currency || 'EUR',
+                link: finalLink
+            };
+        });
+
+        return validDeals.filter(d => d.price > 0);
 
     } catch (err: any) {
         console.error("Deal Search Error:", err);
