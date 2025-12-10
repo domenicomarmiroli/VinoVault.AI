@@ -234,16 +234,18 @@ export const findBestDeals = async (name: string, producer: string, year: string
     if (!apiKey) throw new Error("Chiave API mancante.");
 
     const model = "gemini-2.5-flash";
-    const query = `Prezzo ${producer} ${name} ${year} vendita online Italia`;
+    // Query mirata sui principali e-commerce italiani per evitare blog/recensioni
+    const query = `site:tannico.it OR site:callmewine.com OR site:vino.com OR site:vivino.com OR site:xtrawine.com OR site:bernabei.it acquista "${producer} ${name} ${year}" prezzo`;
 
     const systemInstruction = `
         Sei un Personal Shopper di vini esperto.
         Usa Google Search per trovare i PREZZI REALI ATTUALI di questo vino.
-        Cerca nei principali e-commerce italiani (es. Tannico, Callmewine, Bernabei, Vino.com, Vivino, Xtrawine).
         
-        Estrai 3-5 opzioni migliori.
-        Ignora aste o privati.
-        Se non trovi l'annata esatta, cerca l'annata più vicina disponibile specificandolo nel nome.
+        REGOLE CRITICHE ANTI-ALLUCINAZIONE:
+        1. RIPORTA SOLO URL REALI che trovi esplicitamente nei risultati di ricerca (Grounding). NON inventare o costruire URL (es. vietato scrivere "tannico.it/nome-vino" se non lo hai letto).
+        2. Se non trovi un link diretto funzionante alla pagina prodotto, SCARTA l'offerta.
+        3. Cerca l'annata specifica. Se non la trovi, cerca la più vicina e indicalo chiaramente nel nome del negozio (es. "Tannico (Annata 2022)").
+        4. Ignora aste o venditori privati.
         
         IMPORTANTE: Restituisci la risposta ESCLUSIVAMENTE come un array JSON grezzo, senza markdown (no \`\`\`json).
         Il formato deve essere:
@@ -252,7 +254,7 @@ export const findBestDeals = async (name: string, producer: string, year: string
             "merchant": "Nome Negozio",
             "price": 25.50,
             "currency": "EUR",
-            "link": "https://..."
+            "link": "https://www.realsite.com/product/page"
           }
         ]
     `;
@@ -270,7 +272,12 @@ export const findBestDeals = async (name: string, producer: string, year: string
         const text = response.text;
         if (!text) throw new Error("Nessun risultato trovato");
         
-        return JSON.parse(cleanJson(text));
+        // Pulisce eventuale markdown residuo
+        const jsonStr = cleanJson(text);
+        const deals = JSON.parse(jsonStr);
+
+        // Validazione extra post-generazione: Filtra deal senza link valido
+        return deals.filter((d: WineDeal) => d.link && d.link.startsWith('http') && d.price > 0);
 
     } catch (err: any) {
         console.error("Deal Search Error:", err);
