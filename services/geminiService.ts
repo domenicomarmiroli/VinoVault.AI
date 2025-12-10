@@ -227,38 +227,22 @@ export const analyzePurchase = async (
     }
 }
 
-// Mappa dei pattern di ricerca per i principali e-commerce (Smart Links)
-// Usata SOLO come fallback se l'AI non trova il link diretto
-const MERCHANT_PATTERNS: Record<string, string> = {
-    'tannico': 'https://www.tannico.it/catalogsearch/result/?q=',
-    'callmewine': 'https://www.callmewine.com/ricerca.html?keys=',
-    'vivino': 'https://www.vivino.com/search/wines?q=',
-    'vino.com': 'https://www.vino.com/ricerca?q=',
-    'xtrawine': 'https://www.xtrawine.com/it/ricerca?q=',
-    'bernabei': 'https://www.bernabei.it/catalogsearch/result/?q=',
-    'signorvino': 'https://www.signorvino.com/it/cerca?q=',
-    'decanto': 'https://www.decanto.it/it/ricerca?s=',
-    'gallienoteca': 'https://www.gallienoteca.it/it/ricerca?s='
-};
-
-// Genera un link di ricerca sicuro basato sul negozio
-const generateSmartLink = (merchantName: string, query: string): string => {
-    const normalizedMerchant = merchantName.toLowerCase().replace(/\s/g, '');
-    const encodedQuery = encodeURIComponent(query);
-    
-    // Trova se il nome del merchant contiene una delle chiavi note
-    const matchedKey = Object.keys(MERCHANT_PATTERNS).find(key => normalizedMerchant.includes(key));
-    
-    if (matchedKey) {
-        return `${MERCHANT_PATTERNS[matchedKey]}${encodedQuery}`;
-    }
-    
-    // Fallback: Ricerca specifica su Google per quel sito
-    return `https://www.google.com/search?q=${encodeURIComponent(`site:${merchantName} acquista ${query}`)}`;
-};
+// Lista di domini affidabili per la ricerca prezzi
+const TRUSTED_DOMAINS = [
+    'tannico.it',
+    'callmewine.com',
+    'vino.com',
+    'bernabei.it',
+    'xtrawine.com',
+    'signorvino.com',
+    'vivino.com',
+    'decanto.it',
+    'gallienoteca.it'
+];
 
 /**
  * Uses Google Search Grounding to find real-time best deals for a wine.
+ * STRATEGIA WALLED GARDEN: Cerca SOLO nei siti affidabili per evitare link rotti.
  */
 export const findBestDeals = async (name: string, producer: string, year: string): Promise<WineDeal[]> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
@@ -266,30 +250,27 @@ export const findBestDeals = async (name: string, producer: string, year: string
     const model = "gemini-2.5-flash";
     const fullWineName = `${producer} ${name} ${year}`;
     
-    // Query molto specifica per attivare la ricerca prodotti
-    const query = `trova prezzo acquisto online bottiglia "${fullWineName}"`;
+    // Costruiamo una query che forza Google a cercare SOLO nei siti affidabili
+    const siteFilters = TRUSTED_DOMAINS.map(d => `site:${d}`).join(' OR ');
+    const query = `(${siteFilters}) "${fullWineName}" prezzo acquista`;
 
     const systemInstruction = `
-        Sei un Personal Shopper di vini esperto.
-        Usa Google Search per trovare le migliori offerte reali.
+        Sei un Motore di Comparazione Prezzi Vini rigoroso.
+        Analizza i risultati di ricerca forniti dal tool Google Search.
         
-        Il tuo compito è estrarre l'URL PRECISO della pagina del prodotto dai risultati di ricerca.
+        OBIETTIVO: Trovare link diretti all'acquisto per "${fullWineName}".
         
-        Regole:
-        1. Identifica Negozio e Prezzo.
-        2. COPIA L'URL esatto dai risultati di ricerca (grounding) che punta alla pagina di vendita.
-        3. Se non trovi un URL diretto, lascia il campo "link" vuoto.
-        4. NON INVENTARE URL.
+        REGOLE FERREE:
+        1. Estrai SOLO offerte dai domini: tannico.it, callmewine.com, vino.com, vivino.com, ecc.
+        2. Il campo "link" DEVE essere l'URL esatto della pagina prodotto trovato nei risultati.
+        3. SE NON TROVI UN LINK REALE NEI RISULTATI, NON INVENTARLO. Ignora quell'offerta.
+        4. Non includere risultati da blog, forum o siti di recensioni. Solo E-commerce.
         
-        Restituisci ESCLUSIVAMENTE un array JSON:
+        Rispondi ESCLUSIVAMENTE con un JSON Array:
         [
-          {
-            "merchant": "Nome Negozio",
-            "price": 25.50,
-            "currency": "EUR",
-            "link": "https://www.tannico.it/..." 
-          }
+          { "merchant": "Tannico", "price": 20.50, "currency": "EUR", "link": "https://www.tannico.it/..." }
         ]
+        Se non trovi nulla, restituisci array vuoto [].
     `;
 
     try {
@@ -303,36 +284,28 @@ export const findBestDeals = async (name: string, producer: string, year: string
         });
         
         const text = response.text;
-        if (!text) throw new Error("Nessun risultato trovato");
+        if (!text) return []; // Nessun risultato
         
         const jsonStr = cleanJson(text);
         let deals: any[] = JSON.parse(jsonStr);
 
-        // HYBRID APPROACH IMPROVED: Prefer Real Link, Fallback to Smart Link
-        const validDeals: WineDeal[] = deals.map(deal => {
-            let finalLink = deal.link;
+        // Filtro di Sicurezza Finale
+        const validDeals: WineDeal[] = deals.filter(deal => {
+            if (!deal.link || !deal.price) return false;
+            // Accettiamo solo se il link contiene uno dei domini fidati
+            return TRUSTED_DOMAINS.some(domain => deal.link.includes(domain));
+        }).map(deal => ({
+            merchant: deal.merchant,
+            price: deal.price,
+            currency: deal.currency || 'EUR',
+            link: deal.link
+        }));
 
-            // Validazione base del link: deve esistere e iniziare con http
-            const isValidUrl = finalLink && typeof finalLink === 'string' && finalLink.startsWith('http');
-            
-            if (!isValidUrl) {
-                // Se l'AI non ha trovato il link diretto, usiamo il generatore sicuro
-                finalLink = generateSmartLink(deal.merchant, fullWineName);
-            }
-
-            return {
-                merchant: deal.merchant,
-                price: deal.price,
-                currency: deal.currency || 'EUR',
-                link: finalLink
-            };
-        });
-
-        return validDeals.filter(d => d.price > 0);
+        return validDeals;
 
     } catch (err: any) {
         console.error("Deal Search Error:", err);
-        throw new Error("Impossibile trovare offerte al momento.");
+        throw new Error("Ricerca momentaneamente non disponibile.");
     }
 }
 
