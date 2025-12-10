@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, WineDeal } from "../types";
+import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, WineDeal, RestaurantSuggestion } from "../types";
 
 // Helper to remove base64 prefix
 const cleanBase64 = (base64: string) => {
@@ -264,7 +264,6 @@ export const findBestDeals = async (name: string, producer: string, year: string
             config: {
                 systemInstruction,
                 tools: [{ googleSearch: {} }], // Enable real-time web search
-                // Removed responseSchema and responseMimeType to prevent conflict with tools
             }
         });
         
@@ -278,3 +277,67 @@ export const findBestDeals = async (name: string, producer: string, year: string
         throw new Error("Impossibile trovare offerte al momento.");
     }
 }
+
+/**
+ * Analyzes restaurant wine list photos and suggests pairings for a dish.
+ */
+export const suggestRestaurantPairing = async (
+    images: string[], 
+    dish: string
+): Promise<RestaurantSuggestion[]> => {
+    if (!apiKey) throw new Error("Chiave API mancante.");
+
+    const model = "gemini-2.5-flash";
+
+    // Prepare content parts: images + prompt
+    const parts: any[] = images.map(img => ({
+        inlineData: { mimeType: "image/jpeg", data: cleanBase64(img) }
+    }));
+
+    parts.push({
+        text: `Sto mangiando: "${dish}".
+        Analizza queste foto della carta dei vini.
+        1. Leggi i vini disponibili (Nome, Produttore, Annata, Prezzo).
+        2. Seleziona i 3 MIGLIORI abbinamenti per il mio piatto, bilanciando qualità/prezzo.
+        3. Se il prezzo non è leggibile, stima 0 o lascia vuoto.`
+    });
+
+    const systemInstruction = `Sei un Sommelier al ristorante che aiuta il cliente a scegliere dalla carta.
+    Devi leggere le immagini (OCR), capire il piatto del cliente e suggerire le 3 opzioni migliori.
+    Fornisci una spiegazione convincente per ogni abbinamento.
+    Rispondi SEMPRE con un JSON valido.`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: { parts },
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            name: { type: Type.STRING },
+                            producer: { type: Type.STRING },
+                            year: { type: Type.STRING },
+                            price: { type: Type.NUMBER },
+                            type: { type: Type.STRING },
+                            reasoning: { type: Type.STRING, description: "Perché sta bene con il piatto" },
+                            matchScore: { type: Type.NUMBER, description: "1-100" }
+                        },
+                        required: ["name", "producer", "reasoning", "matchScore"]
+                    }
+                }
+            }
+        });
+
+        const text = response.text;
+        if (!text) throw new Error("Nessuna risposta da Gemini");
+
+        return JSON.parse(cleanJson(text));
+    } catch (err: any) {
+        throw new Error(err.message || "Errore analisi carta vini");
+    }
+};

@@ -87,3 +87,13 @@ export interface WineDeal {
     currency: string;
     link: string;
 }
+
+export interface RestaurantSuggestion {
+    name: string;
+    producer: string;
+    year: string;
+    price: number;
+    type: string;
+    reasoning: string; // Perché sta bene col piatto
+    matchScore: number; // 1-100
+}

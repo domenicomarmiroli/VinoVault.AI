@@ -29,17 +29,17 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
       acc[region] = (acc[region] || 0) + w.quantity;
       return acc;
   }, {} as Record<string, number>);
-  const sortedRegions = Object.entries(regionCounts)
+  const sortedRegions = (Object.entries(regionCounts) as [string, number][])
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5);
 
   // 4. Statistiche Consumo
   const totalConsumed = history.length;
   const favoriteType = history.length > 0 ? 
-    Object.entries(history.reduce((acc, h) => {
+    (Object.entries(history.reduce((acc, h) => {
        // Assuming we could link history back to type, for now approximation or generic
        return acc; 
-    }, {} as Record<string, number>)).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/D' 
+    }, {} as Record<string, number>)) as [string, number][]).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/D' 
     : 'N/D';
 
   const getTypeColor = (type: string) => {
@@ -101,7 +101,7 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
             
             {/* Simple Bar Chart Visual */}
             <div className="flex h-6 w-full rounded-full overflow-hidden mb-4">
-                {Object.entries(typeCounts).map(([type, count]) => (
+                {(Object.entries(typeCounts) as [string, number][]).map(([type, count]) => (
                     <div 
                         key={type} 
                         className={getTypeColor(type)}
