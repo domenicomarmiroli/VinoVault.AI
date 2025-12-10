@@ -227,34 +227,64 @@ export const analyzePurchase = async (
     }
 }
 
+// Mappa dei pattern di ricerca per i principali e-commerce (Smart Links)
+const MERCHANT_PATTERNS: Record<string, string> = {
+    'tannico': 'https://www.tannico.it/catalogsearch/result/?q=',
+    'callmewine': 'https://www.callmewine.com/ricerca.html?keys=',
+    'vivino': 'https://www.vivino.com/search/wines?q=',
+    'vino.com': 'https://www.vino.com/ricerca?q=',
+    'xtrawine': 'https://www.xtrawine.com/it/ricerca?q=',
+    'bernabei': 'https://www.bernabei.it/catalogsearch/result/?q=',
+    'signorvino': 'https://www.signorvino.com/it/cerca?q=',
+    'decanto': 'https://www.decanto.it/it/ricerca?s=',
+    'gallienoteca': 'https://www.gallienoteca.it/it/ricerca?s='
+};
+
+// Genera un link di ricerca sicuro basato sul negozio
+const generateSmartLink = (merchantName: string, query: string): string => {
+    const normalizedMerchant = merchantName.toLowerCase().replace(/\s/g, '');
+    const encodedQuery = encodeURIComponent(query);
+    
+    // Trova se il nome del merchant contiene una delle chiavi note
+    const matchedKey = Object.keys(MERCHANT_PATTERNS).find(key => normalizedMerchant.includes(key));
+    
+    if (matchedKey) {
+        return `${MERCHANT_PATTERNS[matchedKey]}${encodedQuery}`;
+    }
+    
+    // Fallback: Ricerca specifica su Google per quel sito
+    return `https://www.google.com/search?q=${encodeURIComponent(`site:${merchantName} acquista ${query}`)}`;
+};
+
 /**
  * Uses Google Search Grounding to find real-time best deals for a wine.
+ * Uses Hybrid Approach: AI finds merchant/price, Code generates the link.
  */
 export const findBestDeals = async (name: string, producer: string, year: string): Promise<WineDeal[]> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
 
     const model = "gemini-2.5-flash";
-    // Query mirata sui principali e-commerce italiani per evitare blog/recensioni
-    const query = `site:tannico.it OR site:callmewine.com OR site:vino.com OR site:vivino.com OR site:xtrawine.com OR site:bernabei.it acquista "${producer} ${name} ${year}" prezzo`;
+    const fullWineName = `${producer} ${name} ${year}`;
+    
+    // Query mirata per trovare negozi e prezzi
+    const query = `cerca il prezzo attuale di "${fullWineName}" su tannico, callmewine, vivino, vino.com, bernabei, xtrawine.`;
 
     const systemInstruction = `
         Sei un Personal Shopper di vini esperto.
-        Usa Google Search per trovare i PREZZI REALI ATTUALI di questo vino.
+        Usa Google Search per trovare CHI vende questo vino e a QUANTO.
         
-        REGOLE CRITICHE ANTI-ALLUCINAZIONE:
-        1. RIPORTA SOLO URL REALI che trovi esplicitamente nei risultati di ricerca (Grounding). NON inventare o costruire URL (es. vietato scrivere "tannico.it/nome-vino" se non lo hai letto).
-        2. Se non trovi un link diretto funzionante alla pagina prodotto, SCARTA l'offerta.
-        3. Cerca l'annata specifica. Se non la trovi, cerca la più vicina e indicalo chiaramente nel nome del negozio (es. "Tannico (Annata 2022)").
-        4. Ignora aste o venditori privati.
+        IMPORTANTE:
+        1. Identifica il nome del negozio (es. Tannico, Callmewine).
+        2. Estrai il prezzo attuale.
+        3. Ignora link rotti o non funzionanti, mi servono solo Negozio e Prezzo, il link lo trovo io.
         
-        IMPORTANTE: Restituisci la risposta ESCLUSIVAMENTE come un array JSON grezzo, senza markdown (no \`\`\`json).
-        Il formato deve essere:
+        Restituisci la risposta ESCLUSIVAMENTE come un array JSON grezzo.
+        Formato:
         [
           {
             "merchant": "Nome Negozio",
             "price": 25.50,
-            "currency": "EUR",
-            "link": "https://www.realsite.com/product/page"
+            "currency": "EUR"
           }
         ]
     `;
@@ -265,19 +295,25 @@ export const findBestDeals = async (name: string, producer: string, year: string
             contents: query,
             config: {
                 systemInstruction,
-                tools: [{ googleSearch: {} }], // Enable real-time web search
+                tools: [{ googleSearch: {} }], 
             }
         });
         
         const text = response.text;
         if (!text) throw new Error("Nessun risultato trovato");
         
-        // Pulisce eventuale markdown residuo
         const jsonStr = cleanJson(text);
-        const deals = JSON.parse(jsonStr);
+        let deals: any[] = JSON.parse(jsonStr);
 
-        // Validazione extra post-generazione: Filtra deal senza link valido
-        return deals.filter((d: WineDeal) => d.link && d.link.startsWith('http') && d.price > 0);
+        // HYBRID APPROACH: Generate Smart Links programmatically
+        const smartDeals: WineDeal[] = deals.map(deal => ({
+            merchant: deal.merchant,
+            price: deal.price,
+            currency: deal.currency || 'EUR',
+            link: generateSmartLink(deal.merchant, fullWineName)
+        }));
+
+        return smartDeals.filter(d => d.price > 0);
 
     } catch (err: any) {
         console.error("Deal Search Error:", err);

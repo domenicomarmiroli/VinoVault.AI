@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_wine_key_change_me';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
 // Middleware
 app.use(cors());
@@ -134,6 +136,59 @@ const initDb = async () => {
 };
 
 // --- AUTH ROUTES ---
+
+// Google Login
+app.post('/api/auth/google', async (req, res) => {
+    const { token: googleToken, clientId } = req.body;
+    
+    if (!googleToken) {
+        return res.status(400).json({ error: 'Token mancante' });
+    }
+
+    try {
+        const client = new OAuth2Client(clientId || GOOGLE_CLIENT_ID);
+        const ticket = await client.verifyIdToken({
+            idToken: googleToken,
+            audience: clientId || GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const email = payload.email;
+
+        // Check if user exists
+        let result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        let user = result.rows[0];
+
+        if (!user) {
+            // Register new Google User
+            const userId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+            // Random password - user uses Google to login
+            const randomPassword = Math.random().toString(36).slice(-8);
+            const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+            await pool.query(
+                'INSERT INTO users (id, email, password) VALUES ($1, $2, $3)',
+                [userId, email, hashedPassword]
+            );
+
+            // Default Locations
+            await pool.query(`
+                INSERT INTO locations (id, user_id, name) VALUES 
+                ($1, $2, 'Cantina'),
+                ($3, $2, 'Frigo Cucina'),
+                ($4, $2, 'Scaffale')
+            `, [userId + '_l1', userId, userId + '_l2', userId + '_l3']);
+
+            user = { id: userId, email: email };
+        }
+
+        const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+        res.json({ token, user: { id: user.id, email: user.email } });
+
+    } catch (err) {
+        console.error("Google Auth Error:", err);
+        res.status(401).json({ error: 'Autenticazione Google fallita' });
+    }
+});
 
 // Register
 app.post('/api/auth/register', async (req, res) => {

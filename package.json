@@ -18,7 +18,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "google-auth-library": "^9.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
