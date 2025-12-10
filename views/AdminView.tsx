@@ -1,7 +1,8 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { User } from '../types';
-import { ShieldCheckIcon, LogoutIcon, TrashIcon } from '../components/Icons';
+import { ShieldCheckIcon, LogoutIcon, TrashIcon, WineIcon, ChartBarIcon } from '../components/Icons';
 
 interface AdminViewProps {
   onLogout: () => void;
@@ -79,6 +80,11 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
       }
   };
 
+  // Stats Calculations
+  const totalUsers = users.length;
+  const totalWines = users.reduce((acc, u) => acc + (parseInt(u.wine_count as any) || 0), 0);
+  const totalAiRequests = users.reduce((acc, u) => acc + (u.ai_usage_count || 0), 0);
+
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden">
       {/* Header */}
@@ -97,10 +103,28 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-24">
+      <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-6">
+         
+         {/* Stats Cards */}
+         <div className="grid grid-cols-3 gap-4">
+             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+                 <span className="block text-3xl font-bold text-gray-900">{totalUsers}</span>
+                 <span className="text-xs text-gray-500 font-bold uppercase">Utenti</span>
+             </div>
+             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+                 <span className="block text-3xl font-bold text-wine-700">{totalWines}</span>
+                 <span className="text-xs text-gray-500 font-bold uppercase">Bottiglie</span>
+             </div>
+             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+                 <span className="block text-3xl font-bold text-blue-600">{totalAiRequests}</span>
+                 <span className="text-xs text-gray-500 font-bold uppercase">Richieste AI</span>
+             </div>
+         </div>
+
+         {/* Users Table */}
          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
              <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                 <h3 className="font-bold text-gray-700">Utenti Registrati ({users.length})</h3>
+                 <h3 className="font-bold text-gray-700">Utenti Registrati</h3>
                  <button onClick={fetchUsers} className="text-wine-600 text-sm font-bold hover:underline">Aggiorna</button>
              </div>
              
@@ -112,27 +136,36 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                          <thead className="bg-gray-50 text-gray-500 font-bold uppercase text-xs">
                              <tr>
                                  <th className="p-3">Email</th>
-                                 <th className="p-3">Ruolo</th>
-                                 <th className="p-3">Registrato il</th>
+                                 <th className="p-3 text-center">Vini</th>
+                                 <th className="p-3 text-center">Uso AI</th>
+                                 <th className="p-3">Registrato</th>
                                  <th className="p-3 text-right">Azioni</th>
                              </tr>
                          </thead>
                          <tbody className="divide-y divide-gray-100">
                              {users.map(user => (
                                  <tr key={user.id} className="hover:bg-gray-50">
-                                     <td className="p-3 font-medium text-gray-900">{user.email}</td>
-                                     <td className="p-3">
-                                         <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
-                                             {user.role}
+                                     <td className="p-3 font-medium text-gray-900">
+                                         {user.email}
+                                         {user.role === 'admin' && (
+                                             <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-100 text-purple-700">Admin</span>
+                                         )}
+                                     </td>
+                                     <td className="p-3 text-center font-bold text-gray-700">
+                                         {user.wine_count || 0}
+                                     </td>
+                                     <td className="p-3 text-center">
+                                         <span className="inline-block px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold text-xs">
+                                             {user.ai_usage_count || 0}
                                          </span>
                                      </td>
-                                     <td className="p-3 text-gray-500">{new Date(user.created_at || '').toLocaleDateString()}</td>
+                                     <td className="p-3 text-gray-500 text-xs">{new Date(user.created_at || '').toLocaleDateString()}</td>
                                      <td className="p-3 text-right flex gap-2 justify-end">
                                          <button 
                                             onClick={() => setResetModalUser(user)}
                                             className="text-blue-600 hover:text-blue-800 text-xs font-bold border border-blue-200 bg-blue-50 px-2 py-1 rounded"
                                          >
-                                             Reset Pwd
+                                             Pwd
                                          </button>
                                          <button 
                                             onClick={() => handleDeleteUser(user.id)}

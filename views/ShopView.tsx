@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef } from 'react';
 import { Wine, PurchaseAnalysis } from '../types';
 import { analyzePurchase } from '../services/geminiService';
@@ -8,9 +9,10 @@ interface ShopViewProps {
   inventory: Wine[];
   onLogout: () => void;
   onAddToInventory: (wine: Wine) => void;
+  onAiUsed: () => void;
 }
 
-const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInventory }) => {
+const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInventory, onAiUsed }) => {
   const [image, setImage] = useState<string | null>(null);
   const [price, setPrice] = useState<number | ''>('');
   const [loading, setLoading] = useState(false);
@@ -35,6 +37,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
       try {
           const result = await analyzePurchase(image, Number(price), inventory);
           setAnalysis(result);
+          onAiUsed(); // Track
       } catch (error: any) {
           alert(`Errore analisi: ${error.message || "Riprova più tardi."}`);
           console.error(error);

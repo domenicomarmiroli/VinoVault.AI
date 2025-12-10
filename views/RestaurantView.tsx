@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef } from 'react';
 import { suggestRestaurantPairing } from '../services/geminiService';
 import { RestaurantSuggestion, HistoryEntry } from '../types';
@@ -7,9 +8,10 @@ import { CameraIcon, LogoutIcon, RestaurantIcon, PlusIcon } from '../components/
 interface RestaurantViewProps {
   onLogout: () => void;
   onAddToHistory: (entry: Partial<HistoryEntry>) => void;
+  onAiUsed: () => void;
 }
 
-const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistory }) => {
+const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistory, onAiUsed }) => {
   const [dish, setDish] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,6 +51,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
       try {
           const results = await suggestRestaurantPairing(images, dish);
           setSuggestions(results);
+          onAiUsed(); // Track
       } catch (error: any) {
           alert(`Errore analisi: ${error.message}`);
       } finally {

@@ -46,17 +46,23 @@ const App: React.FC = () => {
       return fetch(fullUrl, { ...options, headers });
   };
 
+  // Funzione per tracciare l'uso dell'AI
+  const trackAiUsage = async () => {
+      if (isOfflineMode) return;
+      try {
+          // Fire and forget, don't await blocking UI
+          authFetch('/api/users/track-ai', { method: 'POST' });
+      } catch (e) {
+          console.error("Tracking failed", e);
+      }
+  };
+
   // Login handler
   const handleLogin = (newToken: string, email: string) => {
       localStorage.setItem('vinovault_token', newToken);
       setToken(newToken);
       setUserEmail(email);
       
-      // Decode JWT to get role without another request if possible, 
-      // but simpler is to trust the API response data if we pass it up from AuthForm.
-      // However, AuthForm only passes token and email. 
-      // Let's decode simply to check role or fetch it.
-      // For now, let's assume standard user, role will be fetched or we can decode token
       try {
         const payload = JSON.parse(atob(newToken.split('.')[1]));
         if (payload.role) {
@@ -361,6 +367,7 @@ const App: React.FC = () => {
                     onAddLocation={handleAddLocation}
                     onDeleteLocation={handleDeleteLocation}
                     onLogout={handleLogout}
+                    onAiUsed={trackAiUsage} // Pass tracking
                 />
              )}
         </div>
@@ -371,6 +378,7 @@ const App: React.FC = () => {
                     inventory={wines} 
                     onLogout={handleLogout}
                     onAddToInventory={handleAddWine}
+                    onAiUsed={trackAiUsage} // Pass tracking
                 />
              )}
         </div>
@@ -380,12 +388,19 @@ const App: React.FC = () => {
                 <RestaurantView 
                     onLogout={handleLogout}
                     onAddToHistory={handleAddToHistory}
+                    onAiUsed={trackAiUsage} // Pass tracking
                 />
              )}
         </div>
 
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'sommelier' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             {activeTab === 'sommelier' && <SommelierView inventory={wines} onLogout={handleLogout} />}
+             {activeTab === 'sommelier' && (
+                 <SommelierView 
+                    inventory={wines} 
+                    onLogout={handleLogout} 
+                    onAiUsed={trackAiUsage} // Pass tracking
+                 />
+             )}
         </div>
         
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>

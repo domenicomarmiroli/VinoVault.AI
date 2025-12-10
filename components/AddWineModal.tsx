@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Wine, WineType, Location } from '../types';
@@ -13,9 +14,10 @@ interface AddWineModalProps {
   onClose: () => void;
   onAdd: (wine: Wine) => void;
   locations: Location[];
+  onAiUsed: () => void;
 }
 
-const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, locations }) => {
+const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, locations, onAiUsed }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'upload' | 'verify'>('upload');
@@ -58,6 +60,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
                 quantity: 1,
                 location: prev.location 
             }));
+            onAiUsed(); // Track usage
             setStep('verify');
         } catch (err: any) {
             console.error("Analysis failed", err);

@@ -58,13 +58,14 @@ const authenticateAdmin = (req, res, next) => {
 // --- DB INITIALIZATION ---
 const initDb = async () => {
   try {
-    // 1. Create Users Table with ROLE
+    // 1. Create Users Table with ROLE and STATS
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role TEXT DEFAULT 'user',
+        ai_usage_count INTEGER DEFAULT 0,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -132,11 +133,12 @@ const initDb = async () => {
         await pool.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE;`);
         
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user';`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_usage_count INTEGER DEFAULT 0;`); // NEW
 
         // History Reviews Migration
         await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT 0;`);
         await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS notes TEXT;`);
-        await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS type TEXT;`); // NEW
+        await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS type TEXT;`); 
         
         // Analytics Migration
         await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS drink_window TEXT;`);
@@ -294,10 +296,24 @@ app.post('/api/auth/login', async (req, res) => {
 
 // --- ADMIN API ROUTES ---
 
-// GET All Users
+// GET All Users with Stats
 app.get('/api/users', authenticateAdmin, async (req, res) => {
     try {
-        const result = await pool.query('SELECT id, email, role, created_at FROM users ORDER BY created_at DESC');
+        // Advanced query to count wines per user
+        const query = `
+            SELECT 
+                u.id, 
+                u.email, 
+                u.role, 
+                u.created_at, 
+                u.ai_usage_count,
+                COUNT(w.id) as wine_count
+            FROM users u
+            LEFT JOIN wines w ON u.id = w.user_id
+            GROUP BY u.id
+            ORDER BY u.created_at DESC
+        `;
+        const result = await pool.query(query);
         res.json(result.rows);
     } catch(err) {
         console.error(err);
@@ -340,6 +356,18 @@ app.put('/api/users/:id/reset-password', authenticateAdmin, async (req, res) => 
 
 
 // --- PROTECTED API ROUTES ---
+
+// TELEMETRY: Track AI Usage
+app.post('/api/users/track-ai', authenticateToken, async (req, res) => {
+    try {
+        await pool.query('UPDATE users SET ai_usage_count = COALESCE(ai_usage_count, 0) + 1 WHERE id = $1', [req.user.userId]);
+        res.sendStatus(200);
+    } catch(err) {
+        console.error("Telemetry error", err);
+        // Don't break the client flow if telemetry fails
+        res.sendStatus(200); 
+    }
+});
 
 // GET All Wines (User Scoped)
 app.get('/api/wines', authenticateToken, async (req, res) => {

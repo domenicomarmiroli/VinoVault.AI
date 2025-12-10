@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Wine, WineType, Location } from '../types';
 import WineCard from '../components/WineCard';
@@ -18,12 +19,13 @@ interface InventoryViewProps {
   onAddLocation: (name: string) => void;
   onDeleteLocation: (id: string) => void;
   onLogout: () => void;
+  onAiUsed: () => void; // New prop
 }
 
 type FilterType = 'all' | WineType | 'still';
 
 const InventoryView: React.FC<InventoryViewProps> = ({ 
-    wines, locations, onAddWine, onUpdateWine, onConsume, onDelete, onAddLocation, onDeleteLocation, onLogout 
+    wines, locations, onAddWine, onUpdateWine, onConsume, onDelete, onAddLocation, onDeleteLocation, onLogout, onAiUsed 
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLocManagerOpen, setIsLocManagerOpen] = useState(false);
@@ -182,6 +184,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         onClose={() => setIsModalOpen(false)} 
         onAdd={onAddWine}
         locations={locations}
+        onAiUsed={onAiUsed} // Pass tracking
       />
 
       <LocationManagerModal 

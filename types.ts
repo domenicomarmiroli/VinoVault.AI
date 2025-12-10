@@ -99,4 +99,7 @@ export interface User {
   role: 'user' | 'admin';
   created_at?: string;
   last_login?: string;
+  // Stats
+  wine_count?: number;     // From DB Join
+  ai_usage_count?: number; // From DB column
 }

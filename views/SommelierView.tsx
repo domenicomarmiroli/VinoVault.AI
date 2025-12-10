@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Wine, PairingSuggestion } from '../types';
 import { suggestPairing } from '../services/geminiService';
@@ -7,9 +8,10 @@ import { ChefIcon, WineIcon, LogoutIcon } from '../components/Icons';
 interface SommelierViewProps {
   inventory: Wine[];
   onLogout: () => void;
+  onAiUsed: () => void;
 }
 
-const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout }) => {
+const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAiUsed }) => {
   const [menuText, setMenuText] = useState('');
   const [guests, setGuests] = useState(2);
   const [style, setStyle] = useState<'single' | 'multiple'>('multiple');
@@ -25,6 +27,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout }) =>
     try {
       const results = await suggestPairing(menuText, guests, inventory, style);
       setSuggestions(results);
+      onAiUsed(); // Track
     } catch (error: any) {
       console.error(error);
       alert(`Errore Sommelier: ${error.message || "Riprova più tardi."}`);
