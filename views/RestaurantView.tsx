@@ -212,8 +212,8 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
 
         {/* Confirmation Modal (Bottom Sheet) */}
         {selectedWine && (
-            <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center">
-                 <div className="bg-white w-full max-w-md p-6 rounded-t-2xl shadow-xl animate-in slide-in-from-bottom duration-300">
+            <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-end justify-center">
+                 <div className="bg-white w-full max-w-md p-6 pb-12 rounded-t-2xl shadow-xl animate-in slide-in-from-bottom duration-300">
                      <h3 className="font-serif font-bold text-lg mb-4 text-center">Conferma Scelta</h3>
                      <p className="text-sm text-gray-600 text-center mb-4">
                          Hai scelto <strong>{selectedWine.name}</strong>. <br/>
