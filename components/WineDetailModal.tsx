@@ -1,10 +1,9 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Wine, WineType, Location } from '../types';
 import { ThermometerIcon, BoxIcon, WineIcon, StarIcon, ChartBarIcon, PencilIcon } from './Icons';
 import DrinkabilityBadge from './DrinkabilityBadge';
+import PriceComparison from './PriceComparison'; // New import
 
 interface WineDetailModalProps {
   wine: Wine | null;
@@ -13,6 +12,7 @@ interface WineDetailModalProps {
   onConsume: (wine: Wine) => void;
   onUpdateWine: (wine: Wine) => void;
   onDelete: (id: string) => void;
+  isPremium: boolean; // New Prop
 }
 
 const getTypeColor = (type: WineType) => {
@@ -25,7 +25,7 @@ const getTypeColor = (type: WineType) => {
   }
 };
 
-const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onClose, onConsume, onUpdateWine, onDelete }) => {
+const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onClose, onConsume, onUpdateWine, onDelete, isPremium }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Wine | null>(null);
 
@@ -237,6 +237,18 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
                          )}
                      </div>
                  </div>
+
+                 {/* DEAL FINDER BUTTON INSIDE CARD */}
+                 {!isEditing && (
+                    <div className="mt-2 pt-2 border-t border-indigo-200/50">
+                        <PriceComparison 
+                            name={formData.name} 
+                            producer={formData.producer} 
+                            year={formData.year} 
+                            isPremium={isPremium} // Pass prop
+                        />
+                    </div>
+                 )}
             </div>
 
             {/* Sezione Sommelier */}

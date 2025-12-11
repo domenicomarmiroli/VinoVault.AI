@@ -57,13 +57,14 @@ const authenticateAdmin = (req, res, next) => {
 // --- DB INITIALIZATION ---
 const initDb = async () => {
   try {
-    // 1. Create Users Table with ROLE and STATS
+    // 1. Create Users Table with ROLE and STATS and PREMIUM
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role TEXT DEFAULT 'user',
+        is_premium BOOLEAN DEFAULT FALSE,
         ai_usage_count INTEGER DEFAULT 0,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
@@ -132,7 +133,8 @@ const initDb = async () => {
         await pool.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE;`);
         
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user';`);
-        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_usage_count INTEGER DEFAULT 0;`); // NEW
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_usage_count INTEGER DEFAULT 0;`); 
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT FALSE;`); // NEW
 
         // History Reviews Migration
         await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT 0;`);
@@ -153,7 +155,7 @@ const initDb = async () => {
         if (result.rows.length === 0) {
             const adminPassword = await bcrypt.hash('admin123', 10);
             await pool.query(
-                "INSERT INTO users (id, email, password, role) VALUES ($1, $2, $3, 'admin')",
+                "INSERT INTO users (id, email, password, role, is_premium) VALUES ($1, $2, $3, 'admin', TRUE)",
                 ['admin_001', adminEmail, adminPassword]
             );
             console.log("Default Admin user created.");
@@ -176,10 +178,15 @@ app.get('/api/config', (req, res) => {
     });
 });
 
-// --- SERPAPI PROXY ROUTE (NEW) ---
+// --- SERPAPI PROXY ROUTE (NEW) - PROTECTED (PREMIUM ONLY) ---
 app.get('/api/search-prices', authenticateToken, async (req, res) => {
     const { query } = req.query;
     
+    // PREMIUM CHECK
+    if (!req.user.isPremium) {
+        return res.status(403).json({ error: 'Funzionalità riservata agli utenti Premium.' });
+    }
+
     if (!SERPAPI_KEY) {
         return res.status(503).json({ error: 'Servizio ricerca prezzi non configurato (SERPAPI_KEY mancante)' });
     }
@@ -258,7 +265,7 @@ app.post('/api/auth/google', async (req, res) => {
             const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
             await pool.query(
-                "INSERT INTO users (id, email, password, role) VALUES ($1, $2, $3, 'user')",
+                "INSERT INTO users (id, email, password, role, is_premium) VALUES ($1, $2, $3, 'user', FALSE)",
                 [userId, email, hashedPassword]
             );
 
@@ -270,11 +277,15 @@ app.post('/api/auth/google', async (req, res) => {
                 ($4, $2, 'Scaffale')
             `, [userId + '_l1', userId, userId + '_l2', userId + '_l3']);
 
-            user = { id: userId, email: email, role: 'user' };
+            user = { id: userId, email: email, role: 'user', is_premium: false };
         }
 
-        const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+        const token = jwt.sign(
+            { userId: user.id, email: user.email, role: user.role, isPremium: user.is_premium }, 
+            JWT_SECRET, 
+            { expiresIn: '30d' }
+        );
+        res.json({ token, user: { id: user.id, email: user.email, role: user.role, is_premium: user.is_premium } });
 
     } catch (err) {
         console.error("Google Auth Error:", err);
@@ -294,7 +305,7 @@ app.post('/api/auth/register', async (req, res) => {
 
         // Insert User
         await pool.query(
-            "INSERT INTO users (id, email, password, role) VALUES ($1, $2, $3, 'user')",
+            "INSERT INTO users (id, email, password, role, is_premium) VALUES ($1, $2, $3, 'user', FALSE)",
             [userId, email, hashedPassword]
         );
 
@@ -312,8 +323,12 @@ app.post('/api/auth/register', async (req, res) => {
         ]);
 
         // Generate Token
-        const token = jwt.sign({ userId, email, role: 'user' }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, user: { id: userId, email, role: 'user' } });
+        const token = jwt.sign(
+            { userId, email, role: 'user', isPremium: false }, 
+            JWT_SECRET, 
+            { expiresIn: '30d' }
+        );
+        res.json({ token, user: { id: userId, email, role: 'user', is_premium: false } });
 
     } catch (err) {
         if (err.code === '23505') { // Unique violation
@@ -336,8 +351,12 @@ app.post('/api/auth/login', async (req, res) => {
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) return res.status(400).json({ error: 'Invalid password' });
 
-        const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+        const token = jwt.sign(
+            { userId: user.id, email: user.email, role: user.role, isPremium: user.is_premium }, 
+            JWT_SECRET, 
+            { expiresIn: '30d' }
+        );
+        res.json({ token, user: { id: user.id, email: user.email, role: user.role, is_premium: user.is_premium } });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Login failed' });
@@ -355,6 +374,7 @@ app.get('/api/users', authenticateAdmin, async (req, res) => {
                 u.id, 
                 u.email, 
                 u.role, 
+                u.is_premium,
                 u.created_at, 
                 u.ai_usage_count,
                 COUNT(w.id) as wine_count
@@ -368,6 +388,19 @@ app.get('/api/users', authenticateAdmin, async (req, res) => {
     } catch(err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// PUT Toggle Premium
+app.put('/api/users/:id/premium', authenticateAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Toggle boolean value
+        await pool.query('UPDATE users SET is_premium = NOT is_premium WHERE id = $1', [id]);
+        res.json({ message: 'Premium status toggled' });
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to toggle premium' });
     }
 });
 

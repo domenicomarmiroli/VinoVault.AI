@@ -97,6 +97,7 @@ export interface User {
   id: string;
   email: string;
   role: 'user' | 'admin';
+  is_premium?: boolean; // New Premium Status
   created_at?: string;
   last_login?: string;
   // Stats

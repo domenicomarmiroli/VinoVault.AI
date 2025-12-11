@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { Wine, HistoryEntry, Location } from './types';
 import InventoryView from './views/InventoryView';
@@ -20,7 +18,8 @@ const App: React.FC = () => {
   // Auth State
   const [token, setToken] = useState<string | null>(localStorage.getItem('vinovault_token'));
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<'user' | 'admin'>('user'); // New Role State
+  const [userRole, setUserRole] = useState<'user' | 'admin'>('user'); 
+  const [userPremium, setUserPremium] = useState(false); // New Premium State
 
   const [activeTab, setActiveTab] = useState<'inventory' | 'sommelier' | 'shop' | 'history' | 'analytics' | 'restaurant' | 'admin'>('inventory');
   const [wines, setWines] = useState<Wine[]>([]);
@@ -65,9 +64,8 @@ const App: React.FC = () => {
       
       try {
         const payload = JSON.parse(atob(newToken.split('.')[1]));
-        if (payload.role) {
-            setUserRole(payload.role);
-        }
+        if (payload.role) setUserRole(payload.role);
+        if (payload.isPremium) setUserPremium(payload.isPremium);
       } catch (e) {
           console.error("Token parse error", e);
       }
@@ -85,18 +83,18 @@ const App: React.FC = () => {
       setToken(null);
       setUserEmail(null);
       setUserRole('user');
+      setUserPremium(false);
   };
 
   // Load Data
   useEffect(() => {
     if (!token) return;
 
-    // Decode token to ensure role is set on page reload
+    // Decode token to ensure role/premium is set on page reload
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload.role) {
-            setUserRole(payload.role);
-        }
+        if (payload.role) setUserRole(payload.role);
+        if (payload.isPremium) setUserPremium(payload.isPremium);
     } catch (e) {
         console.error("Token parse error", e);
     }
@@ -367,7 +365,8 @@ const App: React.FC = () => {
                     onAddLocation={handleAddLocation}
                     onDeleteLocation={handleDeleteLocation}
                     onLogout={handleLogout}
-                    onAiUsed={trackAiUsage} // Pass tracking
+                    onAiUsed={trackAiUsage} 
+                    isPremium={userPremium} // Pass prop
                 />
              )}
         </div>
@@ -378,7 +377,8 @@ const App: React.FC = () => {
                     inventory={wines} 
                     onLogout={handleLogout}
                     onAddToInventory={handleAddWine}
-                    onAiUsed={trackAiUsage} // Pass tracking
+                    onAiUsed={trackAiUsage} 
+                    isPremium={userPremium} // Pass prop
                 />
              )}
         </div>
@@ -388,7 +388,7 @@ const App: React.FC = () => {
                 <RestaurantView 
                     onLogout={handleLogout}
                     onAddToHistory={handleAddToHistory}
-                    onAiUsed={trackAiUsage} // Pass tracking
+                    onAiUsed={trackAiUsage} 
                 />
              )}
         </div>
@@ -398,7 +398,7 @@ const App: React.FC = () => {
                  <SommelierView 
                     inventory={wines} 
                     onLogout={handleLogout} 
-                    onAiUsed={trackAiUsage} // Pass tracking
+                    onAiUsed={trackAiUsage} 
                     onConsume={handleConsume}
                  />
              )}
@@ -411,6 +411,7 @@ const App: React.FC = () => {
                     onClearHistory={handleClearHistory} 
                     onLogout={handleLogout}
                     onUpdateHistoryEntry={handleUpdateHistoryEntry}
+                    isPremium={userPremium} // Pass prop
                 />
              )}
         </div>
@@ -503,6 +504,7 @@ const App: React.FC = () => {
         entry={ratingModalEntry}
         onClose={() => setRatingModalEntry(null)}
         onSave={handleUpdateHistoryEntry}
+        isPremium={userPremium} // Pass prop
       />
     </div>
   );

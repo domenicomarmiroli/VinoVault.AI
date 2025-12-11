@@ -6,9 +6,10 @@ interface PriceComparisonProps {
   name: string;
   producer: string;
   year: string;
+  isPremium?: boolean; // New Prop
 }
 
-const PriceComparison: React.FC<PriceComparisonProps> = ({ name, producer, year }) => {
+const PriceComparison: React.FC<PriceComparisonProps> = ({ name, producer, year, isPremium = false }) => {
   const [loading, setLoading] = useState(false);
   const [prices, setPrices] = useState<OnlinePrice[]>([]);
   const [searched, setSearched] = useState(false);
@@ -43,6 +44,22 @@ const PriceComparison: React.FC<PriceComparisonProps> = ({ name, producer, year 
           setSearched(true);
       }
   };
+
+  if (!isPremium) {
+      return (
+          <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl text-center">
+              <div className="flex justify-center mb-2 text-gray-400">
+                  <ShoppingCartIcon className="w-6 h-6" />
+              </div>
+              <h3 className="text-sm font-bold text-gray-600">Confronta Prezzi Online</h3>
+              <p className="text-xs text-gray-500 mt-1 mb-3">Trova le migliori offerte su Google Shopping.</p>
+              <div className="inline-block px-3 py-1.5 bg-amber-100 border border-amber-200 text-amber-800 rounded-lg text-xs font-bold">
+                  🔒 Funzionalità Premium
+              </div>
+              <p className="text-[10px] text-gray-400 mt-2">Contatta l'Admin per sbloccare.</p>
+          </div>
+      );
+  }
 
   return (
     <div className="mt-4">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { HistoryEntry } from '../types';
@@ -9,9 +8,10 @@ interface RateWineModalProps {
   entry: HistoryEntry | null;
   onClose: () => void;
   onSave: (id: string, rating: number, notes: string) => void;
+  isPremium: boolean; // New Prop
 }
 
-const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave }) => {
+const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, isPremium }) => {
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState('');
 
@@ -79,6 +79,7 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave })
                         name={entry.name} 
                         producer={entry.producer} 
                         year={entry.year} 
+                        isPremium={isPremium} // Pass prop
                      />
                 </div>
 

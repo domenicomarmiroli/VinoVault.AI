@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { HistoryEntry, WineType } from '../types';
 import { WineIcon, ClockIcon, LogoutIcon, StarIcon, PencilIcon } from '../components/Icons';
@@ -9,12 +8,13 @@ interface HistoryViewProps {
   onClearHistory: () => void;
   onLogout: () => void;
   onUpdateHistoryEntry: (id: string, rating: number, notes: string) => void;
+  isPremium: boolean; // New Prop
 }
 
 type SortOption = 'date_desc' | 'date_asc' | 'rating_desc' | 'rating_asc';
 type FilterType = 'all' | WineType;
 
-const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLogout, onUpdateHistoryEntry }) => {
+const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLogout, onUpdateHistoryEntry, isPremium }) => {
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -192,6 +192,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLo
         entry={selectedEntry} 
         onClose={() => setSelectedEntry(null)} 
         onSave={onUpdateHistoryEntry}
+        isPremium={isPremium} // Pass prop
       />
     </div>
   );

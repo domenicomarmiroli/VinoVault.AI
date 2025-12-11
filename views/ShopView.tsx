@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef } from 'react';
 import { Wine, PurchaseAnalysis } from '../types';
 import { analyzePurchase } from '../services/geminiService';
@@ -11,9 +9,10 @@ interface ShopViewProps {
   onLogout: () => void;
   onAddToInventory: (wine: Wine) => void;
   onAiUsed: () => void;
+  isPremium: boolean; // New Prop
 }
 
-const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInventory, onAiUsed }) => {
+const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInventory, onAiUsed, isPremium }) => {
   const [mode, setMode] = useState<'camera' | 'link'>('camera');
   const [image, setImage] = useState<string | null>(null);
   const [linkUrl, setLinkUrl] = useState('');
@@ -261,13 +260,14 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                             name={analysis.wineDetails.name || ''} 
                             producer={analysis.wineDetails.producer || ''} 
                             year={analysis.wineDetails.year || ''}
+                            isPremium={isPremium} // Pass prop
                         />
                     </div>
                 </div>
 
                 {/* Cellar Fit Analysis - The Killer Feature */}
                 <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-xl border border-indigo-100">
-                    <h3 className="font-bold text-indigo-900 flex items-center gap-2 mb-2">
+                    <h3 className="font-bold text-indigo-900 flex items-center gap-2">
                         <WineIcon className="w-5 h-5" filled />
                         Integrazione Cantina
                     </h3>

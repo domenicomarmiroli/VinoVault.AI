@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { Wine, WineType, Location } from '../types';
 import WineCard from '../components/WineCard';
@@ -21,12 +19,13 @@ interface InventoryViewProps {
   onDeleteLocation: (id: string) => void;
   onLogout: () => void;
   onAiUsed: () => void; 
+  isPremium: boolean; // New Prop
 }
 
 type FilterType = 'all' | WineType | 'still';
 
 const InventoryView: React.FC<InventoryViewProps> = ({ 
-    wines, locations, onAddWine, onUpdateWine, onConsume, onDelete, onAddLocation, onDeleteLocation, onLogout, onAiUsed 
+    wines, locations, onAddWine, onUpdateWine, onConsume, onDelete, onAddLocation, onDeleteLocation, onLogout, onAiUsed, isPremium
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLocManagerOpen, setIsLocManagerOpen] = useState(false);
@@ -231,6 +230,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         onConsume={onConsume}
         onUpdateWine={onUpdateWine}
         onDelete={onDelete}
+        isPremium={isPremium} // Pass prop
       />
     </div>
   );

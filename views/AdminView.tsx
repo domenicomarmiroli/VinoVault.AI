@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { User } from '../types';
 import { ShieldCheckIcon, LogoutIcon, TrashIcon, WineIcon, ChartBarIcon } from '../components/Icons';
@@ -49,6 +47,24 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
               setUsers(prev => prev.filter(u => u.id !== id));
           } else {
               alert("Errore durante l'eliminazione");
+          }
+      } catch (e) {
+          alert("Errore di connessione");
+      }
+  };
+
+  const handleTogglePremium = async (id: string) => {
+      try {
+          const res = await fetch(`${API_BASE}/api/users/${id}/premium`, {
+              method: 'PUT',
+              headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+              setUsers(prev => prev.map(u => 
+                  u.id === id ? { ...u, is_premium: !u.is_premium } : u
+              ));
+          } else {
+              alert("Errore cambio stato premium");
           }
       } catch (e) {
           alert("Errore di connessione");
@@ -136,6 +152,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                          <thead className="bg-gray-50 text-gray-500 font-bold uppercase text-xs">
                              <tr>
                                  <th className="p-3">Email</th>
+                                 <th className="p-3 text-center">Stato</th>
                                  <th className="p-3 text-center">Vini</th>
                                  <th className="p-3 text-center">Uso AI</th>
                                  <th className="p-3">Registrato</th>
@@ -151,6 +168,13 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                                              <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-100 text-purple-700">Admin</span>
                                          )}
                                      </td>
+                                     <td className="p-3 text-center">
+                                         {user.is_premium ? (
+                                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-100 text-amber-700 border border-amber-200">Premium</span>
+                                         ) : (
+                                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-100 text-gray-500">Free</span>
+                                         )}
+                                     </td>
                                      <td className="p-3 text-center font-bold text-gray-700">
                                          {user.wine_count || 0}
                                      </td>
@@ -160,7 +184,14 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                                          </span>
                                      </td>
                                      <td className="p-3 text-gray-500 text-xs">{new Date(user.created_at || '').toLocaleDateString()}</td>
-                                     <td className="p-3 text-right flex gap-2 justify-end">
+                                     <td className="p-3 text-right flex gap-2 justify-end items-center">
+                                         <button 
+                                            onClick={() => handleTogglePremium(user.id)}
+                                            className="text-amber-600 hover:text-amber-800 text-lg p-1"
+                                            title="Toggle Premium"
+                                         >
+                                             💎
+                                         </button>
                                          <button 
                                             onClick={() => setResetModalUser(user)}
                                             className="text-blue-600 hover:text-blue-800 text-xs font-bold border border-blue-200 bg-blue-50 px-2 py-1 rounded"
