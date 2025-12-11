@@ -399,6 +399,7 @@ const App: React.FC = () => {
                     inventory={wines} 
                     onLogout={handleLogout} 
                     onAiUsed={trackAiUsage} // Pass tracking
+                    onConsume={handleConsume}
                  />
              )}
         </div>
