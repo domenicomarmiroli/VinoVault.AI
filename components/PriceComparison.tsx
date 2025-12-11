@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { OnlinePrice } from '../types';
 import { ShoppingCartIcon, ExternalLinkIcon } from './Icons';
@@ -84,6 +83,7 @@ const PriceComparison: React.FC<PriceComparisonProps> = ({ name, producer, year 
                         href={price.link} 
                         target="_blank" 
                         rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
                         className="block bg-white border border-gray-200 rounded-xl p-3 hover:shadow-md transition-all active:scale-[0.99] group relative overflow-hidden"
                     >
                         {idx === 0 && (

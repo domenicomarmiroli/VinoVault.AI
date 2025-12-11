@@ -1,5 +1,3 @@
-
-
 import express from 'express';
 import pkg from 'pg';
 const { Pool } = pkg;
@@ -208,7 +206,7 @@ app.get('/api/search-prices', authenticateToken, async (req, res) => {
 
         const results = data.shopping_results || [];
 
-        // Mappatura semplificata per il frontend
+        // Mappatura corretta basata sul JSON di SerpApi Google Shopping
         const topDeals = results
             .sort((a, b) => (a.extracted_price || 0) - (b.extracted_price || 0)) // Ordina per prezzo
             .slice(0, 3) // Prendi i primi 3
@@ -216,7 +214,7 @@ app.get('/api/search-prices', authenticateToken, async (req, res) => {
                 source: item.source,
                 price: item.extracted_price,
                 currency: 'EUR', // Assumiamo Euro dato gl=it
-                link: item.link,
+                link: item.product_link, // CORRETTO: usa 'product_link' non 'link'
                 thumbnail: item.thumbnail
             }));
 
