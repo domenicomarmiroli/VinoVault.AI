@@ -194,7 +194,8 @@ export const analyzePurchase = async (
             "type": "Rosso", // Rosso, Bianco, Spumante, etc
             "region": "Regione",
             "grape": "Vitigno",
-            "alcohol": "Vol%"
+            "alcohol": "Vol%",
+            "foodPairings": ["Piatto 1", "Piatto 2"]
         },
         "marketPriceEstimate": 25.50,
         "isGoodDeal": true,
@@ -304,5 +305,5 @@ export const suggestRestaurantPairing = async (
         return JSON.parse(cleanJson(text));
     } catch (err: any) {
         throw new Error(err.message || "Errore analisi carta vini");
-    }
+    } 
 };

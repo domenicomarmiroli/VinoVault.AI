@@ -1,7 +1,9 @@
+
+
 import React, { useState, useRef } from 'react';
 import { Wine, PurchaseAnalysis } from '../types';
 import { analyzePurchase } from '../services/geminiService';
-import { CameraIcon, LogoutIcon, ShopIcon, WineIcon, ExternalLinkIcon } from '../components/Icons';
+import { CameraIcon, LogoutIcon, ShopIcon, WineIcon, ExternalLinkIcon, ChefIcon } from '../components/Icons';
 import PriceComparison from '../components/PriceComparison'; // New
 
 interface ShopViewProps {
@@ -82,7 +84,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           storageAdvice: 'Da verificare',
           servingTemp: '16-18°C',
           servingAdvice: 'Aprire prima',
-          foodPairings: [],
+          foodPairings: analysis.wineDetails.foodPairings || [],
           imageUrl: image || undefined,
           drinkWindow: `${new Date().getFullYear()}-${new Date().getFullYear() + 3}`,
           marketPrice: analysis.marketPriceEstimate || Number(price)
@@ -231,6 +233,22 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                     <p className="mt-3 text-sm text-gray-600 italic border-l-2 border-wine-300 pl-3">
                         "{analysis.sommelierNotes}"
                     </p>
+
+                    {/* Food Pairings Display */}
+                    {analysis.wineDetails.foodPairings && analysis.wineDetails.foodPairings.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-1">
+                                <ChefIcon className="w-3 h-3" /> Abbinamenti
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                                {analysis.wineDetails.foodPairings.map((pair, idx) => (
+                                    <span key={idx} className="text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded-lg border border-orange-100 font-medium">
+                                        {pair}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Price Analysis & Comparison */}
@@ -300,7 +318,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
 
       </div>
     </div>
-  );
+  ); 
 };
 
 export default ShopView;
