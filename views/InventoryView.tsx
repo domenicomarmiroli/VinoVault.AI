@@ -1,12 +1,13 @@
 
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Wine, WineType, Location } from '../types';
 import WineCard from '../components/WineCard';
 import AddWineModal from '../components/AddWineModal';
 import WineDetailModal from '../components/WineDetailModal';
 import LocationManagerModal from '../components/LocationManagerModal';
-import { PlusIcon, CogIcon, LogoutIcon } from '../components/Icons';
+import OnboardingModal from '../components/OnboardingModal'; // Import Manuale
+import { PlusIcon, CogIcon, LogoutIcon, HelpIcon } from '../components/Icons';
 import { Logo } from '../components/Logo';
 
 interface InventoryViewProps {
@@ -19,7 +20,7 @@ interface InventoryViewProps {
   onAddLocation: (name: string) => void;
   onDeleteLocation: (id: string) => void;
   onLogout: () => void;
-  onAiUsed: () => void; // New prop
+  onAiUsed: () => void; 
 }
 
 type FilterType = 'all' | WineType | 'still';
@@ -29,10 +30,24 @@ const InventoryView: React.FC<InventoryViewProps> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLocManagerOpen, setIsLocManagerOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false); // State per il manuale
   const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
+
+  // Controllo Primo Accesso (Tutorial)
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem('vinovault_tutorial_seen');
+    if (!hasSeenTutorial) {
+      setIsHelpOpen(true);
+    }
+  }, []);
+
+  const handleCloseHelp = () => {
+    setIsHelpOpen(false);
+    localStorage.setItem('vinovault_tutorial_seen', 'true');
+  };
 
   const filters: { label: string, value: FilterType }[] = [
     { label: 'Tutti', value: 'all' },
@@ -83,8 +98,16 @@ const InventoryView: React.FC<InventoryViewProps> = ({
 
           <div className="flex gap-2">
              <button 
+                onClick={() => setIsHelpOpen(true)}
+                className="bg-wine-50 text-wine-700 p-2.5 rounded-full hover:bg-wine-100 transition-colors"
+                title="Aiuto / Manuale"
+             >
+                <HelpIcon className="w-6 h-6" />
+             </button>
+
+             <button 
                 onClick={onLogout}
-                className="bg-gray-100 text-wine-700 p-2.5 rounded-full hover:bg-wine-50 transition-colors"
+                className="bg-gray-100 text-gray-500 p-2.5 rounded-full hover:bg-gray-200 transition-colors"
                 title="Esci"
             >
                 <LogoutIcon className="w-6 h-6" />
@@ -184,7 +207,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         onClose={() => setIsModalOpen(false)} 
         onAdd={onAddWine}
         locations={locations}
-        onAiUsed={onAiUsed} // Pass tracking
+        onAiUsed={onAiUsed} 
       />
 
       <LocationManagerModal 
@@ -193,6 +216,11 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         locations={locations}
         onAddLocation={onAddLocation}
         onDeleteLocation={onDeleteLocation}
+      />
+
+      <OnboardingModal
+        isOpen={isHelpOpen}
+        onClose={handleCloseHelp}
       />
 
       {/* Detail Modal */}
