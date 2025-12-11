@@ -1,7 +1,9 @@
 
+
 import React from 'react';
 import { Wine, WineType } from '../types';
 import DrinkabilityBadge from './DrinkabilityBadge';
+import { MapPinIcon } from './Icons';
 
 interface WineCardProps {
   wine: Wine;
@@ -22,7 +24,7 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onClick }) => {
   return (
     <div 
         onClick={() => onClick(wine)}
-        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all active:scale-[0.98] cursor-pointer flex h-28"
+        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all active:scale-[0.98] cursor-pointer flex h-30"
     >
         {/* Immagine a Sinistra */}
         <div className="w-24 bg-gray-100 flex-shrink-0 relative overflow-hidden">
@@ -58,11 +60,19 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onClick }) => {
           </div>
           
           <div className="flex justify-between items-end mt-2">
-             <div className="text-xs text-gray-500 truncate max-w-[120px]">
-                {wine.region}
+             <div className="flex flex-col gap-1 min-w-0 flex-1 mr-2">
+                <div className="text-xs text-gray-500 truncate">
+                    {wine.region}
+                </div>
+                {wine.location && (
+                    <div className="flex items-center gap-1 text-[10px] text-wine-600 font-medium bg-wine-50 px-1.5 py-0.5 rounded w-fit max-w-full">
+                        <MapPinIcon className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{wine.location}</span>
+                    </div>
+                )}
              </div>
              {wine.price > 0 && (
-                <div className="text-sm font-semibold text-gray-700">
+                <div className="text-sm font-semibold text-gray-700 whitespace-nowrap">
                   € {wine.price.toFixed(0)}
                 </div>
              )}
