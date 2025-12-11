@@ -1,7 +1,7 @@
 
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, RestaurantSuggestion } from "../types";
+import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, RestaurantSuggestion, HistoryEntry, CellarReport } from "../types";
 
 // Helper to remove base64 prefix
 const cleanBase64 = (base64: string) => {
@@ -306,4 +306,83 @@ export const suggestRestaurantPairing = async (
     } catch (err: any) {
         throw new Error(err.message || "Errore analisi carta vini");
     } 
+};
+
+/**
+ * Generates a professional Sommelier report analyzing the user's cellar and history.
+ */
+export const generateCellarReport = async (
+    inventory: Wine[],
+    history: HistoryEntry[]
+): Promise<CellarReport> => {
+    if (!apiKey) throw new Error("Chiave API mancante.");
+
+    const model = "gemini-2.5-flash";
+
+    // 1. Prepare Data Summary
+    const inventorySummary = inventory.map(w => 
+        `[${w.quantity}pz] ${w.name} ${w.year} (${w.region}, ${w.type})`
+    ).join("\n");
+
+    const historySummary = history.map(h => 
+        `Bevuto: ${h.name} (${h.type}), Voto: ${h.rating}/5`
+    ).join("\n");
+
+    const prompt = `
+        ANALISI CANTINA & PROFILO SOMMELIER
+        
+        Inventario Attuale:
+        ${inventorySummary || "Cantina vuota."}
+        
+        Storico Consumo & Voti:
+        ${historySummary || "Nessuno storico."}
+        
+        Compito:
+        Agisci come un Sommelier Senior. Redigi un report professionale che includa:
+        1. Valutazione generale della cantina (equilibrio, valore, varietà).
+        2. Profilo del Palato dell'utente basato sui voti nello storico.
+        3. Gap Analysis: Cosa manca? (es. mancano bianchi da invecchiamento, mancano bollicine per aperitivo).
+        4. Consigli per gli Acquisti: 3 bottiglie specifiche da comprare per migliorare la collezione.
+        5. Strategia di Consumo: Cosa bere subito e cosa aspettare.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+                systemInstruction: "Sei un Sommelier consulente. Rispondi con un JSON strutturato per un report.",
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        overallAssessment: { type: Type.STRING },
+                        palateProfile: { type: Type.STRING },
+                        gapAnalysis: { type: Type.STRING },
+                        buyRecommendations: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    wineName: { type: Type.STRING },
+                                    reason: { type: Type.STRING },
+                                    type: { type: Type.STRING }
+                                },
+                                required: ["wineName", "reason", "type"]
+                            }
+                        },
+                        drinkNowStrategy: { type: Type.STRING }
+                    },
+                    required: ["overallAssessment", "palateProfile", "gapAnalysis", "buyRecommendations", "drinkNowStrategy"]
+                }
+            }
+        });
+
+        const text = response.text;
+        if (!text) throw new Error("Nessuna risposta da Gemini");
+
+        return JSON.parse(cleanJson(text));
+    } catch (err: any) {
+        throw new Error(err.message || "Errore generazione report");
+    }
 };

@@ -112,3 +112,19 @@ export interface OnlinePrice {
     link: string;
     thumbnail?: string;
 }
+
+// --- NEW TYPES FOR CELLAR REPORT ---
+
+export interface CellarRecommendation {
+    wineName: string;
+    reason: string;
+    type: string;
+}
+
+export interface CellarReport {
+    overallAssessment: string;
+    palateProfile: string;
+    gapAnalysis: string;
+    buyRecommendations: CellarRecommendation[];
+    drinkNowStrategy: string;
+}

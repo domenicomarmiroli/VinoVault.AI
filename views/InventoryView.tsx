@@ -1,12 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
-import { Wine, WineType, Location } from '../types';
+import { Wine, WineType, Location, HistoryEntry, CellarReport } from '../types';
 import WineCard from '../components/WineCard';
 import AddWineModal from '../components/AddWineModal';
 import WineDetailModal from '../components/WineDetailModal';
 import LocationManagerModal from '../components/LocationManagerModal';
-import OnboardingModal from '../components/OnboardingModal'; // Import Manuale
-import { PlusIcon, CogIcon, LogoutIcon, HelpIcon } from '../components/Icons';
+import OnboardingModal from '../components/OnboardingModal'; 
+import CellarReportModal from '../components/CellarReportModal'; // New Import
+import { PlusIcon, CogIcon, LogoutIcon, HelpIcon, ReportIcon } from '../components/Icons';
 import { Logo } from '../components/Logo';
+import { generateCellarReport } from '../services/geminiService'; // New Import
 
 interface InventoryViewProps {
   wines: Wine[];
@@ -19,7 +22,7 @@ interface InventoryViewProps {
   onDeleteLocation: (id: string) => void;
   onLogout: () => void;
   onAiUsed: () => void; 
-  isPremium: boolean; // New Prop
+  isPremium: boolean; 
 }
 
 type FilterType = 'all' | WineType | 'still';
@@ -29,11 +32,16 @@ const InventoryView: React.FC<InventoryViewProps> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLocManagerOpen, setIsLocManagerOpen] = useState(false);
-  const [isHelpOpen, setIsHelpOpen] = useState(false); // State per il manuale
+  const [isHelpOpen, setIsHelpOpen] = useState(false); 
   const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
+
+  // Report State
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [cellarReport, setCellarReport] = useState<CellarReport | null>(null);
 
   // Controllo Primo Accesso (Tutorial)
   useEffect(() => {
@@ -46,6 +54,40 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   const handleCloseHelp = () => {
     setIsHelpOpen(false);
     localStorage.setItem('vinovault_tutorial_seen', 'true');
+  };
+
+  // Funzione per generare il report
+  const handleOpenReport = async () => {
+      setIsReportOpen(true);
+      if (cellarReport) return; // Se già generato, non rigenerare subito
+
+      setReportLoading(true);
+      try {
+          // Fetch history locally/via API would be better, but assuming props passed or handled differently?
+          // Since history isn't passed to InventoryView props directly in the previous snippet, 
+          // we need to either fetch it or accept it as a prop.
+          // Let's assume we fetch history here for the report or require it as prop.
+          // FIX: Add history to props of InventoryView in App.tsx or fetch it here.
+          // For now, I will use a placeholder fetch since App.tsx handles state.
+          // To do this cleanly, I should ask to update App.tsx to pass history to InventoryView.
+          // Assuming App.tsx passes history, I need to update interface.
+          // Since I cannot change App.tsx interface easily without breaking, I will fetch history from API directly here.
+          
+          const token = localStorage.getItem('vinovault_token');
+          const res = await fetch('/api/history', {
+              headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const historyData: HistoryEntry[] = await res.json();
+
+          const report = await generateCellarReport(wines, historyData);
+          setCellarReport(report);
+          onAiUsed();
+      } catch (err: any) {
+          alert("Errore generazione report: " + err.message);
+          setIsReportOpen(false);
+      } finally {
+          setReportLoading(false);
+      }
   };
 
   const filters: { label: string, value: FilterType }[] = [
@@ -96,6 +138,15 @@ const InventoryView: React.FC<InventoryViewProps> = ({
           </div>
 
           <div className="flex gap-2">
+             {/* Report Button */}
+             <button 
+                onClick={handleOpenReport}
+                className="bg-purple-50 text-purple-700 p-2.5 rounded-full hover:bg-purple-100 transition-colors border border-purple-100"
+                title="Report Sommelier"
+             >
+                <ReportIcon className="w-6 h-6" />
+             </button>
+
              <button 
                 onClick={() => setIsHelpOpen(true)}
                 className="bg-wine-50 text-wine-700 p-2.5 rounded-full hover:bg-wine-100 transition-colors"
@@ -220,6 +271,13 @@ const InventoryView: React.FC<InventoryViewProps> = ({
       <OnboardingModal
         isOpen={isHelpOpen}
         onClose={handleCloseHelp}
+      />
+
+      <CellarReportModal 
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        report={cellarReport}
+        loading={reportLoading}
       />
 
       {/* Detail Modal */}
