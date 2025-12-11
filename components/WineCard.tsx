@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { Wine, WineType } from '../types';
 import DrinkabilityBadge from './DrinkabilityBadge';
@@ -35,10 +34,12 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onClick }) => {
                <span className="text-[10px] text-center px-1">No Foto</span>
             </div>
           )}
-          {/* Badge quantità sovrapposto */}
-          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] text-center py-0.5 backdrop-blur-sm">
-             {wine.quantity} pz
-          </div>
+          {/* Badge quantità sovrapposto - Mostra solo se > 1 */}
+          {wine.quantity > 1 && (
+            <div className="absolute bottom-0 left-0 right-0 bg-wine-800/80 text-white text-[10px] font-bold text-center py-0.5 backdrop-blur-sm shadow-sm">
+               {wine.quantity} pz
+            </div>
+          )}
         </div>
         
         {/* Info a Destra */}
