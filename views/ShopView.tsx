@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { Wine, PurchaseAnalysis } from '../types';
 import { analyzePurchase } from '../services/geminiService';
 import { CameraIcon, LogoutIcon, ShopIcon, WineIcon, ExternalLinkIcon } from '../components/Icons';
+import PriceComparison from '../components/PriceComparison'; // New
 
 interface ShopViewProps {
   inventory: Wine[];
@@ -233,7 +234,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                     </p>
                 </div>
 
-                {/* Price Analysis */}
+                {/* Price Analysis & Comparison */}
                 <div className={`p-5 rounded-xl border ${getDealColor(analysis.dealRating)}`}>
                     <div className="flex justify-between items-center mb-2">
                         <h3 className="font-bold uppercase tracking-wide text-sm flex items-center gap-2">
@@ -243,7 +244,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                             </span>
                         </h3>
                     </div>
-                    <div className="flex justify-between items-end">
+                    <div className="flex justify-between items-end mb-4">
                         <div>
                              <p className="text-xs opacity-70 mb-1">Prezzo Offerta</p>
                              <p className="text-2xl font-bold">€{Number(price).toFixed(2)}</p>
@@ -252,6 +253,15 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                              <p className="text-xs opacity-70 mb-1">Stima Mercato</p>
                              <p className="text-xl font-semibold opacity-90">~€{analysis.marketPriceEstimate.toFixed(2)}</p>
                         </div>
+                    </div>
+                    
+                    {/* NEW: Verify prices button integrated directly in the result card */}
+                    <div className="bg-white/50 rounded-xl p-2">
+                        <PriceComparison 
+                            name={analysis.wineDetails.name || ''} 
+                            producer={analysis.wineDetails.producer || ''} 
+                            year={analysis.wineDetails.year || ''}
+                        />
                     </div>
                 </div>
 

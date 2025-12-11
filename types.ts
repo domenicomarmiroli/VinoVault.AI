@@ -103,3 +103,11 @@ export interface User {
   wine_count?: number;     // From DB Join
   ai_usage_count?: number; // From DB column
 }
+
+export interface OnlinePrice {
+    source: string; // Nome negozio (es. Tannico)
+    price: number;
+    currency: string;
+    link: string;
+    thumbnail?: string;
+}

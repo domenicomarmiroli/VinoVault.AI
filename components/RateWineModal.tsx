@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { HistoryEntry } from '../types';
 import { StarIcon } from './Icons';
+import PriceComparison from './PriceComparison'; // New import
 
 interface RateWineModalProps {
   entry: HistoryEntry | null;
@@ -70,6 +71,15 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave })
                         placeholder="Com'era il vino? Aromi, abbinamenti, impressioni..."
                         className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-wine-500 outline-none h-32 resize-none bg-gray-50"
                     />
+                </div>
+                
+                {/* NEW: Price Comparison Feature */}
+                <div className="border-t border-gray-100 pt-4">
+                     <PriceComparison 
+                        name={entry.name} 
+                        producer={entry.producer} 
+                        year={entry.year} 
+                     />
                 </div>
 
                 <button 

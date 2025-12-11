@@ -20,6 +20,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_wine_key_change_me';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const SERPAPI_KEY = process.env.SERPAPI_KEY;
 
 // Middleware
 app.use(cors());
@@ -176,6 +177,57 @@ app.get('/api/config', (req, res) => {
         googleClientId: GOOGLE_CLIENT_ID || ''
     });
 });
+
+// --- SERPAPI PROXY ROUTE (NEW) ---
+app.get('/api/search-prices', authenticateToken, async (req, res) => {
+    const { query } = req.query;
+    
+    if (!SERPAPI_KEY) {
+        return res.status(503).json({ error: 'Servizio ricerca prezzi non configurato (SERPAPI_KEY mancante)' });
+    }
+    if (!query) return res.status(400).json({ error: 'Query mancante' });
+
+    try {
+        const params = new URLSearchParams({
+            engine: 'google_shopping',
+            q: query,
+            api_key: SERPAPI_KEY,
+            location: 'Italy',
+            gl: 'it',
+            hl: 'it',
+            num: '10' // Scarichiamo i primi 10 per poi filtrare/ordinare
+        });
+
+        const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`);
+        const data = await response.json();
+
+        if (data.error) {
+            console.error("SerpApi Error:", data.error);
+            return res.status(500).json({ error: 'Errore durante la ricerca prezzi' });
+        }
+
+        const results = data.shopping_results || [];
+
+        // Mappatura semplificata per il frontend
+        const topDeals = results
+            .sort((a, b) => (a.extracted_price || 0) - (b.extracted_price || 0)) // Ordina per prezzo
+            .slice(0, 3) // Prendi i primi 3
+            .map(item => ({
+                source: item.source,
+                price: item.extracted_price,
+                currency: 'EUR', // Assumiamo Euro dato gl=it
+                link: item.link,
+                thumbnail: item.thumbnail
+            }));
+
+        res.json(topDeals);
+
+    } catch (err) {
+        console.error("Search API Error", err);
+        res.status(500).json({ error: 'Errore di connessione al servizio prezzi' });
+    }
+});
+
 
 // --- AUTH ROUTES ---
 
