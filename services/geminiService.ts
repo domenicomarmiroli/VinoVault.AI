@@ -215,8 +215,10 @@ export const analyzePurchase = async (
     4. Analizza la cantina attuale dell'utente: [${inventorySummary}].
     Decidi se aggiungere questo vino migliora la collezione.
     
-    Restituisci ESCLUSIVAMENTE un oggetto JSON valido con questa struttura:
+    Restituisci ESCLUSIVAMENTE un oggetto JSON valido (senza markdown) con questa struttura esatta:
     ${jsonStructure}
+    
+    IMPORTANTE: NON usare blocchi markdown. Rispondi solo con il JSON grezzo.
     `;
 
     try {
@@ -226,7 +228,7 @@ export const analyzePurchase = async (
             config: {
                 systemInstruction,
                 tools: tools.length > 0 ? tools : undefined,
-                responseMimeType: "application/json",
+                // Rimosso responseMimeType: "application/json" perché incompatibile con i Tools
             }
         });
 
@@ -235,6 +237,8 @@ export const analyzePurchase = async (
 
         return JSON.parse(cleanJson(text));
     } catch (err: any) {
+        // Log dettagliato per debug
+        console.error("Shop Advisor Error Details:", JSON.stringify(err, null, 2));
         throw new Error(err.message || "Errore Shop Advisor");
     }
 }
