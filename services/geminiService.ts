@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, RestaurantSuggestion } from "../types";
 
@@ -151,9 +152,10 @@ export const suggestPairing = async (
 
 /**
  * Analyzes a potential purchase considering the price and the current user's cellar.
+ * Supports both Image Analysis and URL (Product Page) Analysis.
  */
 export const analyzePurchase = async (
-    base64Image: string, 
+    input: { type: 'image' | 'url', data: string }, 
     inputPrice: number, 
     inventory: Wine[]
 ): Promise<PurchaseAnalysis> => {
@@ -163,58 +165,68 @@ export const analyzePurchase = async (
 
     // Summarize inventory for context
     const inventorySummary = inventory.map(w => `${w.quantity}x ${w.name} (${w.type}, ${w.region})`).join(", ");
+    
+    let parts: any[] = [];
+    let tools: any[] = [];
+    
+    if (input.type === 'image') {
+        parts = [
+            { inlineData: { mimeType: "image/jpeg", data: cleanBase64(input.data) } },
+            { text: `Prezzo offerta: ${inputPrice}€. Analizza questo vino (foto etichetta). È un buon acquisto?` }
+        ];
+    } else {
+        // URL Mode -> Use Google Search Grounding
+        tools = [{ googleSearch: {} }];
+        parts = [{ text: `
+            Analizza il vino presente in questo URL: ${input.data}
+            Prezzo Utente: ${inputPrice > 0 ? inputPrice : 'Cerca il prezzo attuale nella pagina'}.
+            
+            Identifica il vino, il prezzo, e valuta l'acquisto.
+        `}];
+    }
+
+    const jsonStructure = `
+    {
+        "wineDetails": {
+            "name": "Nome Vino",
+            "producer": "Produttore",
+            "year": "Annata",
+            "type": "Rosso", // Rosso, Bianco, Spumante, etc
+            "region": "Regione",
+            "grape": "Vitigno",
+            "alcohol": "Vol%"
+        },
+        "marketPriceEstimate": 25.50,
+        "isGoodDeal": true,
+        "dealRating": "Good", // Bad, Fair, Good, Excellent
+        "qualityScore": 92, // 1-100
+        "sommelierNotes": "Breve descrizione...",
+        "cellarFit": {
+            "isRecommended": true,
+            "reasoning": "Spiegazione..."
+        }
+    }
+    `;
 
     const systemInstruction = `Sei un Advisor di investimenti vinicoli e Sommelier.
-    Analizza la foto del vino e il prezzo inserito dall'utente (€${inputPrice}).
     1. Identifica il vino.
     2. Stima il prezzo medio di mercato.
-    3. Valuta se il prezzo inserito è un affare.
-    4. Analizza la cantina attuale dell'utente e decidi se questo vino è una buona aggiunta (diversificazione) o se è ridondante.
-    Cantina Attuale: [${inventorySummary}]
+    3. Valuta se l'acquisto è un affare.
+    4. Analizza la cantina attuale dell'utente: [${inventorySummary}].
+    Decidi se aggiungere questo vino migliora la collezione.
+    
+    Restituisci ESCLUSIVAMENTE un oggetto JSON valido con questa struttura:
+    ${jsonStructure}
     `;
 
     try {
         const response = await ai.models.generateContent({
             model,
-            contents: {
-                parts: [
-                    { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } },
-                    { text: `Prezzo offerta: ${inputPrice}€. Analizza questo vino. È un buon acquisto? Completa la mia cantina?` }
-                ]
-            },
+            contents: { parts },
             config: {
                 systemInstruction,
+                tools: tools.length > 0 ? tools : undefined,
                 responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        wineDetails: {
-                            type: Type.OBJECT,
-                            properties: {
-                                name: { type: Type.STRING },
-                                producer: { type: Type.STRING },
-                                year: { type: Type.STRING },
-                                type: { type: Type.STRING, enum: Object.values(WineType) },
-                                region: { type: Type.STRING },
-                                grape: { type: Type.STRING },
-                                alcohol: { type: Type.STRING },
-                            }
-                        },
-                        marketPriceEstimate: { type: Type.NUMBER, description: "Prezzo medio online" },
-                        isGoodDeal: { type: Type.BOOLEAN },
-                        dealRating: { type: Type.STRING, enum: ['Bad', 'Fair', 'Good', 'Excellent'] },
-                        qualityScore: { type: Type.NUMBER, description: "Punteggio 1-100 basato su critica internazionale" },
-                        sommelierNotes: { type: Type.STRING, description: "Descrizione breve gusto e naso" },
-                        cellarFit: {
-                            type: Type.OBJECT,
-                            properties: {
-                                isRecommended: { type: Type.BOOLEAN },
-                                reasoning: { type: Type.STRING, description: "Spiega perché comprarlo o no basandoti sulla cantina attuale" }
-                            }
-                        }
-                    },
-                    required: ["marketPriceEstimate", "dealRating", "cellarFit", "wineDetails", "qualityScore"]
-                }
             }
         });
 

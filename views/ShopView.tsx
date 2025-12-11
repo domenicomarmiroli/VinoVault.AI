@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { Wine, PurchaseAnalysis } from '../types';
 import { analyzePurchase } from '../services/geminiService';
-import { CameraIcon, LogoutIcon, ShopIcon, WineIcon } from '../components/Icons';
+import { CameraIcon, LogoutIcon, ShopIcon, WineIcon, ExternalLinkIcon } from '../components/Icons';
 
 interface ShopViewProps {
   inventory: Wine[];
@@ -13,7 +13,9 @@ interface ShopViewProps {
 }
 
 const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInventory, onAiUsed }) => {
+  const [mode, setMode] = useState<'camera' | 'link'>('camera');
   const [image, setImage] = useState<string | null>(null);
+  const [linkUrl, setLinkUrl] = useState('');
   const [price, setPrice] = useState<number | ''>('');
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<PurchaseAnalysis | null>(null);
@@ -30,14 +32,28 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
 
   const handleAnalyze = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!image || !price) return;
+      
+      if (mode === 'camera' && !image) return;
+      if (mode === 'link' && !linkUrl) return;
+
+      const inputPrice = price ? Number(price) : 0;
       
       setLoading(true);
       setAnalysis(null);
       try {
-          const result = await analyzePurchase(image, Number(price), inventory);
+          const input = mode === 'camera' 
+            ? { type: 'image' as const, data: image! }
+            : { type: 'url' as const, data: linkUrl };
+
+          const result = await analyzePurchase(input, inputPrice, inventory);
           setAnalysis(result);
           onAiUsed(); // Track
+          
+          // If price was auto-detected from link and user didn't input one
+          if (!price && result.marketPriceEstimate) {
+              setPrice(result.marketPriceEstimate);
+          }
+
       } catch (error: any) {
           alert(`Errore analisi: ${error.message || "Riprova più tardi."}`);
           console.error(error);
@@ -60,7 +76,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           grape: analysis.wineDetails.grape || '',
           alcohol: analysis.wineDetails.alcohol || '',
           purchaseDate: today,
-          price: Number(price),
+          price: Number(price) || analysis.marketPriceEstimate || 0,
           quantity: 1,
           location: 'Da posizionare',
           storageTemp: '12-16°C',
@@ -77,6 +93,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
       alert("Vino aggiunto alla cantina!");
       // Reset
       setImage(null);
+      setLinkUrl('');
       setPrice('');
       setAnalysis(null);
   };
@@ -113,31 +130,64 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
         {/* Input Section */}
         {!analysis && (
             <div className="space-y-6">
-                <div 
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all cursor-pointer ${
-                        image ? 'border-wine-500 bg-wine-50' : 'border-gray-300 hover:bg-gray-50'
-                    }`}
-                >
-                    {image ? (
-                        <img src={image} alt="Preview" className="h-48 object-contain rounded shadow-sm" />
-                    ) : (
-                        <>
-                            <div className="bg-wine-100 p-4 rounded-full mb-3">
-                                <CameraIcon className="w-8 h-8 text-wine-600" />
-                            </div>
-                            <span className="font-medium text-gray-600">Tocca per scattare foto</span>
-                        </>
-                    )}
-                    <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                        accept="image/*"
-                        capture="environment" 
-                        onChange={handleFileChange} 
-                    />
+                
+                {/* Mode Toggles */}
+                <div className="flex p-1 bg-gray-200 rounded-xl">
+                    <button 
+                        onClick={() => setMode('camera')}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${mode === 'camera' ? 'bg-white shadow-sm text-wine-700' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <CameraIcon className="w-4 h-4" />
+                        Foto
+                    </button>
+                    <button 
+                        onClick={() => setMode('link')}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${mode === 'link' ? 'bg-white shadow-sm text-wine-700' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <ExternalLinkIcon className="w-4 h-4" />
+                        Link
+                    </button>
                 </div>
+
+                {mode === 'camera' ? (
+                    <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all cursor-pointer ${
+                            image ? 'border-wine-500 bg-wine-50' : 'border-gray-300 hover:bg-gray-50'
+                        }`}
+                    >
+                        {image ? (
+                            <img src={image} alt="Preview" className="h-48 object-contain rounded shadow-sm" />
+                        ) : (
+                            <>
+                                <div className="bg-wine-100 p-4 rounded-full mb-3">
+                                    <CameraIcon className="w-8 h-8 text-wine-600" />
+                                </div>
+                                <span className="font-medium text-gray-600">Tocca per scattare foto</span>
+                            </>
+                        )}
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            accept="image/*"
+                            capture="environment" 
+                            onChange={handleFileChange} 
+                        />
+                    </div>
+                ) : (
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Link E-commerce</label>
+                        <input 
+                            type="url" 
+                            value={linkUrl}
+                            onChange={(e) => setLinkUrl(e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none"
+                            placeholder="https://www.tannico.it/..."
+                        />
+                        <p className="text-xs text-gray-500 mt-2">Incolla l'URL della pagina prodotto.</p>
+                    </div>
+                )}
 
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                     <label className="block text-sm font-bold text-gray-700 mb-2">Prezzo Bottiglia (€)</label>
@@ -146,13 +196,13 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                         value={price}
                         onChange={(e) => setPrice(Number(e.target.value))}
                         className="w-full p-3 text-lg border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none"
-                        placeholder="0.00"
+                        placeholder={mode === 'link' ? "Lascia vuoto per auto-rilevamento" : "0.00"}
                     />
                 </div>
 
                 <button 
                     onClick={handleAnalyze}
-                    disabled={!image || !price || loading}
+                    disabled={(mode === 'camera' && !image) || (mode === 'link' && !linkUrl) || loading}
                     className="w-full py-4 bg-wine-700 text-white font-bold rounded-xl shadow-lg hover:bg-wine-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     {loading ? 'Analisi in corso...' : 'Analizza Acquisto'}
@@ -193,7 +243,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                     </div>
                     <div className="flex justify-between items-end">
                         <div>
-                             <p className="text-xs opacity-70 mb-1">Prezzo Inserito</p>
+                             <p className="text-xs opacity-70 mb-1">Prezzo Rilevato</p>
                              <p className="text-2xl font-bold">€{Number(price).toFixed(2)}</p>
                         </div>
                         <div className="text-right">
@@ -221,7 +271,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
 
                 <div className="flex gap-3 pt-2">
                     <button 
-                        onClick={() => { setAnalysis(null); setImage(null); setPrice(''); }}
+                        onClick={() => { setAnalysis(null); setImage(null); setLinkUrl(''); setPrice(''); }}
                         className="flex-1 py-3 text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl font-medium"
                     >
                         Nuova Analisi
