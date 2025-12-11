@@ -9,6 +9,9 @@ import { CameraIcon, PlusIcon } from './Icons';
 // Helper per generare ID univoci
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
+// Genera anni per il selettore (dal 2030 al 1950)
+const years = Array.from({length: 81}, (_, i) => (new Date().getFullYear() + 1) - i);
+
 interface AddWineModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -191,7 +194,16 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
               <div className="grid grid-cols-3 gap-4">
                   <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Annata</label>
-                      <input type="text" value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
+                      <select 
+                        value={formData.year} 
+                        onChange={e => setFormData({...formData, year: e.target.value})} 
+                        className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all"
+                      >
+                        <option value="">N/A</option>
+                        {years.map(y => (
+                          <option key={y} value={y.toString()}>{y}</option>
+                        ))}
+                      </select>
                   </div>
                   <div className="col-span-2">
                       <label className="block text-xs font-medium text-gray-500 mb-1">Tipologia</label>
@@ -206,18 +218,18 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
                       <label className="block text-xs font-medium text-gray-500 mb-1">Prezzo (€)</label>
                       <input type="number" step="0.01" value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-wine-500 outline-none transition-all" />
                    </div>
-                   <div>
+                   <div className="min-w-0">
                       <label className="block text-xs font-medium text-gray-500 mb-1">Quantità</label>
-                      <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => setFormData({...formData, quantity: Math.max(1, (formData.quantity || 1) - 1)})} className="w-12 h-11 bg-white border border-gray-300 rounded-lg text-gray-600 font-bold hover:bg-gray-50">-</button>
+                      <div className="flex items-center gap-1 w-full">
+                          <button type="button" onClick={() => setFormData({...formData, quantity: Math.max(1, (formData.quantity || 1) - 1)})} className="w-10 h-11 bg-white border border-gray-300 rounded-lg text-gray-600 font-bold hover:bg-gray-50 shrink-0">-</button>
                           <input 
                               type="number" 
                               min="1" 
                               value={formData.quantity} 
                               onChange={e => setFormData({...formData, quantity: parseInt(e.target.value)})} 
-                              className="flex-1 p-3 border border-gray-300 rounded-lg text-center bg-white outline-none h-11" 
+                              className="w-full min-w-0 flex-1 p-3 border border-gray-300 rounded-lg text-center bg-white outline-none h-11" 
                           />
-                          <button type="button" onClick={() => setFormData({...formData, quantity: (formData.quantity || 1) + 1})} className="w-12 h-11 bg-white border border-gray-300 rounded-lg text-wine-600 font-bold hover:bg-gray-50">+</button>
+                          <button type="button" onClick={() => setFormData({...formData, quantity: (formData.quantity || 1) + 1})} className="w-10 h-11 bg-white border border-gray-300 rounded-lg text-wine-600 font-bold hover:bg-gray-50 shrink-0">+</button>
                       </div>
                    </div>
               </div>

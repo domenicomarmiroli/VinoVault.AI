@@ -164,13 +164,13 @@ const App: React.FC = () => {
 
       if (!isOfflineMode) {
           try {
-              // Send updated fields (quantity and location support)
-              await authFetch(`/api/wines/${updatedWine.id}`, {
+              // Send updated wine object. The backend now supports dynamic field updates.
+              // We filter out 'id' from the body to avoid confusion, though the backend ignores it in SET clause.
+              const { id, ...updates } = updatedWine;
+              
+              await authFetch(`/api/wines/${id}`, {
                   method: 'PUT',
-                  body: JSON.stringify({ 
-                      quantity: updatedWine.quantity,
-                      location: updatedWine.location 
-                  })
+                  body: JSON.stringify(updates)
               });
           } catch (e) {
               console.error("Errore aggiornamento vino", e);

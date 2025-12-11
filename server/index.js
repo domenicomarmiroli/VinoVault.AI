@@ -430,14 +430,14 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT Update Wine (Quantity, Location, etc.)
+// PUT Update Wine (Any field)
 app.put('/api/wines/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
-  const { quantity, location } = req.body;
+  const updates = req.body; // Expecting { name: '...', quantity: 5, ... }
   
   try {
     // If quantity is explicitly 0 or less, delete
-    if (quantity !== undefined && quantity <= 0) {
+    if (updates.quantity !== undefined && updates.quantity <= 0) {
       await pool.query('DELETE FROM wines WHERE id = $1 AND user_id = $2', [id, req.user.userId]);
       return res.json({ message: 'Deleted' });
     }
@@ -447,13 +447,31 @@ app.put('/api/wines/:id', authenticateToken, async (req, res) => {
     const values = [];
     let idx = 1;
 
-    if (quantity !== undefined) {
-        fields.push(`quantity = $${idx++}`);
-        values.push(quantity);
-    }
-    if (location !== undefined) {
-        fields.push(`location = $${idx++}`);
-        values.push(location);
+    // Allowed columns to update to prevent SQL injection or bad data
+    const allowedColumns = [
+        'name', 'producer', 'year', 'type', 'region', 'grape', 'alcohol',
+        'purchase_date', 'price', 'quantity', 'location', 
+        'storage_temp', 'storage_advice', 'serving_temp', 'serving_advice', 
+        'food_pairings', 'image_url', 'drink_window', 'market_price'
+    ];
+
+    for (const [key, value] of Object.entries(updates)) {
+        // Map JS camelCase to DB snake_case if necessary
+        let dbCol = key;
+        if (key === 'purchaseDate') dbCol = 'purchase_date';
+        if (key === 'storageTemp') dbCol = 'storage_temp';
+        if (key === 'storageAdvice') dbCol = 'storage_advice';
+        if (key === 'servingTemp') dbCol = 'serving_temp';
+        if (key === 'servingAdvice') dbCol = 'serving_advice';
+        if (key === 'foodPairings') dbCol = 'food_pairings';
+        if (key === 'imageUrl') dbCol = 'image_url';
+        if (key === 'drinkWindow') dbCol = 'drink_window';
+        if (key === 'marketPrice') dbCol = 'market_price';
+
+        if (allowedColumns.includes(dbCol)) {
+            fields.push(`${dbCol} = $${idx++}`);
+            values.push(value);
+        }
     }
 
     if (fields.length === 0) return res.json({ message: 'Nothing to update' });
