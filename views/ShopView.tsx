@@ -35,8 +35,12 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
       
       if (mode === 'camera' && !image) return;
       if (mode === 'link' && !linkUrl) return;
+      if (!price) {
+          alert("Inserisci il prezzo per valutare l'offerta.");
+          return;
+      }
 
-      const inputPrice = price ? Number(price) : 0;
+      const inputPrice = Number(price);
       
       setLoading(true);
       setAnalysis(null);
@@ -49,11 +53,6 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           setAnalysis(result);
           onAiUsed(); // Track
           
-          // If price was auto-detected from link and user didn't input one
-          if (!price && result.marketPriceEstimate) {
-              setPrice(result.marketPriceEstimate);
-          }
-
       } catch (error: any) {
           alert(`Errore analisi: ${error.message || "Riprova più tardi."}`);
           console.error(error);
@@ -190,19 +189,22 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                 )}
 
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Prezzo Bottiglia (€)</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                        Prezzo Offerta (€) <span className="text-red-500">*</span>
+                    </label>
                     <input 
                         type="number" 
+                        required
                         value={price}
                         onChange={(e) => setPrice(Number(e.target.value))}
                         className="w-full p-3 text-lg border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none"
-                        placeholder={mode === 'link' ? "Lascia vuoto per auto-rilevamento" : "0.00"}
+                        placeholder="Es. 25.00"
                     />
                 </div>
 
                 <button 
                     onClick={handleAnalyze}
-                    disabled={(mode === 'camera' && !image) || (mode === 'link' && !linkUrl) || loading}
+                    disabled={(mode === 'camera' && !image) || (mode === 'link' && !linkUrl) || !price || loading}
                     className="w-full py-4 bg-wine-700 text-white font-bold rounded-xl shadow-lg hover:bg-wine-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     {loading ? 'Analisi in corso...' : 'Analizza Acquisto'}
@@ -243,7 +245,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                     </div>
                     <div className="flex justify-between items-end">
                         <div>
-                             <p className="text-xs opacity-70 mb-1">Prezzo Rilevato</p>
+                             <p className="text-xs opacity-70 mb-1">Prezzo Offerta</p>
                              <p className="text-2xl font-bold">€{Number(price).toFixed(2)}</p>
                         </div>
                         <div className="text-right">
