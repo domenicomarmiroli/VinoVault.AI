@@ -45,7 +45,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
             <div>
               <h3 className="font-bold text-gray-900 text-lg">Shop Advisor</h3>
               <p className="text-gray-600 text-sm mt-1">
-                Sei in enoteca o al supermercato? Scatta una foto alla bottiglia e inserisci il prezzo. Ti diremo se è un buon affare e se si adatta alla tua collezione.
+                Sei in enoteca, al supermercato o online? Scatta una foto alla bottiglia <strong>o incolla il link della pagina web</strong>, poi inserisci il prezzo. Ti diremo se è un buon affare e se si adatta alla tua collezione.
               </p>
             </div>
           </div>
@@ -58,7 +58,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
             <div>
               <h3 className="font-bold text-gray-900 text-lg">Al Ristorante</h3>
               <p className="text-gray-600 text-sm mt-1">
-                Indeciso sulla carta dei vini? Fotografa il menu e dicci cosa mangi. L'AI sceglierà i 3 migliori abbinamenti per te.
+                Scrivi il piatto che hai ordinato, scatta una foto alle pagine della carta dei vini e il Sommelier ti suggerirà i 3 migliori abbinamenti da ordinare.
               </p>
             </div>
           </div>
