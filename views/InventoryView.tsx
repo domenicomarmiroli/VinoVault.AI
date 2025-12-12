@@ -58,21 +58,18 @@ const InventoryView: React.FC<InventoryViewProps> = ({
 
   // Funzione per generare il report
   const handleOpenReport = async () => {
+      // Validazione: Richiede almeno 11 vini per un'analisi sensata
+      if (wines.length <= 10) {
+          alert(`Per generare un'analisi professionale, il Sommelier ha bisogno di almeno più di 10 etichette in cantina (attualmente ne hai ${wines.length}). Aggiungi altri vini per sbloccare questa funzione.`);
+          return;
+      }
+
       setIsReportOpen(true);
       if (cellarReport) return; // Se già generato, non rigenerare subito
 
       setReportLoading(true);
       try {
-          // Fetch history locally/via API would be better, but assuming props passed or handled differently?
-          // Since history isn't passed to InventoryView props directly in the previous snippet, 
-          // we need to either fetch it or accept it as a prop.
-          // Let's assume we fetch history here for the report or require it as prop.
-          // FIX: Add history to props of InventoryView in App.tsx or fetch it here.
-          // For now, I will use a placeholder fetch since App.tsx handles state.
-          // To do this cleanly, I should ask to update App.tsx to pass history to InventoryView.
-          // Assuming App.tsx passes history, I need to update interface.
-          // Since I cannot change App.tsx interface easily without breaking, I will fetch history from API directly here.
-          
+          // Fetch history directly here to use in report
           const token = localStorage.getItem('vinovault_token');
           const res = await fetch('/api/history', {
               headers: { 'Authorization': `Bearer ${token}` }
@@ -127,6 +124,9 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   const totalBottles = wines.reduce((acc, curr) => acc + curr.quantity, 0);
   const totalValue = wines.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
 
+  // Check eligibility for visual hint
+  const canGenerateReport = wines.length > 10;
+
   return (
     <div className="relative h-full flex flex-col bg-gray-50">
       {/* Header Stats & Search */}
@@ -141,8 +141,12 @@ const InventoryView: React.FC<InventoryViewProps> = ({
              {/* Report Button */}
              <button 
                 onClick={handleOpenReport}
-                className="bg-purple-50 text-purple-700 p-2.5 rounded-full hover:bg-purple-100 transition-colors border border-purple-100"
-                title="Report Sommelier"
+                className={`p-2.5 rounded-full transition-colors border ${
+                    canGenerateReport 
+                    ? 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-100' 
+                    : 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
+                }`}
+                title={canGenerateReport ? "Analisi Sommelier" : "Serve più di 10 vini"}
              >
                 <ReportIcon className="w-6 h-6" />
              </button>
@@ -290,7 +294,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         onDelete={onDelete}
         isPremium={isPremium} // Pass prop
       />
-    </div>
+    </div> 
   );
 };
 
