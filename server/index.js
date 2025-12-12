@@ -25,6 +25,17 @@ const SERPAPI_KEY = process.env.SERPAPI_KEY;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
+// --- STATIC FILES SERVING ---
+// 1. Serve 'dist' folder (Production Build)
+// Quando Vite costruisce l'app, mette tutto qui (inclusi i file copiati da 'public')
+const distPath = path.join(__dirname, '../dist');
+app.use(express.static(distPath));
+
+// 2. Serve 'public' folder (Development / Direct Access)
+// Utile se i file non sono ancora stati copiati in dist o per sviluppo locale
+const publicPath = path.join(process.cwd(), 'public');
+app.use(express.static(publicPath));
+
 // Database Connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -178,36 +189,6 @@ app.get('/api/config', (req, res) => {
         googleClientId: GOOGLE_CLIENT_ID || ''
     });
 });
-
-// --- SERVE STATIC FILES FROM ROOT (Fix for missing logo/favicon) ---
-const serveStaticFile = (filename, res) => {
-    // Cerca il file in diverse posizioni per robustezza
-    const possiblePaths = [
-        path.join(process.cwd(), filename),
-        path.join(__dirname, '../', filename),
-        path.join(__dirname, filename)
-    ];
-
-    let foundPath = null;
-    for (const p of possiblePaths) {
-        if (fs.existsSync(p)) {
-            foundPath = p;
-            break;
-        }
-    }
-
-    if (foundPath) {
-        // console.log(`Serving ${filename} from ${foundPath}`);
-        res.sendFile(foundPath);
-    } else {
-        console.error(`File ${filename} not found in checked paths:`, possiblePaths);
-        res.sendStatus(404);
-    }
-};
-
-app.get('/logo.png', (req, res) => serveStaticFile('logo.png', res));
-app.get('/favicon.ico', (req, res) => serveStaticFile('favicon.ico', res));
-
 
 // --- SERPAPI PROXY ROUTE (NEW) - PROTECTED (PREMIUM ONLY) ---
 app.get('/api/search-prices', authenticateToken, async (req, res) => {
@@ -719,11 +700,12 @@ app.delete('/api/locations/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// --- SERVE FRONTEND ---
-const distPath = path.join(__dirname, '../dist');
-app.use(express.static(distPath));
-
+// --- CATCH-ALL ROUTE FOR SPA ---
 app.get('*', (req, res) => {
+  // Security: Don't serve HTML for asset requests (e.g. broken images)
+  if (req.path.includes('.')) {
+      return res.status(404).send('Not Found');
+  }
   res.sendFile(path.join(distPath, 'index.html'));
 });
 

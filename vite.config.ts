@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, (process as any).cwd(), '');
   return {
     plugins: [react()],
+    publicDir: 'public', // Explicitly set public directory
     define: {
       // Mappa la variabile d'ambiente di sistema su process.env per compatibilità col codice esistente
       'process.env.API_KEY': JSON.stringify(env.API_KEY)
@@ -17,17 +18,6 @@ export default defineConfig(({ mode }) => {
           target: 'http://localhost:3000',
           changeOrigin: true,
           secure: false,
-        },
-        // Proxy specifico per servire i file statici dalla root anche in dev mode
-        '/logo.png': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-          secure: false
-        },
-        '/favicon.ico': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-          secure: false
         }
       }
     }
