@@ -189,6 +189,17 @@ app.get('/logo.png', (req, res) => {
     });
 });
 
+// --- SERVE FAVICON FROM ROOT ---
+app.get('/favicon.ico', (req, res) => {
+    const faviconPath = path.join(__dirname, '../favicon.ico');
+    res.sendFile(faviconPath, (err) => {
+        if (err) {
+            console.error("Favicon not found at:", faviconPath);
+            res.sendStatus(404);
+        }
+    });
+});
+
 // --- SERPAPI PROXY ROUTE (NEW) - PROTECTED (PREMIUM ONLY) ---
 app.get('/api/search-prices', authenticateToken, async (req, res) => {
     const { query } = req.query;
