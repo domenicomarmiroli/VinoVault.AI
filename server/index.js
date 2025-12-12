@@ -699,7 +699,7 @@ app.delete('/api/locations/:id', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Delete error' });
     }
 });
-
+ 
 // --- CATCH-ALL ROUTE FOR SPA ---
 app.get('*', (req, res) => {
   // Security: Don't serve HTML for asset requests (e.g. broken images)
