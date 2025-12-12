@@ -67,6 +67,8 @@ export interface PairingOption {
   wineName: string; // Fallback or display name
   reasoning: string;
   type: 'owned' | 'purchase';
+  servingTemp?: string;   // NEW
+  servingAdvice?: string; // NEW (Opening time)
 }
 
 export interface PairingSuggestion {

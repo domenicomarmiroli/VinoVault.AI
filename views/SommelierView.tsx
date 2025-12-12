@@ -150,6 +150,18 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                                                 "{option.reasoning}"
                                             </p>
 
+                                            {/* Serving Details Row */}
+                                            <div className="flex gap-4 mb-3 text-xs text-gray-500 bg-stone-50 p-2 rounded-lg border border-stone-100">
+                                                <div className="flex items-center gap-1.5" title="Temperatura Servizio">
+                                                    <ThermometerIcon className="w-4 h-4 text-wine-600" />
+                                                    <span>{option.servingTemp || '16-18°C'}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5" title="Quando aprire">
+                                                    <ClockIcon className="w-4 h-4 text-wine-600" />
+                                                    <span className="truncate">{option.servingAdvice || 'Aprire prima'}</span>
+                                                </div>
+                                            </div>
+
                                             {ownedWine ? (
                                                 <div className="bg-green-50/50 border border-green-100 rounded-lg p-3 flex flex-col gap-2">
                                                     <div className="flex gap-2 items-start">

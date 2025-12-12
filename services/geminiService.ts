@@ -129,6 +129,7 @@ export const suggestPairing = async (
     3. Se la cantina ha solo 1 vino adatto, usalo come prima opzione e suggerisci un acquisto per la seconda.
     4. Se non c'è nulla in cantina, suggerisci due vini da comprare (type='purchase') mettendo il nome in wineName e lasciando wineId vuoto.
     5. Spiega brevemente il 'reasoning'.
+    6. FONDAMENTALE: Per OGNI vino (sia posseduto che da comprare) devi indicare 'servingTemp' (es. 16°C) e 'servingAdvice' (es. Aprire 1 ora prima).
   `;
 
   try {
@@ -153,9 +154,11 @@ export const suggestPairing = async (
                       wineId: { type: Type.STRING, nullable: true },
                       wineName: { type: Type.STRING },
                       reasoning: { type: Type.STRING },
-                      type: { type: Type.STRING, enum: ['owned', 'purchase'] }
+                      type: { type: Type.STRING, enum: ['owned', 'purchase'] },
+                      servingTemp: { type: Type.STRING },
+                      servingAdvice: { type: Type.STRING }
                     },
-                    required: ["wineName", "reasoning", "type"]
+                    required: ["wineName", "reasoning", "type", "servingTemp", "servingAdvice"]
                   }
                 }
               },

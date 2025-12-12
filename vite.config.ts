@@ -17,6 +17,17 @@ export default defineConfig(({ mode }) => {
           target: 'http://localhost:3000',
           changeOrigin: true,
           secure: false,
+        },
+        // Proxy specifico per servire i file statici dalla root anche in dev mode
+        '/logo.png': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false
+        },
+        '/favicon.ico': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false
         }
       }
     }

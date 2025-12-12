@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -178,27 +179,29 @@ app.get('/api/config', (req, res) => {
     });
 });
 
-// --- SERVE LOGO IMAGE FROM ROOT (Fix for missing logo in build) ---
-app.get('/logo.png', (req, res) => {
-    const logoPath = path.join(__dirname, '../logo.png');
-    res.sendFile(logoPath, (err) => {
-        if (err) {
-            console.error("Logo not found at:", logoPath);
-            res.sendStatus(404);
-        }
-    });
-});
+// --- SERVE STATIC FILES FROM ROOT (Fix for missing logo/favicon) ---
+// Usa process.cwd() per assicurarsi di puntare alla root del progetto
+const serveStaticFile = (filename, res) => {
+    const filePath = path.join(process.cwd(), filename);
+    
+    // Check if file exists
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        // Fallback to __dirname relative path if process.cwd() fails context
+        const altPath = path.join(__dirname, '../', filename);
+        res.sendFile(altPath, (err) => {
+            if (err) {
+                console.error(`File ${filename} not found at ${filePath} or ${altPath}`);
+                res.sendStatus(404);
+            }
+        });
+    }
+};
 
-// --- SERVE FAVICON FROM ROOT ---
-app.get('/favicon.ico', (req, res) => {
-    const faviconPath = path.join(__dirname, '../favicon.ico');
-    res.sendFile(faviconPath, (err) => {
-        if (err) {
-            console.error("Favicon not found at:", faviconPath);
-            res.sendStatus(404);
-        }
-    });
-});
+app.get('/logo.png', (req, res) => serveStaticFile('logo.png', res));
+app.get('/favicon.ico', (req, res) => serveStaticFile('favicon.ico', res));
+
 
 // --- SERPAPI PROXY ROUTE (NEW) - PROTECTED (PREMIUM ONLY) ---
 app.get('/api/search-prices', authenticateToken, async (req, res) => {
