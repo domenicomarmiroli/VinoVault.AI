@@ -9,6 +9,51 @@ import { CameraIcon, PlusIcon } from './Icons';
 // Helper per generare ID univoci
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
+// Helper per la compressione immagini
+const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 800;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0, width, height);
+                    // Compress to JPEG at 70% quality
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    resolve(dataUrl);
+                } else {
+                    reject(new Error("Canvas context error"));
+                }
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+    });
+};
+
 // Genera anni per il selettore (dal 2030 al 1950)
 const years = Array.from({length: 81}, (_, i) => (new Date().getFullYear() + 1) - i);
 
@@ -47,15 +92,13 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
 
     setLoading(true);
     try {
-      // Convert to Base64
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
-        setImagePreview(base64String);
+        // Compress Image First
+        const compressedBase64 = await compressImage(file);
+        setImagePreview(compressedBase64);
         
         // Call Gemini
         try {
-            const analysis = await analyzeWineLabel(base64String);
+            const analysis = await analyzeWineLabel(compressedBase64);
             setFormData(prev => ({
                 ...prev,
                 ...analysis,
@@ -73,11 +116,10 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
         } finally {
             setLoading(false);
         }
-      };
-      reader.readAsDataURL(file);
     } catch (error) {
       setLoading(false);
       console.error(error);
+      alert("Errore caricamento immagine");
     }
   };
 

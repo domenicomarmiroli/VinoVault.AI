@@ -180,22 +180,28 @@ app.get('/api/config', (req, res) => {
 });
 
 // --- SERVE STATIC FILES FROM ROOT (Fix for missing logo/favicon) ---
-// Usa process.cwd() per assicurarsi di puntare alla root del progetto
 const serveStaticFile = (filename, res) => {
-    const filePath = path.join(process.cwd(), filename);
-    
-    // Check if file exists
-    if (fs.existsSync(filePath)) {
-        res.sendFile(filePath);
+    // Cerca il file in diverse posizioni per robustezza
+    const possiblePaths = [
+        path.join(process.cwd(), filename),
+        path.join(__dirname, '../', filename),
+        path.join(__dirname, filename)
+    ];
+
+    let foundPath = null;
+    for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+            foundPath = p;
+            break;
+        }
+    }
+
+    if (foundPath) {
+        // console.log(`Serving ${filename} from ${foundPath}`);
+        res.sendFile(foundPath);
     } else {
-        // Fallback to __dirname relative path if process.cwd() fails context
-        const altPath = path.join(__dirname, '../', filename);
-        res.sendFile(altPath, (err) => {
-            if (err) {
-                console.error(`File ${filename} not found at ${filePath} or ${altPath}`);
-                res.sendStatus(404);
-            }
-        });
+        console.error(`File ${filename} not found in checked paths:`, possiblePaths);
+        res.sendStatus(404);
     }
 };
 
