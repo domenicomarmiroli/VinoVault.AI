@@ -178,6 +178,17 @@ app.get('/api/config', (req, res) => {
     });
 });
 
+// --- SERVE LOGO IMAGE FROM ROOT (Fix for missing logo in build) ---
+app.get('/logo.png', (req, res) => {
+    const logoPath = path.join(__dirname, '../logo.png');
+    res.sendFile(logoPath, (err) => {
+        if (err) {
+            console.error("Logo not found at:", logoPath);
+            res.sendStatus(404);
+        }
+    });
+});
+
 // --- SERPAPI PROXY ROUTE (NEW) - PROTECTED (PREMIUM ONLY) ---
 app.get('/api/search-prices', authenticateToken, async (req, res) => {
     const { query } = req.query;
