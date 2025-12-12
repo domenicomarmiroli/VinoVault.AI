@@ -8,37 +8,62 @@ interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({ className = "w-12 h-12", showText = true, light = false }) => {
+  const mainColor = light ? "text-white" : "text-wine-800";
+  const liquidColor = light ? "fill-white" : "fill-wine-700";
+  const circuitColor = light ? "stroke-wine-200" : "stroke-wine-500";
+  const dotColor = light ? "fill-wine-200" : "fill-wine-500";
+
   return (
     <div className="flex items-center gap-3 select-none">
-      {/* Icona Vettoriale */}
       <div className={`relative ${className} flex-shrink-0`}>
         <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-sm">
-           {/* Sfondo/Scudo opzionale o forma bottiglia */}
-           <path 
-             d="M50 5C38 5 35 15 35 25V35C35 40 25 45 25 60V85C25 93.28 31.72 100 40 100H60C68.28 100 75 93.28 75 85V60C75 45 65 40 65 35V25C65 15 62 5 50 5Z" 
-             className={light ? "fill-white" : "fill-wine-700"}
-           />
-           {/* Serratura (Vault Concept) - Spazio Negativo */}
-           <path 
-             d="M50 55C53.31 55 56 57.69 56 61C56 63.2 54.8 65.1 53 66.2V78C53 79.66 51.66 81 50 81C48.34 81 47 79.66 47 78V66.2C45.2 65.1 44 63.2 44 61C44 57.69 46.69 55 50 55Z" 
-             className={light ? "fill-wine-600" : "fill-white"}
-           />
-           {/* Etichetta/Dettaglio collo */}
-           <rect x="35" y="28" width="30" height="4" rx="1" className={light ? "fill-wine-200" : "fill-wine-200"} fillOpacity="0.3" />
            
-           {/* AI Sparkle */}
+           {/* Glass Stem & Base */}
            <path 
-             d="M85 20L82 22L85 24L87 22L85 20Z" 
-             className={light ? "fill-yellow-300" : "fill-wine-400"} 
+             d="M50 75 V92 M35 92 H65 M50 92 C50 96 40 96 40 96 H60 C60 96 50 96 50 92" 
+             stroke="currentColor" 
+             strokeWidth="4" 
+             strokeLinecap="round" 
+             strokeLinejoin="round" 
+             className={mainColor}
            />
+
+           {/* Glass Bowl Outline */}
            <path 
-             d="M80 10L76 14L80 18L84 14L80 10Z" 
-             className={light ? "fill-yellow-300" : "fill-wine-400"} 
+             d="M25 20 C25 55 35 75 50 75 C65 75 75 55 75 20" 
+             stroke="currentColor" 
+             strokeWidth="4" 
+             strokeLinecap="round" 
+             className={mainColor}
            />
+
+           {/* Wine Liquid (Bottom Half) */}
+           <path 
+             d="M27 45 C27 45 35 52 50 52 C65 52 73 45 73 45 C73 58 68 71 50 71 C32 71 27 58 27 45 Z" 
+             className={liquidColor}
+             fillOpacity="0.9"
+           />
+
+           {/* Neural Network (Top Half) */}
+           <g className={circuitColor} strokeWidth="2" strokeLinecap="round">
+              <path d="M50 30 L35 25" />
+              <path d="M50 30 L65 25" />
+              <path d="M50 30 L40 40" />
+              <path d="M50 30 L60 40" />
+              <path d="M35 25 L40 40" />
+              <path d="M65 25 L60 40" />
+           </g>
+           <g className={dotColor}>
+              <circle cx="50" cy="30" r="3" />
+              <circle cx="35" cy="25" r="2.5" />
+              <circle cx="65" cy="25" r="2.5" />
+              <circle cx="40" cy="40" r="2.5" />
+              <circle cx="60" cy="40" r="2.5" />
+           </g>
+
         </svg>
       </div>
 
-      {/* Testo Brand */}
       {showText && (
         <div className="flex flex-col justify-center">
           <h1 className={`font-serif font-bold tracking-tight leading-none ${light ? "text-white" : "text-wine-900"}`} style={{ fontSize: '1.75rem' }}>
