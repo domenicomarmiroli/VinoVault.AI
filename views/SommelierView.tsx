@@ -1,9 +1,9 @@
 
 
 import React, { useState } from 'react';
-import { Wine, PairingSuggestion } from '../types';
+import { Wine, PairingSuggestion, PairingOption } from '../types';
 import { suggestPairing } from '../services/geminiService';
-import { ChefIcon, WineIcon, LogoutIcon, ThermometerIcon, ClockIcon, MapPinIcon, StarIcon } from '../components/Icons';
+import { ChefIcon, WineIcon, LogoutIcon, ThermometerIcon, ClockIcon, MapPinIcon, StarIcon, ShoppingCartIcon } from '../components/Icons';
 
 interface SommelierViewProps {
   inventory: Wine[];
@@ -112,81 +112,93 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
 
         {/* Results */}
         {suggestions.length > 0 && (
-            <div className="space-y-6">
+            <div className="space-y-8">
                 <h3 className="text-xl font-serif font-bold text-gray-800 border-l-4 border-wine-500 pl-3">Suggerimenti</h3>
                 
-                {suggestions.map((suggestion, idx) => {
-                    const ownedWine = suggestion.suggestedWineId ? getInventoryWine(suggestion.suggestedWineId) : null;
-                    
-                    return (
-                        <div key={idx} className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
-                            <div className="bg-wine-50 px-4 py-2 border-b border-wine-100 flex justify-between items-center">
-                                <span className="font-bold text-wine-900 uppercase text-sm tracking-wider">{suggestion.courseName}</span>
-                                <span className="text-xs text-wine-700 italic">{suggestion.dishName}</span>
-                            </div>
-                            
-                            <div className="p-4">
-                                <p className="text-gray-600 text-sm mb-4 italic">"{suggestion.reasoning}"</p>
-                                
-                                {ownedWine ? (
-                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex flex-col gap-3">
-                                        <div className="flex gap-3 items-start">
-                                            <div className="w-12 h-12 bg-white rounded flex items-center justify-center flex-shrink-0 border border-green-100 overflow-hidden">
-                                                {ownedWine.imageUrl ? (
-                                                    <img src={ownedWine.imageUrl} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <WineIcon className="text-green-600 w-6 h-6" />
-                                                )}
-                                            </div>
-                                            <div className="flex-1">
-                                                <span className="text-xs font-bold text-green-700 uppercase block">Disponibile in Cantina</span>
-                                                <p className="font-bold text-gray-900 leading-tight">{ownedWine.name}</p>
-                                                <p className="text-xs text-gray-500">{ownedWine.year} • {ownedWine.producer}</p>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-700 bg-white/60 p-2 rounded-lg border border-green-100">
-                                            <div className="flex items-center gap-1">
-                                                <MapPinIcon className="w-3 h-3 text-wine-700" />
-                                                <span className="truncate">{ownedWine.location}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1 justify-end font-bold">
-                                                €{ownedWine.price}
-                                            </div>
-                                            <div className="flex items-center gap-1 col-span-2">
-                                                <ThermometerIcon className="w-3 h-3 text-wine-700" />
-                                                <span>{ownedWine.servingTemp}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1 col-span-2">
-                                                <ClockIcon className="w-3 h-3 text-wine-700" />
-                                                <span>{ownedWine.servingAdvice}</span>
-                                            </div>
+                {suggestions.map((suggestion, idx) => (
+                    <div key={idx} className="space-y-2">
+                        {/* Course Header */}
+                        <div className="flex items-center gap-2">
+                            <span className="font-bold text-wine-900 uppercase text-sm tracking-wider bg-wine-100 px-2 py-1 rounded">
+                                {suggestion.courseName}
+                            </span>
+                            <span className="text-sm text-gray-600 italic border-l border-gray-300 pl-2">
+                                {suggestion.dishName}
+                            </span>
+                        </div>
+
+                        {/* Options Grid (Stacked on mobile, Side by side on larger screens) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {suggestion.options.map((option, optIdx) => {
+                                const ownedWine = option.type === 'owned' && option.wineId 
+                                    ? getInventoryWine(option.wineId) 
+                                    : null;
+
+                                return (
+                                    <div key={optIdx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full">
+                                        <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-100 flex justify-between items-center">
+                                            <span className="text-xs font-bold text-gray-500 uppercase">Opzione {optIdx + 1}</span>
+                                            {ownedWine ? (
+                                                <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded uppercase">In Cantina</span>
+                                            ) : (
+                                                <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded uppercase">Da Comprare</span>
+                                            )}
                                         </div>
 
-                                        <button 
-                                            onClick={() => onConsume(ownedWine)}
-                                            className="w-full py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 shadow-sm flex items-center justify-center gap-2"
-                                        >
-                                            <StarIcon className="w-4 h-4" filled={false} />
-                                            Stappa Ora
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex gap-3 items-center">
-                                         <div className="w-12 h-12 bg-white rounded flex items-center justify-center flex-shrink-0 border border-gray-200">
-                                            <WineIcon className="text-gray-400 w-6 h-6" />
+                                        <div className="p-3 flex-1 flex flex-col">
+                                            <p className="text-sm text-gray-600 italic mb-3 flex-grow">
+                                                "{option.reasoning}"
+                                            </p>
+
+                                            {ownedWine ? (
+                                                <div className="bg-green-50/50 border border-green-100 rounded-lg p-3 flex flex-col gap-2">
+                                                    <div className="flex gap-2 items-start">
+                                                        <div className="w-10 h-10 bg-white rounded flex items-center justify-center flex-shrink-0 border border-green-100 overflow-hidden">
+                                                            {ownedWine.imageUrl ? (
+                                                                <img src={ownedWine.imageUrl} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <WineIcon className="text-green-600 w-5 h-5" />
+                                                            )}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="font-bold text-gray-900 text-sm leading-tight truncate">{ownedWine.name}</p>
+                                                            <p className="text-[10px] text-gray-500">{ownedWine.year} • {ownedWine.producer}</p>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="flex justify-between items-center text-[10px] text-gray-500 mt-1">
+                                                        <div className="flex items-center gap-1">
+                                                            <MapPinIcon className="w-3 h-3" /> {ownedWine.location}
+                                                        </div>
+                                                        <div className="font-bold">€{ownedWine.price}</div>
+                                                    </div>
+
+                                                    <button 
+                                                        onClick={() => onConsume(ownedWine)}
+                                                        className="w-full py-2 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 shadow-sm flex items-center justify-center gap-2 mt-2"
+                                                    >
+                                                        <StarIcon className="w-3 h-3" filled={false} />
+                                                        Stappa Ora
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 flex gap-3 items-center">
+                                                     <div className="w-10 h-10 bg-white rounded flex items-center justify-center flex-shrink-0 border border-blue-100">
+                                                        <ShoppingCartIcon className="text-blue-400 w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 text-sm leading-tight">{option.wineName}</p>
+                                                        <p className="text-[10px] text-gray-500">Suggerimento acquisto</p>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div>
-                                            <span className="text-xs font-bold text-gray-500 uppercase block">Da Acquistare</span>
-                                            <p className="font-bold text-gray-900 leading-tight">{suggestion.fallbackWineName}</p>
-                                            <p className="text-xs text-gray-500">Non presente in inventario</p>
-                                        </div>
                                     </div>
-                                )}
-                            </div>
+                                );
+                            })}
                         </div>
-                    );
-                })}
+                    </div>
+                ))}
             </div>
         )}
       </div>

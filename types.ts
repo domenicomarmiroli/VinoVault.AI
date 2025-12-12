@@ -62,12 +62,17 @@ export interface MenuRequest {
   courseCount: 'single' | 'multiple';
 }
 
+export interface PairingOption {
+  wineId?: string; // If owned
+  wineName: string; // Fallback or display name
+  reasoning: string;
+  type: 'owned' | 'purchase';
+}
+
 export interface PairingSuggestion {
   courseName: string;
   dishName: string;
-  reasoning: string;
-  suggestedWineId?: string;
-  fallbackWineName: string;
+  options: PairingOption[];
 }
 
 export interface PurchaseAnalysis {

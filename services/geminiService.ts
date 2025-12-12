@@ -108,12 +108,27 @@ export const suggestPairing = async (
     `ID: ${w.id}, Nome: ${w.name} (${w.year}), Tipo: ${w.type}, Vitigno: ${w.grape}, Qta: ${w.quantity}`
   ).join("\n");
 
+  let strategyPrompt = "";
+  if (style === 'single') {
+      strategyPrompt = "Strategia: Proponi un VINO UNICO versatile che stia bene con tutto il pasto. Restituisci un solo oggetto nell'array con courseName='Tutto Pasto' e dishName='Menu Completo'. Fornisci 2 opzioni di vino diverse per questa singola proposta.";
+  } else {
+      strategyPrompt = "Strategia: Proponi un abbinamento specifico PER OGNI PORTATA del menu. Per ogni portata, fornisci 2 opzioni di vino diverse (Opzione A e Opzione B).";
+  }
+
   const prompt = `
     Menu: "${menu}" (${guests} persone).
-    Cantina Utente:
-    ${inventoryList}
     
-    Suggerisci abbinamenti. Privilegia la cantina utente.
+    Inventario Cantina Utente (DA PRIVILEGIARE):
+    ${inventoryList || "Cantina Vuota"}
+    
+    ${strategyPrompt}
+    
+    Regole Fondamentali:
+    1. Per ogni suggerimento, devi fornire SEMPRE 2 opzioni distinte.
+    2. Cerca PRIMA nella "Cantina Utente". Se c'è un vino adatto, usa il suo ID e metti type='owned'.
+    3. Se la cantina ha solo 1 vino adatto, usalo come prima opzione e suggerisci un acquisto per la seconda.
+    4. Se non c'è nulla in cantina, suggerisci due vini da comprare (type='purchase') mettendo il nome in wineName e lasciando wineId vuoto.
+    5. Spiega brevemente il 'reasoning'.
   `;
 
   try {
@@ -130,11 +145,21 @@ export const suggestPairing = async (
               properties: {
                 courseName: { type: Type.STRING },
                 dishName: { type: Type.STRING },
-                reasoning: { type: Type.STRING },
-                suggestedWineId: { type: Type.STRING, nullable: true },
-                fallbackWineName: { type: Type.STRING }
+                options: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      wineId: { type: Type.STRING, nullable: true },
+                      wineName: { type: Type.STRING },
+                      reasoning: { type: Type.STRING },
+                      type: { type: Type.STRING, enum: ['owned', 'purchase'] }
+                    },
+                    required: ["wineName", "reasoning", "type"]
+                  }
+                }
               },
-              required: ["courseName", "dishName", "reasoning", "fallbackWineName"]
+              required: ["courseName", "dishName", "options"]
             }
           }
         }
