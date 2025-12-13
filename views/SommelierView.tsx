@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { Wine, PairingSuggestion, PairingOption } from '../types';
 import { suggestPairing } from '../services/geminiService';
@@ -14,7 +12,7 @@ interface SommelierViewProps {
 
 const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAiUsed, onConsume }) => {
   const [menuText, setMenuText] = useState('');
-  const [guests, setGuests] = useState(2);
+  // Rimosso stato guests, usiamo un default interno
   const [style, setStyle] = useState<'single' | 'multiple'>('multiple');
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<PairingSuggestion[]>([]);
@@ -26,7 +24,8 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
     setLoading(true);
     setSuggestions([]);
     try {
-      const results = await suggestPairing(menuText, guests, inventory, style);
+      // Passiamo 4 come default guests per mantenere la firma della funzione
+      const results = await suggestPairing(menuText, 4, inventory, style);
       setSuggestions(results);
       onAiUsed(); // Track
     } catch (error: any) {
@@ -75,27 +74,34 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Ospiti</label>
-                    <input 
-                        type="number" 
-                        min="1" 
-                        value={guests} 
-                        onChange={(e) => setGuests(parseInt(e.target.value))}
-                        className="w-full p-2 border border-gray-300 rounded-lg"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tipologia Servizio</label>
-                    <select 
-                        value={style} 
-                        onChange={(e) => setStyle(e.target.value as 'single' | 'multiple')}
-                        className="w-full p-2 border border-gray-300 rounded-lg"
+            <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tipologia di Servizio</label>
+                <div className="grid grid-cols-2 gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setStyle('multiple')}
+                        className={`p-3 rounded-xl border text-sm font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+                            style === 'multiple' 
+                            ? 'bg-wine-50 border-wine-600 text-wine-800 ring-1 ring-wine-600 shadow-sm' 
+                            : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300'
+                        }`}
                     >
-                        <option value="multiple">Abbinamento per portata</option>
-                        <option value="single">Vino unico per tutto</option>
-                    </select>
+                        <span>🍽️ Per Portata</span>
+                        <span className="text-[10px] font-normal opacity-80">Un vino diverso per ogni piatto</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setStyle('single')}
+                        className={`p-3 rounded-xl border text-sm font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+                            style === 'single' 
+                            ? 'bg-wine-50 border-wine-600 text-wine-800 ring-1 ring-wine-600 shadow-sm' 
+                            : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300'
+                        }`}
+                    >
+                        <span>🍾 Tutto Pasto</span>
+                        <span className="text-[10px] font-normal opacity-80">Un solo vino versatile</span>
+                    </button>
                 </div>
             </div>
 
@@ -112,7 +118,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
 
         {/* Results */}
         {suggestions.length > 0 && (
-            <div className="space-y-8">
+            <div className="space-y-8 animate-in slide-in-from-bottom duration-500">
                 <h3 className="text-xl font-serif font-bold text-gray-800 border-l-4 border-wine-500 pl-3">Suggerimenti</h3>
                 
                 {suggestions.map((suggestion, idx) => (
@@ -135,7 +141,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                                     : null;
 
                                 return (
-                                    <div key={optIdx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full">
+                                    <div key={optIdx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow">
                                         <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-100 flex justify-between items-center">
                                             <span className="text-xs font-bold text-gray-500 uppercase">Opzione {optIdx + 1}</span>
                                             {ownedWine ? (

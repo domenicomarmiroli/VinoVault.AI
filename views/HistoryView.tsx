@@ -158,6 +158,11 @@ const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLo
                                     <h3 className="text-gray-900 font-bold line-through decoration-gray-400 decoration-2 truncate">{entry.name}</h3>
                                     <p className="text-xs text-gray-500 truncate">{entry.producer} • {entry.year}</p>
                                 </div>
+                                {entry.price > 0 && (
+                                    <div className="text-sm font-bold text-gray-600 whitespace-nowrap ml-2">
+                                        €{entry.price.toFixed(2)}
+                                    </div>
+                                )}
                              </div>
                              
                              <div className="flex items-center flex-wrap gap-2 mb-2">
