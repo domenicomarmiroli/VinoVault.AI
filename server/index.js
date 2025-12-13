@@ -8,7 +8,6 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
-import fs from 'fs';
 
 dotenv.config();
 
@@ -25,30 +24,10 @@ const SERPAPI_KEY = process.env.SERPAPI_KEY;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// --- DIAGNOSTICA FILESYSTEM (DEBUG) ---
-const logDirectory = (dirPath, name) => {
-    try {
-        if (fs.existsSync(dirPath)) {
-            const files = fs.readdirSync(dirPath);
-            console.log(`[DEBUG] Contenuto cartella ${name} (${dirPath}):`, files);
-        } else {
-            console.log(`[DEBUG] Cartella ${name} NON trovata in: ${dirPath}`);
-        }
-    } catch (e) {
-        console.error(`[DEBUG] Errore lettura ${name}:`, e.message);
-    }
-};
-
-// Log paths on startup
+// --- STATIC FILES SERVING (STANDARD) ---
 const distPath = path.resolve(__dirname, '../dist');
 const publicPath = path.resolve(process.cwd(), 'public');
-console.log("[DEBUG] Server Startup Checks:");
-console.log("CWD:", process.cwd());
-console.log("__dirname:", __dirname);
-logDirectory(distPath, 'DIST');
-logDirectory(publicPath, 'PUBLIC');
 
-// --- STATIC FILES SERVING (STANDARD) ---
 // Serve built assets (production) - Priority 1
 app.use(express.static(distPath));
 // Serve public folder (dev/fallback) - Priority 2
@@ -202,7 +181,6 @@ const initDb = async () => {
 
 // --- PUBLIC CONFIG ROUTE ---
 app.get('/api/config', (req, res) => {
-    // Espone solo configurazioni pubbliche sicure al frontend
     res.json({
         googleClientId: GOOGLE_CLIENT_ID || ''
     });
