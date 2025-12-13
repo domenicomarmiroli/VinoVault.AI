@@ -25,14 +25,42 @@ const SERPAPI_KEY = process.env.SERPAPI_KEY;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// --- STATIC FILES SERVING ---
+// --- DEBUG & MANUAL STATIC FILE SERVING ---
+// Questa sezione forza la ricerca dei file critici in diverse posizioni
+// e stampa log dettagliati per capire cosa succede su Render.
+app.get(['/logo.png', '/favicon.ico'], (req, res) => {
+    const filename = req.path.substring(1); // Rimuove lo slash iniziale (es. "logo.png")
+    console.log(`[ASSET DEBUG] Richiesta ricevuta per: ${filename}`);
+
+    const possiblePaths = [
+        // 1. Cartella di Build finale (dove Vite mette i file pubblici)
+        path.join(__dirname, '../dist', filename),
+        // 2. Cartella Public sorgente (standard Vite)
+        path.join(process.cwd(), 'public', filename),
+        // 3. Cartella Radice del progetto (fallback estremo)
+        path.join(process.cwd(), filename),
+        // 4. Cartella superiore relativa al server
+        path.join(__dirname, '..', filename)
+    ];
+
+    for (const p of possiblePaths) {
+        // console.log(`[ASSET DEBUG] Controllo esistenza in: ${p}`);
+        if (fs.existsSync(p)) {
+            console.log(`[ASSET DEBUG] TROVATO in: ${p}`);
+            return res.sendFile(p);
+        }
+    }
+
+    console.error(`[ASSET ERROR] ${filename} NON trovato in nessuna delle ${possiblePaths.length} posizioni controllate.`);
+    res.status(404).send('File Image Not Found');
+});
+
+// --- STATIC FILES SERVING (STANDARD) ---
 // 1. Serve 'dist' folder (Production Build)
-// Quando Vite costruisce l'app, mette tutto qui (inclusi i file copiati da 'public')
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
 
 // 2. Serve 'public' folder (Development / Direct Access)
-// Utile se i file non sono ancora stati copiati in dist o per sviluppo locale
 const publicPath = path.join(process.cwd(), 'public');
 app.use(express.static(publicPath));
 
