@@ -11,7 +11,7 @@ export const Logo: React.FC<LogoProps> = ({ className = "w-12 h-12", showText = 
     <div className="flex items-center gap-3 select-none">
       <div className={`relative ${className} flex-shrink-0`}>
         <img 
-          src="/logo.png?v=6" 
+          src="/logo.png?v=final" 
           alt="AIKNOW.WINE Logo" 
           className="w-full h-full object-contain drop-shadow-md"
         />

@@ -48,47 +48,10 @@ console.log("__dirname:", __dirname);
 logDirectory(distPath, 'DIST');
 logDirectory(publicPath, 'PUBLIC');
 
-// --- STATIC ASSETS MANUAL HANDLING ---
-app.get('/logo.png', (req, res) => {
-    // Tentativi con varie combinazioni (anche Case Sensitive)
-    const candidates = [
-        path.join(distPath, 'logo.png'),
-        path.join(distPath, 'Logo.png'),
-        path.join(publicPath, 'logo.png'),
-        path.join(publicPath, 'Logo.png'),
-        path.join(process.cwd(), 'logo.png')
-    ];
-
-    for (const p of candidates) {
-        if (fs.existsSync(p)) {
-            console.log(`[ASSET SUCCESS] Serving logo from: ${p}`);
-            res.setHeader('Content-Type', 'image/png');
-            return res.sendFile(p);
-        }
-    }
-    
-    console.error('[ASSET ERROR] logo.png NOT FOUND. Checked paths:', candidates);
-    res.status(404).send('Image not found');
-});
-
-app.get('/favicon.ico', (req, res) => {
-    const candidates = [
-        path.join(distPath, 'favicon.ico'),
-        path.join(publicPath, 'favicon.ico'),
-        path.join(process.cwd(), 'favicon.ico')
-    ];
-
-    for (const p of candidates) {
-        if (fs.existsSync(p)) {
-            res.setHeader('Content-Type', 'image/x-icon');
-            return res.sendFile(p);
-        }
-    }
-    res.status(404).send('Not found');
-});
-
 // --- STATIC FILES SERVING (STANDARD) ---
+// Serve built assets (production) - Priority 1
 app.use(express.static(distPath));
+// Serve public folder (dev/fallback) - Priority 2
 app.use(express.static(publicPath));
 
 // Database Connection
