@@ -25,42 +25,50 @@ const SERPAPI_KEY = process.env.SERPAPI_KEY;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// --- DEBUG & MANUAL STATIC FILE SERVING ---
-// Questa sezione forza la ricerca dei file critici in diverse posizioni
-// e stampa log dettagliati per capire cosa succede su Render.
-app.get(['/logo.png', '/favicon.ico'], (req, res) => {
-    const filename = req.path.substring(1); // Rimuove lo slash iniziale (es. "logo.png")
-    console.log(`[ASSET DEBUG] Richiesta ricevuta per: ${filename}`);
+// --- STATIC ASSETS MANUAL HANDLING (FIX FOR RENDER) ---
+// Forziamo il serving corretto di logo e favicon bypassando i middleware standard
+// per garantire che il Content-Type sia corretto e non ritorni HTML.
 
-    const possiblePaths = [
-        // 1. Cartella di Build finale (dove Vite mette i file pubblici)
-        path.join(__dirname, '../dist', filename),
-        // 2. Cartella Public sorgente (standard Vite)
-        path.join(process.cwd(), 'public', filename),
-        // 3. Cartella Radice del progetto (fallback estremo)
-        path.join(process.cwd(), filename),
-        // 4. Cartella superiore relativa al server
-        path.join(__dirname, '..', filename)
+app.get('/logo.png', (req, res) => {
+    // Cerchiamo il file in ordine di priorità
+    const pathsToCheck = [
+        path.join(__dirname, '../dist/logo.png'), // Produzione
+        path.join(process.cwd(), 'public/logo.png'), // Sviluppo/Sorgente
+        path.join(process.cwd(), 'logo.png') // Root fallback
     ];
 
-    for (const p of possiblePaths) {
-        // console.log(`[ASSET DEBUG] Controllo esistenza in: ${p}`);
+    for (const p of pathsToCheck) {
         if (fs.existsSync(p)) {
-            console.log(`[ASSET DEBUG] TROVATO in: ${p}`);
+            res.setHeader('Content-Type', 'image/png');
             return res.sendFile(p);
         }
     }
+    console.error('[ASSET ERROR] logo.png not found via manual route');
+    res.status(404).send('Not found');
+});
 
-    console.error(`[ASSET ERROR] ${filename} NON trovato in nessuna delle ${possiblePaths.length} posizioni controllate.`);
-    res.status(404).send('File Image Not Found');
+app.get('/favicon.ico', (req, res) => {
+    const pathsToCheck = [
+        path.join(__dirname, '../dist/favicon.ico'),
+        path.join(process.cwd(), 'public/favicon.ico'),
+        path.join(process.cwd(), 'favicon.ico')
+    ];
+
+    for (const p of pathsToCheck) {
+        if (fs.existsSync(p)) {
+            res.setHeader('Content-Type', 'image/x-icon');
+            return res.sendFile(p);
+        }
+    }
+    res.status(404).send('Not found');
 });
 
 // --- STATIC FILES SERVING (STANDARD) ---
-// 1. Serve 'dist' folder (Production Build)
+// Serve 'dist' folder (Production Build)
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
 
-// 2. Serve 'public' folder (Development / Direct Access)
+// Serve 'public' folder (Development / Direct Access)
 const publicPath = path.join(process.cwd(), 'public');
 app.use(express.static(publicPath));
 
@@ -731,6 +739,7 @@ app.delete('/api/locations/:id', authenticateToken, async (req, res) => {
 // --- CATCH-ALL ROUTE FOR SPA ---
 app.get('*', (req, res) => {
   // Security: Don't serve HTML for asset requests (e.g. broken images)
+  // This explicitly prevents "200 OK" html responses for missing images.
   if (req.path.includes('.')) {
       return res.status(404).send('Not Found');
   }
