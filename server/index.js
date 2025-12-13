@@ -25,36 +25,60 @@ const SERPAPI_KEY = process.env.SERPAPI_KEY;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// --- STATIC ASSETS MANUAL HANDLING (FIX FOR RENDER) ---
-// Forziamo il serving corretto di logo e favicon bypassando i middleware standard
-// per garantire che il Content-Type sia corretto e non ritorni HTML.
+// --- DIAGNOSTICA FILESYSTEM (DEBUG) ---
+const logDirectory = (dirPath, name) => {
+    try {
+        if (fs.existsSync(dirPath)) {
+            const files = fs.readdirSync(dirPath);
+            console.log(`[DEBUG] Contenuto cartella ${name} (${dirPath}):`, files);
+        } else {
+            console.log(`[DEBUG] Cartella ${name} NON trovata in: ${dirPath}`);
+        }
+    } catch (e) {
+        console.error(`[DEBUG] Errore lettura ${name}:`, e.message);
+    }
+};
 
+// Log paths on startup
+const distPath = path.resolve(__dirname, '../dist');
+const publicPath = path.resolve(process.cwd(), 'public');
+console.log("[DEBUG] Server Startup Checks:");
+console.log("CWD:", process.cwd());
+console.log("__dirname:", __dirname);
+logDirectory(distPath, 'DIST');
+logDirectory(publicPath, 'PUBLIC');
+
+// --- STATIC ASSETS MANUAL HANDLING ---
 app.get('/logo.png', (req, res) => {
-    // Cerchiamo il file in ordine di priorità
-    const pathsToCheck = [
-        path.join(__dirname, '../dist/logo.png'), // Produzione
-        path.join(process.cwd(), 'public/logo.png'), // Sviluppo/Sorgente
-        path.join(process.cwd(), 'logo.png') // Root fallback
+    // Tentativi con varie combinazioni (anche Case Sensitive)
+    const candidates = [
+        path.join(distPath, 'logo.png'),
+        path.join(distPath, 'Logo.png'),
+        path.join(publicPath, 'logo.png'),
+        path.join(publicPath, 'Logo.png'),
+        path.join(process.cwd(), 'logo.png')
     ];
 
-    for (const p of pathsToCheck) {
+    for (const p of candidates) {
         if (fs.existsSync(p)) {
+            console.log(`[ASSET SUCCESS] Serving logo from: ${p}`);
             res.setHeader('Content-Type', 'image/png');
             return res.sendFile(p);
         }
     }
-    console.error('[ASSET ERROR] logo.png not found via manual route');
-    res.status(404).send('Not found');
+    
+    console.error('[ASSET ERROR] logo.png NOT FOUND. Checked paths:', candidates);
+    res.status(404).send('Image not found');
 });
 
 app.get('/favicon.ico', (req, res) => {
-    const pathsToCheck = [
-        path.join(__dirname, '../dist/favicon.ico'),
-        path.join(process.cwd(), 'public/favicon.ico'),
+    const candidates = [
+        path.join(distPath, 'favicon.ico'),
+        path.join(publicPath, 'favicon.ico'),
         path.join(process.cwd(), 'favicon.ico')
     ];
 
-    for (const p of pathsToCheck) {
+    for (const p of candidates) {
         if (fs.existsSync(p)) {
             res.setHeader('Content-Type', 'image/x-icon');
             return res.sendFile(p);
@@ -64,12 +88,7 @@ app.get('/favicon.ico', (req, res) => {
 });
 
 // --- STATIC FILES SERVING (STANDARD) ---
-// Serve 'dist' folder (Production Build)
-const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
-
-// Serve 'public' folder (Development / Direct Access)
-const publicPath = path.join(process.cwd(), 'public');
 app.use(express.static(publicPath));
 
 // Database Connection
@@ -738,8 +757,7 @@ app.delete('/api/locations/:id', authenticateToken, async (req, res) => {
  
 // --- CATCH-ALL ROUTE FOR SPA ---
 app.get('*', (req, res) => {
-  // Security: Don't serve HTML for asset requests (e.g. broken images)
-  // This explicitly prevents "200 OK" html responses for missing images.
+  // Security: Don't serve HTML for asset requests
   if (req.path.includes('.')) {
       return res.status(404).send('Not Found');
   }
