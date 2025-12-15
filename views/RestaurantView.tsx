@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef } from 'react';
 import { suggestRestaurantPairing } from '../services/geminiService';
 import { RestaurantSuggestion, HistoryEntry, Restaurant } from '../types';
@@ -268,14 +267,14 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                                  <h3 className="font-bold text-gray-900 leading-tight">{wine.name}</h3>
                                  <p className="text-xs text-gray-600">{wine.producer} • {wine.year}</p>
                              </div>
-                             {wine.price > 0 && (
+                             {wine.price && wine.price > 0 ? (
                                  <div className="text-lg font-bold text-gray-800">€{wine.price}</div>
-                             )}
+                             ) : null}
                         </div>
                         
                         <div className="flex items-center gap-2 mb-3">
                              <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded">
-                                 Match {wine.matchScore}%
+                                 Match {Math.round(wine.matchScore)}%
                              </div>
                              <span className="text-xs text-gray-400 uppercase font-bold tracking-wider">{wine.type}</span>
                         </div>

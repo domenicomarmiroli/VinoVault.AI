@@ -328,12 +328,26 @@ export const suggestRestaurantPairing = async (
     const langName = getLanguageName(lang);
     let parts: any[] = [];
 
+    const promptText = `
+    Sei un Sommelier esperto al ristorante.
+    Compito: Analizzare il menu (testo o immagini) e suggerire 3 abbinamenti per il piatto: "${dish}".
+    
+    Regole Rigorose:
+    1. PREZZO: Estrai il prezzo ESATTO scritto sul menu per quel vino specifico. 
+       - Se il prezzo NON è visibile o leggibile, restituisci 0. 
+       - NON STIMARE, NON INVENTARE, NON CERCARE SU GOOGLE. Usa solo i dati OCR.
+    
+    2. PUNTEGGIO (matchScore): Restituisci un numero INTERO tra 70 e 100 che indica quanto bene si abbina. (Es. 95, non 9.5).
+    
+    3. Rispondi esclusivamente in ${langName}.
+    `;
+
     if (menuSource.type === 'images') {
         const images = menuSource.data as string[];
         parts = images.map(img => ({ inlineData: { mimeType: "image/jpeg", data: cleanBase64(img) } }));
-        parts.push({ text: `Piatto: "${dish}". Leggi menu e suggerisci 3 vini in ${langName}.` });
+        parts.push({ text: promptText });
     } else {
-        parts.push({ text: `Menu: """${menuSource.data}""". Piatto: "${dish}". Suggerisci 3 vini in ${langName}.` });
+        parts.push({ text: `Menu Context: """${menuSource.data}""". \n ${promptText}` });
     }
 
     try {
@@ -341,7 +355,6 @@ export const suggestRestaurantPairing = async (
             model,
             contents: { parts },
             config: {
-                systemInstruction: `Sei un Sommelier. Rispondi in ${langName}. JSON puro.`,
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: "ARRAY",
@@ -351,10 +364,10 @@ export const suggestRestaurantPairing = async (
                             name: { type: "STRING" },
                             producer: { type: "STRING" },
                             year: { type: "STRING" },
-                            price: { type: "NUMBER" },
+                            price: { type: "NUMBER", nullable: true },
                             type: { type: "STRING" },
                             reasoning: { type: "STRING" },
-                            matchScore: { type: "NUMBER" }
+                            matchScore: { type: "INTEGER" } 
                         },
                         required: ["name", "producer", "reasoning", "matchScore"]
                     }
