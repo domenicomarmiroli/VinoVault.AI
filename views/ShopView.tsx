@@ -80,6 +80,12 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
       try {
           const input = mode === 'camera' ? { type: 'image' as const, data: image! } : { type: 'url' as const, data: linkUrl };
           const result = await analyzePurchase(input, inputPrice, inventory, language);
+          
+          // Ensure wineDetails is never null/undefined before setting state
+          if (!result.wineDetails) {
+              result.wineDetails = { name: 'Unknown', producer: 'Unknown', type: 'Rosso' as any };
+          }
+          
           setAnalysis(result);
           onAiUsed(); 
       } catch (error: any) {

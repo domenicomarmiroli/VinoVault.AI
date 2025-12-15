@@ -66,8 +66,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   };
 
   const filters: { label: string, value: FilterType }[] = [
-    { label: t('sort_recent'), value: 'all' }, // Using sort_recent as generic "All" or adding explicit "All" key if preferred, sticking to t('nav_cellar') context or just "Tutti"
-    // Better to use explicit keys if possible, for now mapping:
+    { label: t('sort_recent'), value: 'all' }, 
     { label: "All", value: 'all' },
     { label: "Red", value: WineType.RED },
     { label: "White", value: WineType.WHITE },
@@ -75,10 +74,15 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   ];
 
   const filteredWines = wines.filter(w => {
+    const nameMatch = w.name?.toLowerCase() || '';
+    const producerMatch = w.producer?.toLowerCase() || '';
+    const typeMatch = w.type?.toLowerCase() || '';
+    const term = searchTerm.toLowerCase();
+
     const matchesSearch = 
-        w.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        w.producer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        w.type.toLowerCase().includes(searchTerm.toLowerCase());
+        nameMatch.includes(term) || 
+        producerMatch.includes(term) ||
+        typeMatch.includes(term);
     
     let matchesFilter = true;
     if (activeFilter !== 'all') {

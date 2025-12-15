@@ -31,10 +31,12 @@ const publicPath = path.resolve(process.cwd(), 'public');
 app.use(express.static(distPath));
 app.use(express.static(publicPath));
 
-// Database Connection
+// Database Connection with Timeout
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 5000, // Fail fast if DB is unreachable
+  idleTimeoutMillis: 30000,
 });
 
 // --- AUTH MIDDLEWARE ---
@@ -63,9 +65,11 @@ const authenticateAdmin = (req, res, next) => {
 
 // --- DB INITIALIZATION ---
 const initDb = async () => {
+  console.log("Initializing DB tables...");
+  const client = await pool.connect();
   try {
     // 1. Users
-    await pool.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
@@ -80,7 +84,7 @@ const initDb = async () => {
     `);
 
     // 2. Wines
-    await pool.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS wines (
         id TEXT PRIMARY KEY,
         user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
@@ -108,7 +112,7 @@ const initDb = async () => {
     `);
 
     // 3. History
-    await pool.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS history (
         id TEXT PRIMARY KEY,
         user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
@@ -127,7 +131,7 @@ const initDb = async () => {
     `);
 
     // 4. Locations
-    await pool.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS locations (
         id TEXT PRIMARY KEY,
         user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
@@ -136,7 +140,7 @@ const initDb = async () => {
     `);
 
     // 5. Restaurants
-    await pool.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS restaurants (
         id TEXT PRIMARY KEY,
         slug TEXT UNIQUE NOT NULL,
@@ -148,26 +152,29 @@ const initDb = async () => {
 
     // MIGRATIONS: Add new columns if they don't exist
     try {
-        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'it';`);
-        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT FALSE;`);
-        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_usage_count INTEGER DEFAULT 0;`);
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'it';`);
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT FALSE;`);
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_usage_count INTEGER DEFAULT 0;`);
         
         // Ensure Wine Columns Exist
-        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS storage_temp TEXT;`);
-        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS storage_advice TEXT;`);
-        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS serving_temp TEXT;`);
-        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS serving_advice TEXT;`);
-        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS food_pairings TEXT[];`);
-        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS image_url TEXT;`);
-        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS drink_window TEXT;`);
-        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS market_price DECIMAL;`);
+        await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS storage_temp TEXT;`);
+        await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS storage_advice TEXT;`);
+        await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS serving_temp TEXT;`);
+        await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS serving_advice TEXT;`);
+        await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS food_pairings TEXT[];`);
+        await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS image_url TEXT;`);
+        await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS drink_window TEXT;`);
+        await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS market_price DECIMAL;`);
     } catch (e) {
-        console.log("Migration check complete");
+        console.log("Migration check skipped/error (non-fatal):", e.message);
     }
 
     console.log("Database tables checked/created successfully.");
   } catch (error) {
     console.error("Error initializing database tables:", error);
+    // Don't crash the server if DB init fails, just log it. Server needs to start to pass health checks.
+  } finally {
+    client.release();
   }
 };
 
@@ -582,7 +589,13 @@ app.get('*', (req, res) => {
 
 // Start Server
 const startServer = async () => {
-  if (process.env.DATABASE_URL) await initDb();
+  try {
+    if (process.env.DATABASE_URL) {
+      await initDb();
+    }
+  } catch (e) {
+    console.error("DB Init failed but starting server anyway:", e);
+  }
   app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
 };
 
