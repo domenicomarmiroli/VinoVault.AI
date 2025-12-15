@@ -16,8 +16,17 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
       <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300 relative">
         
         {/* Header */}
-        <div className="bg-wine-700 p-6 text-white shrink-0">
-          <h2 className="text-2xl font-serif font-bold">Benvenuto in AIKnow.wine</h2>
+        <div className="bg-wine-700 p-6 text-white shrink-0 relative">
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 text-wine-200 hover:text-white p-1 rounded-full hover:bg-wine-600/50 transition-colors"
+            title="Chiudi"
+          >
+             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+             </svg>
+          </button>
+          <h2 className="text-2xl font-serif font-bold pr-8">Benvenuto in AIKnow.wine</h2>
           <p className="text-wine-100 text-sm mt-1">Il tuo sommelier personale e gestore di cantina.</p>
         </div>
 
@@ -100,7 +109,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
             Inizia a usare l'App
           </button>
         </div>
-
+ 
       </div>
     </div>
   );
