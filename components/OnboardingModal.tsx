@@ -11,16 +11,31 @@ interface OnboardingModalProps {
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
+  const handleBackdropClick = (e: React.MouseEvent) => {
+      // Chiudi se si clicca sullo sfondo scuro (backdrop)
+      if (e.target === e.currentTarget) {
+          onClose();
+      }
+  };
+
   const content = (
-    <div className="fixed inset-0 bg-black/70 z-[300] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300 relative">
+    <div 
+        onClick={handleBackdropClick}
+        className="fixed inset-0 bg-black/70 z-[300] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300"
+    >
+      {/* Aggiunto stopPropagation per evitare che click sul contenuto chiudano il modale */}
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300 relative"
+      >
         
         {/* Header */}
         <div className="bg-wine-700 p-6 text-white shrink-0 relative">
           <button 
             onClick={onClose}
-            className="absolute top-4 right-4 text-wine-200 hover:text-white p-1 rounded-full hover:bg-wine-600/50 transition-colors"
+            className="absolute top-4 right-4 text-wine-200 hover:text-white p-2 rounded-full hover:bg-wine-600/50 transition-colors z-50 cursor-pointer"
             title="Chiudi"
+            type="button"
           >
              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -41,7 +56,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
             <div>
               <h3 className="font-bold text-gray-900 text-lg">La tua Cantina Digitale</h3>
               <p className="text-gray-600 text-sm mt-1">
-                Aggiungi i tuoi vini scattando una foto all'etichetta. L'intelligenza artificiale riconoscerà tutti i dettagli. Clicca sul tasto <strong>+</strong> per iniziare.
+                Aggiungi i tuoi vini scattando una foto all'etichetta. L'intelligenza artificiale riconoscerà tutti i dettagli. Clicca sul tast <strong>+</strong> per iniziare.
               </p>
             </div>
           </div>
@@ -104,12 +119,12 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
         <div className="p-4 border-t border-gray-100 bg-gray-50 shrink-0">
           <button 
             onClick={onClose}
-            className="w-full py-3 bg-wine-700 text-white font-bold rounded-xl hover:bg-wine-800 transition-colors shadow-lg shadow-wine-200"
+            className="w-full py-3 bg-wine-700 text-white font-bold rounded-xl hover:bg-wine-800 transition-colors shadow-lg shadow-wine-200 cursor-pointer"
           >
             Inizia a usare l'App
           </button>
         </div>
- 
+
       </div>
     </div>
   );
