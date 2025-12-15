@@ -136,7 +136,8 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
       }
   };
 
-  const generateQrUrl = (slug: string) => `${window.location.origin}/?ref=${encodeURIComponent(slug)}`;
+  // Ensure strict domain for QR Codes
+  const generateQrUrl = (slug: string) => `https://www.aiknow.wine/?ref=${encodeURIComponent(slug)}`;
 
   // --- USER ACTIONS ---
   const handleDeleteUser = async (id: string) => {
