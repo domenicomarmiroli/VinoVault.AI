@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
-import { Wine, PairingSuggestion, PairingOption } from '../types';
+import { Wine, PairingSuggestion } from '../types';
 import { suggestPairing } from '../services/geminiService';
-import { ChefIcon, WineIcon, LogoutIcon, ThermometerIcon, ClockIcon, MapPinIcon, StarIcon, ShoppingCartIcon } from '../components/Icons';
+import { ChefIcon, LogoutIcon, ThermometerIcon, ClockIcon, MapPinIcon, StarIcon, ShoppingCartIcon, WineIcon } from '../components/Icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface SommelierViewProps {
   inventory: Wine[];
@@ -12,10 +14,11 @@ interface SommelierViewProps {
 
 const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAiUsed, onConsume }) => {
   const [menuText, setMenuText] = useState('');
-  // Rimosso stato guests, usiamo un default interno
   const [style, setStyle] = useState<'single' | 'multiple'>('multiple');
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<PairingSuggestion[]>([]);
+  
+  const { t, language } = useLanguage();
 
   const handleSuggestion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,13 +27,13 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
     setLoading(true);
     setSuggestions([]);
     try {
-      // Passiamo 4 come default guests per mantenere la firma della funzione
-      const results = await suggestPairing(menuText, 4, inventory, style);
+      // Pass language to Gemini
+      const results = await suggestPairing(menuText, 4, inventory, style, language);
       setSuggestions(results);
-      onAiUsed(); // Track
+      onAiUsed(); 
     } catch (error: any) {
       console.error(error);
-      alert(`Errore Sommelier: ${error.message || "Riprova più tardi."}`);
+      alert(`${t('error')}: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -40,42 +43,40 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
 
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden">
-       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
         <div>
             <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
                 <ChefIcon className="w-8 h-8 text-wine-600" />
-                Sommelier Virtuale
+                {t('sommelier_title')}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-                Inserisci il menu e lascia che l'IA trovi il vino perfetto nella tua cantina.
+                {t('sommelier_desc')}
             </p>
         </div>
         <button 
             onClick={onLogout}
             className="text-gray-400 hover:text-wine-700 p-2"
-            title="Esci"
+            title={t('logout')}
         >
             <LogoutIcon className="w-6 h-6" />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 pb-24">
-        {/* Input Form */}
         <form onSubmit={handleSuggestion} className="bg-white rounded-xl shadow-sm p-4 border border-gray-200 mb-6">
             <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Il Menu del Pranzo/Cena</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Menu</label>
                 <textarea 
                     value={menuText}
                     onChange={(e) => setMenuText(e.target.value)}
-                    placeholder="Es. Antipasto di salumi, Lasagne al ragù, Arrosto di vitello..."
+                    placeholder={t('menu_placeholder')}
                     className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wine-500 outline-none resize-none"
                     required
                 />
             </div>
 
             <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipologia di Servizio</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('service_type')}</label>
                 <div className="grid grid-cols-2 gap-3">
                     <button
                         type="button"
@@ -86,8 +87,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                             : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300'
                         }`}
                     >
-                        <span>🍽️ Per Portata</span>
-                        <span className="text-[10px] font-normal opacity-80">Un vino diverso per ogni piatto</span>
+                        <span>🍽️ {t('per_course')}</span>
                     </button>
 
                     <button
@@ -99,8 +99,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                             : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300'
                         }`}
                     >
-                        <span>🍾 Tutto Pasto</span>
-                        <span className="text-[10px] font-normal opacity-80">Un solo vino versatile</span>
+                        <span>🍾 {t('single_wine')}</span>
                     </button>
                 </div>
             </div>
@@ -112,18 +111,16 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                     loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-wine-600 hover:bg-wine-700'
                 }`}
             >
-                {loading ? 'Consultazione in corso...' : 'Chiedi al Sommelier'}
+                {loading ? t('ai_analyzing') : t('ask_sommelier')}
             </button>
         </form>
 
-        {/* Results */}
         {suggestions.length > 0 && (
             <div className="space-y-8 animate-in slide-in-from-bottom duration-500">
-                <h3 className="text-xl font-serif font-bold text-gray-800 border-l-4 border-wine-500 pl-3">Suggerimenti</h3>
+                <h3 className="text-xl font-serif font-bold text-gray-800 border-l-4 border-wine-500 pl-3">Suggestions</h3>
                 
                 {suggestions.map((suggestion, idx) => (
                     <div key={idx} className="space-y-2">
-                        {/* Course Header */}
                         <div className="flex items-center gap-2">
                             <span className="font-bold text-wine-900 uppercase text-sm tracking-wider bg-wine-100 px-2 py-1 rounded">
                                 {suggestion.courseName}
@@ -133,7 +130,6 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                             </span>
                         </div>
 
-                        {/* Options Grid (Stacked on mobile, Side by side on larger screens) */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {suggestion.options.map((option, optIdx) => {
                                 const ownedWine = option.type === 'owned' && option.wineId 
@@ -143,11 +139,11 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                                 return (
                                     <div key={optIdx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow">
                                         <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-100 flex justify-between items-center">
-                                            <span className="text-xs font-bold text-gray-500 uppercase">Opzione {optIdx + 1}</span>
+                                            <span className="text-xs font-bold text-gray-500 uppercase">Option {optIdx + 1}</span>
                                             {ownedWine ? (
-                                                <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded uppercase">In Cantina</span>
+                                                <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded uppercase">In Cellar</span>
                                             ) : (
-                                                <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded uppercase">Da Comprare</span>
+                                                <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded uppercase">To Buy</span>
                                             )}
                                         </div>
 
@@ -156,13 +152,12 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                                                 "{option.reasoning}"
                                             </p>
 
-                                            {/* Serving Details Row */}
                                             <div className="flex gap-4 mb-3 text-xs text-gray-500 bg-stone-50 p-2 rounded-lg border border-stone-100">
-                                                <div className="flex items-center gap-1.5" title="Temperatura Servizio">
+                                                <div className="flex items-center gap-1.5">
                                                     <ThermometerIcon className="w-4 h-4 text-wine-600" />
                                                     <span>{option.servingTemp || '16-18°C'}</span>
                                                 </div>
-                                                <div className="flex items-center gap-1.5" title="Quando aprire">
+                                                <div className="flex items-center gap-1.5">
                                                     <ClockIcon className="w-4 h-4 text-wine-600" />
                                                     <span className="truncate">{option.servingAdvice || 'Aprire prima'}</span>
                                                 </div>
@@ -183,20 +178,12 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                                                             <p className="text-[10px] text-gray-500">{ownedWine.year} • {ownedWine.producer}</p>
                                                         </div>
                                                     </div>
-                                                    
-                                                    <div className="flex justify-between items-center text-[10px] text-gray-500 mt-1">
-                                                        <div className="flex items-center gap-1">
-                                                            <MapPinIcon className="w-3 h-3" /> {ownedWine.location}
-                                                        </div>
-                                                        <div className="font-bold">€{ownedWine.price}</div>
-                                                    </div>
-
                                                     <button 
                                                         onClick={() => onConsume(ownedWine)}
                                                         className="w-full py-2 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 shadow-sm flex items-center justify-center gap-2 mt-2"
                                                     >
                                                         <StarIcon className="w-3 h-3" filled={false} />
-                                                        Stappa Ora
+                                                        Open
                                                     </button>
                                                 </div>
                                             ) : (
@@ -206,7 +193,6 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                                                     </div>
                                                     <div>
                                                         <p className="font-bold text-gray-900 text-sm leading-tight">{option.wineName}</p>
-                                                        <p className="text-[10px] text-gray-500">Suggerimento acquisto</p>
                                                     </div>
                                                 </div>
                                             )}

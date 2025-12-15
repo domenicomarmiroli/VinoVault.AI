@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Logo } from './Logo';
+import { useLanguage } from '../contexts/LanguageContext';
 
-// Add type for Google Identity Services
 declare global {
     interface Window {
         google: any;
@@ -19,22 +19,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  // State per il Client ID (gestito automaticamente)
   const [googleClientId, setGoogleClientId] = useState('');
+  
+  const { t, language } = useLanguage();
 
-  // 1. Fetch Config from Backend (Runtime environment variable)
   useEffect(() => {
       const fetchConfig = async () => {
           try {
               const res = await fetch('/api/config');
               if (res.ok) {
                   const data = await res.json();
-                  if (data.googleClientId) {
-                      setGoogleClientId(data.googleClientId);
-                  } else {
-                      console.warn("Google Client ID non configurato sul server.");
-                  }
+                  if (data.googleClientId) setGoogleClientId(data.googleClientId);
               }
           } catch (e) {
               console.log("Config fetch failed", e);
@@ -43,7 +38,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
       fetchConfig();
   }, []);
 
-  // 2. Initialize Google Button
   useEffect(() => {
     if (window.google && googleClientId) {
         try {
@@ -70,7 +64,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
                   token: response.credential,
-                  clientId: googleClientId // Inviamo anche l'ID per verifica backend
+                  clientId: googleClientId,
+                  language // Send current detected language
               })
           });
           const data = await res.json();
@@ -94,7 +89,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, language }) // Send lang on register
       });
 
       const data = await res.json();
@@ -115,12 +110,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
     <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 animate-in fade-in zoom-in-95 duration-500">
         
-        {/* Logo Section */}
         <div className="flex flex-col items-center justify-center mb-8">
             <Logo className="w-20 h-20 mb-4" />
         </div>
 
-        {/* Google Sign In Section - Appare solo se ID è configurato */}
         {googleClientId && (
             <div className="mb-6">
                 <div id="googleSignInBtn" className="w-full h-[40px] flex justify-center"></div>
@@ -129,7 +122,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
 
         <div className="relative flex py-2 items-center mb-6">
             <div className="flex-grow border-t border-gray-100"></div>
-            <span className="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase font-bold">Oppure con Email</span>
+            <span className="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase font-bold">{t('or_email')}</span>
             <div className="flex-grow border-t border-gray-100"></div>
         </div>
 
@@ -142,7 +135,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none transition-shadow"
-                    placeholder="sommelier@esempio.com"
+                    placeholder="email@example.com"
                 />
             </div>
             <div>
@@ -164,19 +157,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
                 disabled={loading}
                 className="w-full py-3 bg-wine-700 text-white font-bold rounded-xl hover:bg-wine-800 transition-all shadow-lg shadow-wine-200 disabled:opacity-50 transform active:scale-[0.98]"
             >
-                {loading ? 'Attendere...' : (isLogin ? 'Accedi alla Cantina' : 'Crea Account')}
+                {loading ? t('loading') : (isLogin ? t('login_title') : t('register_title'))}
             </button>
         </form>
 
         <div className="mt-8 text-center pt-6 border-t border-gray-100">
-            <p className="text-gray-500 text-sm mb-2">
-                {isLogin ? 'Nuovo sommelier?' : 'Hai già le chiavi?'}
-            </p>
             <button 
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-wine-700 font-bold hover:underline"
+                className="text-wine-700 font-bold hover:underline text-sm"
             >
-                {isLogin ? 'Registrati gratuitamente' : 'Accedi al tuo account'}
+                {isLogin ? t('register_btn') : t('login_btn')}
             </button>
         </div>
       </div>

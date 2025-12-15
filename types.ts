@@ -1,5 +1,7 @@
 
 
+export type Language = 'it' | 'en' | 'fr' | 'es' | 'de';
+
 export enum WineType {
   RED = 'Rosso',
   WHITE = 'Bianco',
@@ -104,16 +106,17 @@ export interface User {
   id: string;
   email: string;
   role: 'user' | 'admin';
-  is_premium?: boolean; // New Premium Status
+  is_premium?: boolean; 
+  language?: Language; // New Language Preference
   created_at?: string;
   last_login?: string;
   // Stats
-  wine_count?: number;     // From DB Join
-  ai_usage_count?: number; // From DB column
+  wine_count?: number;     
+  ai_usage_count?: number; 
 }
 
 export interface OnlinePrice {
-    source: string; // Nome negozio (es. Tannico)
+    source: string; 
     price: number;
     currency: string;
     link: string;

@@ -1,7 +1,6 @@
 
-
 import { GoogleGenAI, Type } from "@google/genai";
-import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, RestaurantSuggestion, HistoryEntry, CellarReport } from "../types";
+import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, RestaurantSuggestion, HistoryEntry, CellarReport, Language } from "../types";
 
 // Helper to remove base64 prefix
 const cleanBase64 = (base64: string) => {
@@ -13,23 +12,35 @@ const cleanJson = (text: string) => {
     return text.replace(/```json/g, '').replace(/```/g, '').trim();
 };
 
-// Initialize Gemini Client safely
 const apiKey = process.env.API_KEY;
 const ai = new GoogleGenAI({ apiKey: apiKey || "dummy_key" });
+
+const getLanguageName = (code: Language) => {
+    switch(code) {
+        case 'en': return 'English';
+        case 'fr': return 'French';
+        case 'es': return 'Spanish';
+        case 'de': return 'German';
+        default: return 'Italian';
+    }
+};
 
 /**
  * Analyzes a wine label image to extract details and provide professional advice.
  */
-export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Wine>> => {
-  if (!apiKey) throw new Error("Chiave API mancante. Configurala su Render.");
+export const analyzeWineLabel = async (base64Image: string, lang: Language = 'it'): Promise<Partial<Wine>> => {
+  if (!apiKey) throw new Error("Chiave API mancante.");
 
   const model = "gemini-2.5-flash"; 
+  const langName = getLanguageName(lang);
   
-  const systemInstruction = `Sei un sommelier professionista e un gestore di cantina meticoloso. 
-  Analizza l'immagine dell'etichetta di vino per estrarre TUTTI i dati tecnici visibili o deducibili.
+  const systemInstruction = `Sei un sommelier professionista. 
+  Analizza l'immagine dell'etichetta di vino per estrarre TUTTI i dati tecnici.
   
-  Per "drinkWindow", stima l'intervallo di anni ideale per bere il vino (es. "2026-2030") basandoti su annata, vitigno e regione.
-  Per "marketPrice", stima il valore attuale medio in Euro di questa bottiglia specifica.
+  IMPORTANTE: Rispondi SEMPRE in ${langName} (tranne che per i nomi propri).
+  
+  Per "drinkWindow", stima l'intervallo di anni (es. "2026-2030").
+  Per "marketPrice", stima il valore attuale medio in Euro.
   
   Rispondi SEMPRE SOLTANTO con un JSON valido (senza markdown) secondo lo schema fornito.`;
 
@@ -38,15 +49,8 @@ export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Win
         model,
         contents: {
           parts: [
-            {
-              inlineData: {
-                mimeType: "image/jpeg",
-                data: cleanBase64(base64Image),
-              },
-            },
-            {
-              text: "Analizza questa etichetta. Estrai dati tecnici, finestra di bevibilità e stima valore mercato.",
-            },
+            { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } },
+            { text: `Analizza questa etichetta. Estrai dati tecnici in ${langName}.` },
           ],
         },
         config: {
@@ -68,8 +72,8 @@ export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Win
               servingAdvice: { type: Type.STRING },
               foodPairings: { type: Type.ARRAY, items: { type: Type.STRING } },
               price: { type: Type.NUMBER },
-              drinkWindow: { type: Type.STRING, description: "Year range e.g. 2026-2030" },
-              marketPrice: { type: Type.NUMBER, description: "Estimated market value in EUR" }
+              drinkWindow: { type: Type.STRING },
+              marketPrice: { type: Type.NUMBER }
             },
             required: ["name", "producer", "type", "storageTemp", "servingAdvice", "storageAdvice", "grape", "drinkWindow", "marketPrice"]
           },
@@ -78,16 +82,10 @@ export const analyzeWineLabel = async (base64Image: string): Promise<Partial<Win
 
       const text = response.text;
       if (!text) throw new Error("Nessuna risposta da Gemini");
-      
-      try {
-          return JSON.parse(cleanJson(text));
-      } catch (e) {
-          console.error("JSON Parse Error. Raw text:", text);
-          throw new Error("Il formato dei dati ricevuto dall'IA non è valido.");
-      }
+      return JSON.parse(cleanJson(text));
   } catch (err: any) {
       console.error("Gemini API Error:", err);
-      throw new Error(err.message || "Errore di comunicazione con l'IA");
+      throw new Error(err.message || "Errore AI");
   }
 };
 
@@ -98,38 +96,29 @@ export const suggestPairing = async (
   menu: string, 
   guests: number, 
   inventory: Wine[], 
-  style: 'single' | 'multiple'
+  style: 'single' | 'multiple',
+  lang: Language = 'it'
 ): Promise<PairingSuggestion[]> => {
   if (!apiKey) throw new Error("Chiave API mancante.");
 
   const model = "gemini-2.5-flash";
+  const langName = getLanguageName(lang);
 
   const inventoryList = inventory.map(w => 
-    `ID: ${w.id}, Nome: ${w.name} (${w.year}), Tipo: ${w.type}, Vitigno: ${w.grape}, Qta: ${w.quantity}`
+    `ID: ${w.id}, Nome: ${w.name} (${w.year}), Tipo: ${w.type}, Vitigno: ${w.grape}`
   ).join("\n");
 
-  let strategyPrompt = "";
-  if (style === 'single') {
-      strategyPrompt = "Strategia: Proponi un VINO UNICO versatile che stia bene con tutto il pasto. Restituisci un solo oggetto nell'array con courseName='Tutto Pasto' e dishName='Menu Completo'. Fornisci 2 opzioni di vino diverse per questa singola proposta.";
-  } else {
-      strategyPrompt = "Strategia: Proponi un abbinamento specifico PER OGNI PORTATA del menu. Per ogni portata, fornisci 2 opzioni di vino diverse (Opzione A e Opzione B).";
-  }
-
   const prompt = `
-    Menu: "${menu}" (${guests} persone).
-    
-    Inventario Cantina Utente (DA PRIVILEGIARE):
+    Menu: "${menu}".
+    Inventario Cantina Utente:
     ${inventoryList || "Cantina Vuota"}
     
-    ${strategyPrompt}
-    
-    Regole Fondamentali:
-    1. Per ogni suggerimento, devi fornire SEMPRE 2 opzioni distinte.
-    2. Cerca PRIMA nella "Cantina Utente". Se c'è un vino adatto, usa il suo ID e metti type='owned'.
-    3. Se la cantina ha solo 1 vino adatto, usalo come prima opzione e suggerisci un acquisto per la seconda.
-    4. Se non c'è nulla in cantina, suggerisci due vini da comprare (type='purchase') mettendo il nome in wineName e lasciando wineId vuoto.
-    5. Spiega brevemente il 'reasoning'.
-    6. FONDAMENTALE: Per OGNI vino (sia posseduto che da comprare) devi indicare 'servingTemp' (es. 16°C) e 'servingAdvice' (es. Aprire 1 ora prima).
+    Regole:
+    1. Rispondi in ${langName}.
+    2. Proponi 2 opzioni per suggerimento.
+    3. Privilegia l'inventario utente (type='owned').
+    4. Se mancano vini, suggerisci acquisti (type='purchase').
+    5. Fornisci 'servingTemp' e 'servingAdvice' in ${langName}.
   `;
 
   try {
@@ -137,7 +126,7 @@ export const suggestPairing = async (
         model,
         contents: prompt,
         config: {
-          systemInstruction: "Sei un sommelier di alto livello. Rispondi in JSON puro.",
+          systemInstruction: `Sei un sommelier. Rispondi in ${langName} con JSON puro.`,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.ARRAY,
@@ -167,11 +156,7 @@ export const suggestPairing = async (
           }
         }
       });
-
-      const text = response.text;
-      if (!text) throw new Error("Nessuna risposta da Gemini");
-
-      return JSON.parse(cleanJson(text));
+      return JSON.parse(cleanJson(response.text || "[]"));
   } catch (err: any) {
       throw new Error(err.message || "Errore Sommelier");
   }
@@ -179,20 +164,18 @@ export const suggestPairing = async (
 
 
 /**
- * Analyzes a potential purchase considering the price and the current user's cellar.
- * Supports both Image Analysis and URL (Product Page) Analysis.
+ * Analyzes a potential purchase.
  */
 export const analyzePurchase = async (
     input: { type: 'image' | 'url', data: string }, 
     inputPrice: number, 
-    inventory: Wine[]
+    inventory: Wine[],
+    lang: Language = 'it'
 ): Promise<PurchaseAnalysis> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
 
     const model = "gemini-2.5-flash";
-
-    // Summarize inventory for context
-    const inventorySummary = inventory.map(w => `${w.quantity}x ${w.name} (${w.type}, ${w.region})`).join(", ");
+    const langName = getLanguageName(lang);
     
     let parts: any[] = [];
     let tools: any[] = [];
@@ -200,55 +183,15 @@ export const analyzePurchase = async (
     if (input.type === 'image') {
         parts = [
             { inlineData: { mimeType: "image/jpeg", data: cleanBase64(input.data) } },
-            { text: `Prezzo offerta: ${inputPrice}€. Analizza questo vino (foto etichetta). È un buon acquisto?` }
+            { text: `Prezzo offerta: ${inputPrice}€. Analizza questo vino in ${langName}.` }
         ];
     } else {
-        // URL Mode -> Use Google Search Grounding
         tools = [{ googleSearch: {} }];
-        parts = [{ text: `
-            Analizza il vino presente in questo URL: ${input.data}
-            Prezzo Utente: ${inputPrice > 0 ? inputPrice : 'Cerca il prezzo attuale nella pagina'}.
-            
-            Identifica il vino, il prezzo, e valuta l'acquisto.
-        `}];
+        parts = [{ text: `Analizza URL: ${input.data}. Prezzo: ${inputPrice}. Rispondi in ${langName}.` }];
     }
 
-    const jsonStructure = `
-    {
-        "wineDetails": {
-            "name": "Nome Vino",
-            "producer": "Produttore",
-            "year": "Annata",
-            "type": "Rosso", // Rosso, Bianco, Spumante, etc
-            "region": "Regione",
-            "grape": "Vitigno",
-            "alcohol": "Vol%",
-            "foodPairings": ["Piatto 1", "Piatto 2"]
-        },
-        "marketPriceEstimate": 25.50,
-        "isGoodDeal": true,
-        "dealRating": "Good", // Bad, Fair, Good, Excellent
-        "qualityScore": 92, // 1-100
-        "sommelierNotes": "Breve descrizione...",
-        "cellarFit": {
-            "isRecommended": true,
-            "reasoning": "Spiegazione..."
-        }
-    }
-    `;
-
-    const systemInstruction = `Sei un Advisor di investimenti vinicoli e Sommelier.
-    1. Identifica il vino.
-    2. Stima il prezzo medio di mercato.
-    3. Valuta se l'acquisto è un affare.
-    4. Analizza la cantina attuale dell'utente: [${inventorySummary}].
-    Decidi se aggiungere questo vino migliora la collezione.
-    
-    Restituisci ESCLUSIVAMENTE un oggetto JSON valido (senza markdown) con questa struttura esatta:
-    ${jsonStructure}
-    
-    IMPORTANTE: NON usare blocchi markdown. Rispondi solo con il JSON grezzo.
-    `;
+    const systemInstruction = `Sei un Advisor di investimenti vinicoli. Rispondi ESCLUSIVAMENTE in ${langName}.
+    Restituisci JSON puro senza markdown.`;
 
     try {
         const response = await ai.models.generateContent({
@@ -257,74 +200,42 @@ export const analyzePurchase = async (
             config: {
                 systemInstruction,
                 tools: tools.length > 0 ? tools : undefined,
-                // Rimosso responseMimeType: "application/json" perché incompatibile con i Tools
             }
         });
-
-        const text = response.text;
-        if (!text) throw new Error("Nessuna risposta da Gemini");
-
-        return JSON.parse(cleanJson(text));
+        return JSON.parse(cleanJson(response.text || "{}"));
     } catch (err: any) {
-        // Log dettagliato per debug
-        console.error("Shop Advisor Error Details:", JSON.stringify(err, null, 2));
         throw new Error(err.message || "Errore Shop Advisor");
     }
 }
 
 /**
- * Analyzes restaurant wine list (Image OR Text) and suggests pairings for a dish.
+ * Analyzes restaurant wine list.
  */
 export const suggestRestaurantPairing = async (
     menuSource: { type: 'images' | 'text', data: string[] | string }, 
-    dish: string
+    dish: string,
+    lang: Language = 'it'
 ): Promise<RestaurantSuggestion[]> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
 
     const model = "gemini-2.5-flash";
+    const langName = getLanguageName(lang);
     let parts: any[] = [];
 
     if (menuSource.type === 'images') {
-        // Images mode (OCR by AI)
         const images = menuSource.data as string[];
-        parts = images.map(img => ({
-            inlineData: { mimeType: "image/jpeg", data: cleanBase64(img) }
-        }));
-        parts.push({
-            text: `Sto mangiando: "${dish}".
-            Analizza queste foto della carta dei vini.
-            1. Leggi i vini disponibili (OCR).
-            2. Seleziona i 3 MIGLIORI abbinamenti per il mio piatto.`
-        });
+        parts = images.map(img => ({ inlineData: { mimeType: "image/jpeg", data: cleanBase64(img) } }));
+        parts.push({ text: `Piatto: "${dish}". Leggi menu e suggerisci 3 vini in ${langName}.` });
     } else {
-        // Text mode (Pre-loaded menu)
-        const menuText = menuSource.data as string;
-        parts.push({
-            text: `
-            Carta dei Vini:
-            """
-            ${menuText}
-            """
-            
-            Sto mangiando: "${dish}".
-            
-            Seleziona i 3 MIGLIORI abbinamenti per il mio piatto dalla carta fornita sopra.
-            `
-        });
+        parts.push({ text: `Menu: """${menuSource.data}""". Piatto: "${dish}". Suggerisci 3 vini in ${langName}.` });
     }
-
-    const systemInstruction = `Sei un Sommelier al ristorante.
-    Devi analizzare la carta dei vini fornita, capire il piatto del cliente ("${dish}") e suggerire le 3 opzioni migliori.
-    Bilancia qualità e prezzo. Se il prezzo non è presente, stima 0.
-    Fornisci una spiegazione convincente ("reasoning") per ogni abbinamento.
-    Rispondi SEMPRE con un JSON valido.`;
 
     try {
         const response = await ai.models.generateContent({
             model,
             contents: { parts },
             config: {
-                systemInstruction,
+                systemInstruction: `Sei un Sommelier. Rispondi in ${langName}. JSON puro.`,
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.ARRAY,
@@ -336,84 +247,58 @@ export const suggestRestaurantPairing = async (
                             year: { type: Type.STRING },
                             price: { type: Type.NUMBER },
                             type: { type: Type.STRING },
-                            reasoning: { type: Type.STRING, description: "Perché sta bene con il piatto" },
-                            matchScore: { type: Type.NUMBER, description: "1-100" }
+                            reasoning: { type: Type.STRING },
+                            matchScore: { type: Type.NUMBER }
                         },
                         required: ["name", "producer", "reasoning", "matchScore"]
                     }
                 }
             }
         });
-
-        const text = response.text;
-        if (!text) throw new Error("Nessuna risposta da Gemini");
-
-        return JSON.parse(cleanJson(text));
+        return JSON.parse(cleanJson(response.text || "[]"));
     } catch (err: any) {
         throw new Error(err.message || "Errore analisi carta vini");
     } 
 };
 
-/**
- * Extracts raw text from an image (for Admin Menu creation).
- */
 export const extractTextFromImage = async (base64Image: string): Promise<string> => {
+    // OCR is language agnostic mostly, but context helps
     if (!apiKey) throw new Error("Chiave API mancante.");
     const model = "gemini-2.5-flash";
-
     try {
         const response = await ai.models.generateContent({
             model,
             contents: {
                 parts: [
                     { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } },
-                    { text: "Estrai tutto il testo da questa immagine (carta dei vini). Mantieni la formattazione a lista." }
+                    { text: "OCR: Extract all text." }
                 ]
             }
         });
         return response.text || "";
     } catch (err) {
-        console.error("OCR Error", err);
         throw new Error("Errore lettura immagine");
     }
 };
 
-/**
- * Generates a professional Sommelier report analyzing the user's cellar and history.
- */
 export const generateCellarReport = async (
     inventory: Wine[],
-    history: HistoryEntry[]
+    history: HistoryEntry[],
+    lang: Language = 'it'
 ): Promise<CellarReport> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
-
     const model = "gemini-2.5-flash";
+    const langName = getLanguageName(lang);
 
-    // 1. Prepare Data Summary
-    const inventorySummary = inventory.map(w => 
-        `[${w.quantity}pz] ${w.name} ${w.year} (${w.region}, ${w.type})`
-    ).join("\n");
-
-    const historySummary = history.map(h => 
-        `Bevuto: ${h.name} (${h.type}), Voto: ${h.rating}/5`
-    ).join("\n");
+    const inventorySummary = inventory.map(w => `[${w.quantity}] ${w.name} ${w.year}`).join("\n");
+    const historySummary = history.map(h => `Bevuto: ${h.name}, Voto: ${h.rating}`).join("\n");
 
     const prompt = `
-        ANALISI CANTINA & PROFILO SOMMELIER
+        Analisi Cantina.
+        Inventario: ${inventorySummary}
+        Storico: ${historySummary}
         
-        Inventario Attuale:
-        ${inventorySummary || "Cantina vuota."}
-        
-        Storico Consumo & Voti:
-        ${historySummary || "Nessuno storico."}
-        
-        Compito:
-        Agisci come un Sommelier Senior. Redigi un report professionale che includa:
-        1. Valutazione generale della cantina (equilibrio, valore, varietà).
-        2. Profilo del Palato dell'utente basato sui voti nello storico.
-        3. Gap Analysis: Cosa manca? (es. mancano bianchi da invecchiamento, mancano bollicine per aperitivo).
-        4. Consigli per gli Acquisti: 3 bottiglie specifiche da comprare per migliorare la collezione.
-        5. Strategia di Consumo: Cosa bere subito e cosa aspettare.
+        Genera un report in ${langName}. JSON puro.
     `;
 
     try {
@@ -421,7 +306,7 @@ export const generateCellarReport = async (
             model,
             contents: prompt,
             config: {
-                systemInstruction: "Sei un Sommelier consulente. Rispondi con un JSON strutturato per un report.",
+                systemInstruction: `Sei un Sommelier Senior. Rispondi in ${langName}.`,
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
@@ -447,12 +332,8 @@ export const generateCellarReport = async (
                 }
             }
         });
-
-        const text = response.text;
-        if (!text) throw new Error("Nessuna risposta da Gemini");
-
-        return JSON.parse(cleanJson(text));
+        return JSON.parse(cleanJson(response.text || "{}"));
     } catch (err: any) {
-        throw new Error(err.message || "Errore generazione report");
+        throw new Error(err.message || "Errore report");
     }
 };
