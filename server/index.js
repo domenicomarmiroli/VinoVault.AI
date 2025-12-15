@@ -135,7 +135,18 @@ const initDb = async () => {
       );
     `);
 
-    // 5. Add columns if missing (Migration for existing tables)
+    // 5. RESTAURANTS TABLE (B2B Feature)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS restaurants (
+        id TEXT PRIMARY KEY,
+        slug TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        menu_context TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 6. Add columns if missing (Migration for existing tables)
     try {
         await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE;`);
         await pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE;`);
@@ -157,7 +168,7 @@ const initDb = async () => {
         console.log("Migration columns already exist or skipped");
     }
 
-    // 6. Create Default Admin User
+    // 7. Create Default Admin User
     try {
         const adminEmail = 'admin@vinovault.ai';
         const result = await pool.query('SELECT * FROM users WHERE email = $1', [adminEmail]);
@@ -185,6 +196,67 @@ app.get('/api/config', (req, res) => {
         googleClientId: GOOGLE_CLIENT_ID || ''
     });
 });
+
+// --- RESTAURANT API (PUBLIC) ---
+app.get('/api/restaurants/:slug', async (req, res) => {
+    const { slug } = req.params;
+    try {
+        const result = await pool.query('SELECT id, name, slug, menu_context FROM restaurants WHERE slug = $1', [slug]);
+        if (result.rows.length === 0) {
+            // Se non trovato, non ritornare errore 404 ma null, così il frontend sa che è un ref invalido o generico
+            return res.json(null);
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("Restaurant fetch error", err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// --- RESTAURANT API (ADMIN) ---
+app.get('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM restaurants ORDER BY created_at DESC');
+        res.json(result.rows);
+    } catch(err) {
+        res.status(500).json({ error: 'Failed to fetch restaurants' });
+    }
+});
+
+app.post('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
+    const { id, name, slug, menu_context } = req.body;
+    try {
+        if (id) {
+            // Update
+            await pool.query(
+                'UPDATE restaurants SET name=$1, slug=$2, menu_context=$3 WHERE id=$4',
+                [name, slug, menu_context, id]
+            );
+            res.json({ message: 'Updated' });
+        } else {
+            // Create
+            const newId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+            await pool.query(
+                'INSERT INTO restaurants (id, name, slug, menu_context) VALUES ($1, $2, $3, $4)',
+                [newId, name, slug, menu_context]
+            );
+            res.json({ message: 'Created', id: newId });
+        }
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ error: 'Save failed' });
+    }
+});
+
+app.delete('/api/admin/restaurants/:id', authenticateAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM restaurants WHERE id = $1', [req.params.id]);
+        res.json({ message: 'Deleted' });
+    } catch(err) {
+        res.status(500).json({ error: 'Delete failed' });
+    }
+});
+
 
 // --- SERPAPI PROXY ROUTE (NEW) - PROTECTED (PREMIUM ONLY) ---
 app.get('/api/search-prices', authenticateToken, async (req, res) => {

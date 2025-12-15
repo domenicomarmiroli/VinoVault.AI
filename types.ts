@@ -135,3 +135,12 @@ export interface CellarReport {
     buyRecommendations: CellarRecommendation[];
     drinkNowStrategy: string;
 }
+
+// --- NEW TYPES FOR RESTAURANT B2B ---
+export interface Restaurant {
+    id: string;
+    name: string;
+    slug: string; // Used in URL ?ref=slug
+    menu_context: string; // OCR text of the wine list
+    created_at?: string;
+}

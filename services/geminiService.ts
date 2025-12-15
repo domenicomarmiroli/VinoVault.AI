@@ -273,32 +273,50 @@ export const analyzePurchase = async (
 }
 
 /**
- * Analyzes restaurant wine list photos and suggests pairings for a dish.
+ * Analyzes restaurant wine list (Image OR Text) and suggests pairings for a dish.
  */
 export const suggestRestaurantPairing = async (
-    images: string[], 
+    menuSource: { type: 'images' | 'text', data: string[] | string }, 
     dish: string
 ): Promise<RestaurantSuggestion[]> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
 
     const model = "gemini-2.5-flash";
+    let parts: any[] = [];
 
-    // Prepare content parts: images + prompt
-    const parts: any[] = images.map(img => ({
-        inlineData: { mimeType: "image/jpeg", data: cleanBase64(img) }
-    }));
+    if (menuSource.type === 'images') {
+        // Images mode (OCR by AI)
+        const images = menuSource.data as string[];
+        parts = images.map(img => ({
+            inlineData: { mimeType: "image/jpeg", data: cleanBase64(img) }
+        }));
+        parts.push({
+            text: `Sto mangiando: "${dish}".
+            Analizza queste foto della carta dei vini.
+            1. Leggi i vini disponibili (OCR).
+            2. Seleziona i 3 MIGLIORI abbinamenti per il mio piatto.`
+        });
+    } else {
+        // Text mode (Pre-loaded menu)
+        const menuText = menuSource.data as string;
+        parts.push({
+            text: `
+            Carta dei Vini:
+            """
+            ${menuText}
+            """
+            
+            Sto mangiando: "${dish}".
+            
+            Seleziona i 3 MIGLIORI abbinamenti per il mio piatto dalla carta fornita sopra.
+            `
+        });
+    }
 
-    parts.push({
-        text: `Sto mangiando: "${dish}".
-        Analizza queste foto della carta dei vini.
-        1. Leggi i vini disponibili (Nome, Produttore, Annata, Prezzo).
-        2. Seleziona i 3 MIGLIORI abbinamenti per il mio piatto, bilanciando qualità/prezzo.
-        3. Se il prezzo non è leggibile, stima 0 o lascia vuoto.`
-    });
-
-    const systemInstruction = `Sei un Sommelier al ristorante che aiuta il cliente a scegliere dalla carta.
-    Devi leggere le immagini (OCR), capire il piatto del cliente e suggerire le 3 opzioni migliori.
-    Fornisci una spiegazione convincente per ogni abbinamento.
+    const systemInstruction = `Sei un Sommelier al ristorante.
+    Devi analizzare la carta dei vini fornita, capire il piatto del cliente ("${dish}") e suggerire le 3 opzioni migliori.
+    Bilancia qualità e prezzo. Se il prezzo non è presente, stima 0.
+    Fornisci una spiegazione convincente ("reasoning") per ogni abbinamento.
     Rispondi SEMPRE con un JSON valido.`;
 
     try {
@@ -334,6 +352,30 @@ export const suggestRestaurantPairing = async (
     } catch (err: any) {
         throw new Error(err.message || "Errore analisi carta vini");
     } 
+};
+
+/**
+ * Extracts raw text from an image (for Admin Menu creation).
+ */
+export const extractTextFromImage = async (base64Image: string): Promise<string> => {
+    if (!apiKey) throw new Error("Chiave API mancante.");
+    const model = "gemini-2.5-flash";
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: {
+                parts: [
+                    { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } },
+                    { text: "Estrai tutto il testo da questa immagine (carta dei vini). Mantieni la formattazione a lista." }
+                ]
+            }
+        });
+        return response.text || "";
+    } catch (err) {
+        console.error("OCR Error", err);
+        throw new Error("Errore lettura immagine");
+    }
 };
 
 /**

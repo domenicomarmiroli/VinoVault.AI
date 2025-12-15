@@ -2,13 +2,14 @@
 
 import React, { useState, useRef } from 'react';
 import { suggestRestaurantPairing } from '../services/geminiService';
-import { RestaurantSuggestion, HistoryEntry } from '../types';
+import { RestaurantSuggestion, HistoryEntry, Restaurant } from '../types';
 import { CameraIcon, LogoutIcon, RestaurantIcon, PlusIcon } from '../components/Icons';
 
 interface RestaurantViewProps {
   onLogout: () => void;
   onAddToHistory: (entry: Partial<HistoryEntry>) => void;
   onAiUsed: () => void;
+  restaurantData: Restaurant | null; // NEW PROP
 }
 
 // Compression Helper
@@ -55,7 +56,7 @@ const compressImage = (file: File): Promise<string> => {
     });
 };
 
-const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistory, onAiUsed }) => {
+const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistory, onAiUsed, restaurantData }) => {
   const [dish, setDish] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -90,12 +91,22 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
 
   const handleAnalyze = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!dish || images.length === 0) return;
+      
+      const hasPreloadedMenu = restaurantData && restaurantData.menu_context;
+      if (!dish || (!hasPreloadedMenu && images.length === 0)) return;
 
       setLoading(true);
       setSuggestions([]);
       try {
-          const results = await suggestRestaurantPairing(images, dish);
+          let source: { type: 'images' | 'text', data: string[] | string };
+          
+          if (hasPreloadedMenu) {
+              source = { type: 'text', data: restaurantData.menu_context };
+          } else {
+              source = { type: 'images', data: images };
+          }
+
+          const results = await suggestRestaurantPairing(source, dish);
           setSuggestions(results);
           onAiUsed(); // Track
       } catch (error: any) {
@@ -130,6 +141,8 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
       setImages([]);
   };
 
+  const hasPreloadedMenu = restaurantData && restaurantData.menu_context;
+
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden">
       {/* Header */}
@@ -140,7 +153,10 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                 Al Ristorante
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-                Scatta foto al menu, dimmi cosa mangi e ti dirò cosa bere.
+                {hasPreloadedMenu 
+                    ? `Menu di ${restaurantData.name} pronto.` 
+                    : "Scatta foto al menu, dimmi cosa mangi."
+                }
             </p>
         </div>
         <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2">
@@ -163,49 +179,61 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                     />
                 </div>
 
-                {/* Image Upload Grid */}
-                <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Carta dei Vini ({images.length}/3)</label>
-                    <div className="grid grid-cols-3 gap-2">
-                        {images.map((img, idx) => (
-                            <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
-                                <img src={img} className="w-full h-full object-cover" />
-                                <button 
-                                    onClick={() => removeImage(idx)}
-                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-90 shadow-sm"
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                        ))}
-                        
-                        {images.length < 3 && (
-                            <button 
-                                onClick={() => fileInputRef.current?.click()}
-                                className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:bg-gray-50 transition-colors bg-white"
-                            >
-                                <CameraIcon className="w-6 h-6 text-gray-400 mb-1" />
-                                <span className="text-[10px] text-gray-500 font-bold uppercase">Foto</span>
-                            </button>
-                        )}
+                {/* Pre-loaded Badge or Image Upload */}
+                {hasPreloadedMenu ? (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+                        <div className="bg-green-100 p-2 rounded-full text-green-700">
+                            <RestaurantIcon className="w-6 h-6" filled />
+                        </div>
+                        <div>
+                            <p className="font-bold text-green-800 text-sm">Carta dei Vini Caricata</p>
+                            <p className="text-xs text-green-600">Il Sommelier conosce già i vini di {restaurantData.name}.</p>
+                        </div>
                     </div>
-                    <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                        accept="image/*"
-                        capture="environment" 
-                        multiple
-                        onChange={handleFileChange} 
-                    />
-                </div>
+                ) : (
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Carta dei Vini ({images.length}/3)</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {images.map((img, idx) => (
+                                <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
+                                    <img src={img} className="w-full h-full object-cover" />
+                                    <button 
+                                        onClick={() => removeImage(idx)}
+                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-90 shadow-sm"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            ))}
+                            
+                            {images.length < 3 && (
+                                <button 
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:bg-gray-50 transition-colors bg-white"
+                                >
+                                    <CameraIcon className="w-6 h-6 text-gray-400 mb-1" />
+                                    <span className="text-[10px] text-gray-500 font-bold uppercase">Foto</span>
+                                </button>
+                            )}
+                        </div>
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            accept="image/*"
+                            capture="environment" 
+                            multiple
+                            onChange={handleFileChange} 
+                        />
+                    </div>
+                )}
 
                 <button 
                     onClick={handleAnalyze}
-                    disabled={!dish || images.length === 0 || loading}
+                    disabled={!dish || (!hasPreloadedMenu && images.length === 0) || loading}
                     className="w-full py-4 bg-wine-700 text-white font-bold rounded-xl shadow-lg hover:bg-wine-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all mt-4"
                 >
-                    {loading ? 'Il Sommelier sta leggendo il menu...' : 'Analizza Carta dei Vini'}
+                    {loading ? 'Il Sommelier sta consultando la carta...' : 'Trova Abbinamento'}
                 </button>
                 
                 {loading && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wine, HistoryEntry, Location } from './types';
+import { Wine, HistoryEntry, Location, Restaurant } from './types';
 import InventoryView from './views/InventoryView';
 import SommelierView from './views/SommelierView';
 import HistoryView from './views/HistoryView';
@@ -32,7 +32,7 @@ const App: React.FC = () => {
   const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
 
   // Referral / Restaurant Context State
-  const [restaurantRef, setRestaurantRef] = useState<string | null>(null);
+  const [restaurantData, setRestaurantData] = useState<Restaurant | null>(null);
 
   // Helper per fetch autenticate
   const API_BASE = '';
@@ -94,10 +94,21 @@ const App: React.FC = () => {
       const params = new URLSearchParams(window.location.search);
       const ref = params.get('ref');
       if (ref) {
-          setRestaurantRef(ref);
+          // Fetch Restaurant Details Publicly
+          fetch(`/api/restaurants/${ref}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data) {
+                    setRestaurantData(data);
+                } else {
+                    // Fallback se slug non trovato ma presente
+                    setRestaurantData({ id: 'temp', name: ref, slug: ref, menu_context: '' });
+                }
+            })
+            .catch(e => console.error("Error fetching restaurant", e));
+
           // Opzionale: Pulire l'URL per estetica, ma mantenere lo stato
           window.history.replaceState({}, document.title, window.location.pathname);
-          // Se siamo "al ristorante", potremmo voler switchare tab, ma aspettiamo il login
       }
   }, []);
 
@@ -249,7 +260,7 @@ const App: React.FC = () => {
           imageUrl: undefined, // Non abbiamo foto bottiglia dal ristorante solitamente
           consumedDate: entryData.consumedDate || new Date().toISOString(),
           rating: 0,
-          notes: restaurantRef ? `Bevuto presso ${restaurantRef}` : ''
+          notes: restaurantData ? `Bevuto presso ${restaurantData.name}` : ''
       };
 
       setHistory(prev => [historyEntry, ...prev]);
@@ -349,9 +360,9 @@ const App: React.FC = () => {
       return (
         <>
             {/* Show Welcome Banner even on Login Screen */}
-            {restaurantRef && (
+            {restaurantData && (
                 <div className="fixed top-0 left-0 right-0 z-[100] bg-wine-700 text-white p-4 text-center shadow-lg animate-in slide-in-from-top duration-500">
-                    <p className="font-serif font-bold text-lg">Benvenuto da {restaurantRef}!</p>
+                    <p className="font-serif font-bold text-lg">Benvenuto da {restaurantData.name}!</p>
                     <p className="text-xs opacity-90">Accedi per usare il Sommelier Digitale.</p>
                 </div>
             )}
@@ -378,14 +389,14 @@ const App: React.FC = () => {
       )}
 
       {/* Restaurant Welcome Toast */}
-      {restaurantRef && (
+      {restaurantData && (
         <div className="bg-wine-700 text-white px-4 py-2 flex justify-between items-center relative z-20 shadow-md">
             <div>
                 <p className="text-xs font-bold uppercase tracking-wider opacity-80">Sei presso</p>
-                <p className="font-serif font-bold">{restaurantRef}</p>
+                <p className="font-serif font-bold">{restaurantData.name}</p>
             </div>
             <button 
-                onClick={() => setRestaurantRef(null)} 
+                onClick={() => setRestaurantData(null)} 
                 className="bg-white/20 hover:bg-white/30 rounded-full p-1"
             >
                 ✕
@@ -430,7 +441,8 @@ const App: React.FC = () => {
                 <RestaurantView 
                     onLogout={handleLogout}
                     onAddToHistory={handleAddToHistory}
-                    onAiUsed={trackAiUsage} 
+                    onAiUsed={trackAiUsage}
+                    restaurantData={restaurantData} // Pass pre-loaded data
                 />
              )}
         </div>
