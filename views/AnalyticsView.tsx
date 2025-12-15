@@ -1,22 +1,29 @@
-import React from 'react';
-import { Wine, HistoryEntry, WineType } from '../types';
-import { ChartBarIcon, LogoutIcon, WineIcon, ShoppingCartIcon } from '../components/Icons';
+import React, { useState } from 'react';
+import { Wine, HistoryEntry, WineType, CellarReport } from '../types';
+import { ChartBarIcon, LogoutIcon, WineIcon, ShoppingCartIcon, ReportIcon, ShieldCheckIcon } from '../components/Icons';
+import CellarReportModal from '../components/CellarReportModal';
+import { generateCellarReport } from '../services/geminiService';
 
 interface AnalyticsViewProps {
   inventory: Wine[];
   history: HistoryEntry[];
   onLogout: () => void;
+  isPremium: boolean;
+  onAiUsed: () => void;
 }
 
-const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLogout }) => {
-  
+const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLogout, isPremium, onAiUsed }) => {
+  // State per Report
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [cellarReport, setCellarReport] = useState<CellarReport | null>(null);
+
   // 1. Calcoli Finanziari Cantina
   const totalPurchaseCost = inventory.reduce((sum, w) => sum + (w.price * w.quantity), 0);
   const totalMarketValue = inventory.reduce((sum, w) => sum + ((w.marketPrice || w.price) * w.quantity), 0);
   const roi = totalPurchaseCost > 0 ? ((totalMarketValue - totalPurchaseCost) / totalPurchaseCost) * 100 : 0;
   
   const totalBottles = inventory.reduce((sum, w) => sum + w.quantity, 0);
-  // Calcolo Prezzo Medio Acquisto (Cantina)
   const averagePurchasePrice = totalBottles > 0 ? totalPurchaseCost / totalBottles : 0;
 
   // 2. Distribuzione per Tipologia
@@ -37,20 +44,44 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
 
   // 4. Statistiche Consumo (Storico)
   const totalConsumedCount = history.length;
-  // Calcolo Valore Totale Bevuto
   const totalConsumedValue = history.reduce((acc, h) => acc + (h.price || 0), 0);
-  // Calcolo Prezzo Medio Bevuto
   const averageConsumedPrice = totalConsumedCount > 0 ? totalConsumedValue / totalConsumedCount : 0;
 
-  // Nuova palette colori ad alto contrasto
+  // Funzione Generazione Report
+  const handleOpenReport = async () => {
+      if (!isPremium) {
+          alert("Funzionalità riservata agli utenti Premium.");
+          return;
+      }
+      if (inventory.length <= 10) {
+          alert(`Per generare un'analisi professionale, servono più di 10 etichette (attualmente: ${inventory.length}).`);
+          return;
+      }
+
+      setIsReportOpen(true);
+      if (cellarReport) return;
+
+      setReportLoading(true);
+      try {
+          const report = await generateCellarReport(inventory, history);
+          setCellarReport(report);
+          onAiUsed();
+      } catch (err: any) {
+          alert("Errore generazione report: " + err.message);
+          setIsReportOpen(false);
+      } finally {
+          setReportLoading(false);
+      }
+  };
+
   const getTypeColor = (type: string) => {
      switch(type) {
-         case WineType.RED: return 'bg-red-800';        // Rosso Scuro
-         case WineType.WHITE: return 'bg-yellow-300';   // Giallo Paglierino (Acceso)
-         case WineType.SPARKLING: return 'bg-cyan-400'; // Azzurro/Ghiaccio (Ben distinto dal giallo)
-         case WineType.ROSE: return 'bg-pink-400';      // Rosa
-         case WineType.DESSERT: return 'bg-orange-400'; // Arancio
-         default: return 'bg-slate-300';                // Grigio
+         case WineType.RED: return 'bg-red-800';        
+         case WineType.WHITE: return 'bg-yellow-300';   
+         case WineType.SPARKLING: return 'bg-cyan-400'; 
+         case WineType.ROSE: return 'bg-pink-400';      
+         case WineType.DESSERT: return 'bg-orange-400'; 
+         default: return 'bg-slate-300';                
      }
   };
 
@@ -74,9 +105,43 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
 
       <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-6">
         
+        {/* REPORT CARD - PREMIUM FEATURE */}
+        {isPremium ? (
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 rounded-xl border border-purple-100 flex items-center justify-between shadow-sm">
+                <div>
+                   <h3 className="font-bold text-purple-900 flex items-center gap-2">
+                       <ReportIcon className="w-5 h-5" filled /> 
+                       Analisi Sommelier IA
+                   </h3>
+                   <p className="text-xs text-purple-700 mt-1">Report completo su stato cantina e consigli d'acquisto.</p>
+                </div>
+                <button 
+                    onClick={handleOpenReport}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-purple-700 transition-colors"
+                >
+                    Genera Report
+                </button>
+            </div>
+        ) : (
+             <div className="bg-gray-100 p-4 rounded-xl border border-gray-200 flex items-center justify-between opacity-80 relative overflow-hidden">
+                <div>
+                   <h3 className="font-bold text-gray-500 flex items-center gap-2">
+                       <ShieldCheckIcon className="w-5 h-5" /> 
+                       Analisi Sommelier IA
+                   </h3>
+                   <p className="text-xs text-gray-400 mt-1">Sbloccabile con Premium.</p>
+                </div>
+                <button 
+                    disabled
+                    className="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg text-sm font-bold cursor-not-allowed flex items-center gap-1"
+                >
+                    🔒 Bloccato
+                </button>
+             </div>
+        )}
+
         {/* Investment Card */}
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-             {/* Background Decoration */}
              <div className="absolute top-0 right-0 -mr-8 -mt-8 opacity-10">
                  <WineIcon className="w-40 h-40" filled />
              </div>
@@ -96,7 +161,6 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
                  </div>
              </div>
 
-             {/* Inventory Mini Stats Grid */}
              <div className="grid grid-cols-2 gap-4 border-t border-gray-700 pt-4">
                  <div>
                      <span className="block text-xl font-bold text-gray-200">
@@ -117,7 +181,6 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
             <h3 className="font-serif font-bold text-lg text-gray-900 mb-4">Composizione Cantina</h3>
             
-            {/* Simple Bar Chart Visual */}
             <div className="flex h-8 w-full rounded-lg overflow-hidden mb-4 shadow-inner bg-gray-100">
                 {(Object.entries(typeCounts) as [string, number][]).map(([type, count]) => (
                     <div 
@@ -125,7 +188,6 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
                         className={`${getTypeColor(type)} transition-all hover:opacity-90 relative group`}
                         style={{ width: `${(count / totalBottles) * 100}%` }}
                     >
-                        {/* Tooltip on hover */}
                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
                             {type}: {count}
                         </div>
@@ -175,7 +237,6 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
         {/* Consumption Quick Stats */}
         <h3 className="font-serif font-bold text-lg text-gray-900 px-1 pt-2">Storico Consumi</h3>
         <div className="grid grid-cols-2 gap-4">
-            {/* Bottiglie Bevute */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center flex flex-col items-center justify-center">
                 <div className="bg-wine-50 p-2 rounded-full mb-2">
                     <WineIcon className="w-5 h-5 text-wine-600" />
@@ -184,7 +245,6 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
                 <span className="text-[10px] text-gray-500 uppercase font-bold">Bevute totali</span>
             </div>
 
-            {/* Valore Totale Bevuto */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center flex flex-col items-center justify-center">
                  <div className="bg-green-50 p-2 rounded-full mb-2">
                     <ShoppingCartIcon className="w-5 h-5 text-green-600" />
@@ -195,7 +255,6 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
                 <span className="text-[10px] text-gray-500 uppercase font-bold">Valore Bevuto</span>
             </div>
 
-            {/* Prezzo Medio */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center col-span-2 flex items-center justify-between px-6">
                 <div className="text-left">
                     <span className="text-xs text-gray-500 uppercase font-bold block">Prezzo Medio (Bevuto)</span>
@@ -208,6 +267,13 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
         </div>
 
       </div>
+
+      <CellarReportModal 
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        report={cellarReport}
+        loading={reportLoading}
+      />
     </div>
   );
 };

@@ -1,17 +1,15 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { Wine, WineType, Location, HistoryEntry, CellarReport } from '../types';
+import { Wine, WineType, Location } from '../types';
 import WineCard from '../components/WineCard';
 import AddWineModal from '../components/AddWineModal';
 import WineDetailModal from '../components/WineDetailModal';
 import LocationManagerModal from '../components/LocationManagerModal';
 import OnboardingModal from '../components/OnboardingModal'; 
-import CellarReportModal from '../components/CellarReportModal'; // New Import
-import UserProfileModal from '../components/UserProfileModal'; // New Import
-import { PlusIcon, CogIcon, UserIcon, HelpIcon, ReportIcon } from '../components/Icons';
+import UserProfileModal from '../components/UserProfileModal'; 
+import { PlusIcon, CogIcon, UserIcon, HelpIcon } from '../components/Icons';
 import { Logo } from '../components/Logo';
-import { generateCellarReport } from '../services/geminiService'; // New Import
 
 interface InventoryViewProps {
   wines: Wine[];
@@ -35,16 +33,11 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLocManagerOpen, setIsLocManagerOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false); 
-  const [isProfileOpen, setIsProfileOpen] = useState(false); // Profile Modal State
+  const [isProfileOpen, setIsProfileOpen] = useState(false); 
   const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
-
-  // Report State
-  const [isReportOpen, setIsReportOpen] = useState(false);
-  const [reportLoading, setReportLoading] = useState(false);
-  const [cellarReport, setCellarReport] = useState<CellarReport | null>(null);
 
   // Controllo Primo Accesso (Tutorial)
   useEffect(() => {
@@ -69,37 +62,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({
     } catch (e) {
         return null;
     }
-  };
-
-  // Funzione per generare il report
-  const handleOpenReport = async () => {
-      // Validazione: Richiede almeno 11 vini per un'analisi sensata
-      if (wines.length <= 10) {
-          alert(`Per generare un'analisi professionale, il Sommelier ha bisogno di almeno più di 10 etichette in cantina (attualmente ne hai ${wines.length}). Aggiungi altri vini per sbloccare questa funzione.`);
-          return;
-      }
-
-      setIsReportOpen(true);
-      if (cellarReport) return; // Se già generato, non rigenerare subito
-
-      setReportLoading(true);
-      try {
-          // Fetch history directly here to use in report
-          const token = localStorage.getItem('vinovault_token');
-          const res = await fetch('/api/history', {
-              headers: { 'Authorization': `Bearer ${token}` }
-          });
-          const historyData: HistoryEntry[] = await res.json();
-
-          const report = await generateCellarReport(wines, historyData);
-          setCellarReport(report);
-          onAiUsed();
-      } catch (err: any) {
-          alert("Errore generazione report: " + err.message);
-          setIsReportOpen(false);
-      } finally {
-          setReportLoading(false);
-      }
   };
 
   const filters: { label: string, value: FilterType }[] = [
@@ -139,9 +101,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   const totalBottles = wines.reduce((acc, curr) => acc + curr.quantity, 0);
   const totalValue = wines.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
 
-  // Check eligibility for visual hint
-  const canGenerateReport = wines.length > 10;
-
   return (
     <div className="relative h-full flex flex-col bg-gray-50">
       {/* Header Stats & Search */}
@@ -153,19 +112,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({
           </div>
 
           <div className="flex gap-2">
-             {/* Report Button */}
-             <button 
-                onClick={handleOpenReport}
-                className={`p-2.5 rounded-full transition-colors border ${
-                    canGenerateReport 
-                    ? 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-100' 
-                    : 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
-                }`}
-                title={canGenerateReport ? "Analisi Sommelier" : "Serve più di 10 vini"}
-             >
-                <ReportIcon className="w-6 h-6" />
-             </button>
-
              <button 
                 onClick={() => setIsHelpOpen(true)}
                 className="bg-wine-50 text-wine-700 p-2.5 rounded-full hover:bg-wine-100 transition-colors"
@@ -292,13 +238,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({
       <OnboardingModal
         isOpen={isHelpOpen}
         onClose={handleCloseHelp}
-      />
-
-      <CellarReportModal 
-        isOpen={isReportOpen}
-        onClose={() => setIsReportOpen(false)}
-        report={cellarReport}
-        loading={reportLoading}
       />
 
       <UserProfileModal 

@@ -422,6 +422,8 @@ const App: React.FC = () => {
                     inventory={wines} 
                     history={history}
                     onLogout={handleLogout}
+                    isPremium={userPremium} // NEW PROP
+                    onAiUsed={trackAiUsage} // NEW PROP
                 />
              )}
         </div>
