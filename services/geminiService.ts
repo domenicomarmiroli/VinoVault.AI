@@ -200,6 +200,7 @@ export const analyzePurchase = async (
             config: {
                 systemInstruction,
                 tools: tools.length > 0 ? tools : undefined,
+                // Note: responseSchema cannot be used with googleSearch tools
             }
         });
         

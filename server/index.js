@@ -66,8 +66,9 @@ const authenticateAdmin = (req, res, next) => {
 // --- DB INITIALIZATION ---
 const initDb = async () => {
   console.log("Initializing DB tables...");
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     // 1. Users
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -174,7 +175,7 @@ const initDb = async () => {
     console.error("Error initializing database tables:", error);
     // Don't crash the server if DB init fails, just log it. Server needs to start to pass health checks.
   } finally {
-    client.release();
+    if (client) client.release();
   }
 };
 
