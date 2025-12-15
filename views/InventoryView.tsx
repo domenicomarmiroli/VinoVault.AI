@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Wine, WineType, Location, HistoryEntry, CellarReport } from '../types';
 import WineCard from '../components/WineCard';
@@ -7,7 +8,8 @@ import WineDetailModal from '../components/WineDetailModal';
 import LocationManagerModal from '../components/LocationManagerModal';
 import OnboardingModal from '../components/OnboardingModal'; 
 import CellarReportModal from '../components/CellarReportModal'; // New Import
-import { PlusIcon, CogIcon, LogoutIcon, HelpIcon, ReportIcon } from '../components/Icons';
+import UserProfileModal from '../components/UserProfileModal'; // New Import
+import { PlusIcon, CogIcon, UserIcon, HelpIcon, ReportIcon } from '../components/Icons';
 import { Logo } from '../components/Logo';
 import { generateCellarReport } from '../services/geminiService'; // New Import
 
@@ -33,6 +35,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLocManagerOpen, setIsLocManagerOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false); 
+  const [isProfileOpen, setIsProfileOpen] = useState(false); // Profile Modal State
   const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -54,6 +57,18 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   const handleCloseHelp = () => {
     setIsHelpOpen(false);
     localStorage.setItem('vinovault_tutorial_seen', 'true');
+  };
+
+  // Helper per recuperare email dal token (decodifica sicura lato client)
+  const getUserEmail = () => {
+    const token = localStorage.getItem('vinovault_token');
+    if (!token) return null;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.email;
+    } catch (e) {
+        return null;
+    }
   };
 
   // Funzione per generare il report
@@ -159,13 +174,15 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                 <HelpIcon className="w-6 h-6" />
              </button>
 
+             {/* Profile / Logout Button Replacement */}
              <button 
-                onClick={onLogout}
-                className="bg-gray-100 text-gray-500 p-2.5 rounded-full hover:bg-gray-200 transition-colors"
-                title="Esci"
+                onClick={() => setIsProfileOpen(true)}
+                className="bg-gray-100 text-gray-700 p-2.5 rounded-full hover:bg-gray-200 transition-colors border border-gray-200"
+                title="Profilo Utente"
             >
-                <LogoutIcon className="w-6 h-6" />
+                <UserIcon className="w-6 h-6" />
             </button>
+
             <button 
                 onClick={() => setIsLocManagerOpen(true)}
                 className="bg-gray-100 text-gray-600 p-2.5 rounded-full hover:bg-gray-200 transition-colors"
@@ -282,6 +299,13 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         onClose={() => setIsReportOpen(false)}
         report={cellarReport}
         loading={reportLoading}
+      />
+
+      <UserProfileModal 
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        onLogout={onLogout}
+        userEmail={getUserEmail()}
       />
 
       {/* Detail Modal */}

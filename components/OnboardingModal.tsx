@@ -17,7 +17,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
         
         {/* Header */}
         <div className="bg-wine-700 p-6 text-white shrink-0">
-          <h2 className="text-2xl font-serif font-bold">Benvenuto in VinoVault</h2>
+          <h2 className="text-2xl font-serif font-bold">Benvenuto in AIKnow.wine</h2>
           <p className="text-wine-100 text-sm mt-1">Il tuo sommelier personale e gestore di cantina.</p>
         </div>
 

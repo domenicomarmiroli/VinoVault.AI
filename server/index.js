@@ -371,6 +371,40 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// --- USER PROFILE ROUTES (NEW) ---
+
+// GET Current User Profile
+app.get('/api/users/me', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT id, email, role, is_premium, ai_usage_count, created_at FROM users WHERE id = $1',
+            [req.user.userId]
+        );
+        if (result.rows.length === 0) return res.sendStatus(404);
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch user profile' });
+    }
+});
+
+// PUT Change Password
+app.put('/api/users/me/password', authenticateToken, async (req, res) => {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, req.user.userId]);
+        res.json({ message: 'Password updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to update password' });
+    }
+});
+
 // --- ADMIN API ROUTES ---
 
 // GET All Users with Stats
