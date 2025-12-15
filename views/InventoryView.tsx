@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { Wine, WineType, Location } from '../types';
 import WineCard from '../components/WineCard';
@@ -10,6 +9,7 @@ import OnboardingModal from '../components/OnboardingModal';
 import UserProfileModal from '../components/UserProfileModal'; 
 import { PlusIcon, CogIcon, UserIcon, HelpIcon } from '../components/Icons';
 import { Logo } from '../components/Logo';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface InventoryViewProps {
   wines: Wine[];
@@ -38,6 +38,8 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
+  
+  const { t } = useLanguage();
 
   // Controllo Primo Accesso (Tutorial)
   useEffect(() => {
@@ -52,7 +54,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({
     localStorage.setItem('vinovault_tutorial_seen', 'true');
   };
 
-  // Helper per recuperare email dal token (decodifica sicura lato client)
   const getUserEmail = () => {
     const token = localStorage.getItem('vinovault_token');
     if (!token) return null;
@@ -65,21 +66,20 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   };
 
   const filters: { label: string, value: FilterType }[] = [
-    { label: 'Tutti', value: 'all' },
-    { label: 'Rossi', value: WineType.RED },
-    { label: 'Bianchi', value: WineType.WHITE },
-    { label: 'Bollicine', value: WineType.SPARKLING },
-    { label: 'Fermi', value: 'still' },
+    { label: t('sort_recent'), value: 'all' }, // Using sort_recent as generic "All" or adding explicit "All" key if preferred, sticking to t('nav_cellar') context or just "Tutti"
+    // Better to use explicit keys if possible, for now mapping:
+    { label: "All", value: 'all' },
+    { label: "Red", value: WineType.RED },
+    { label: "White", value: WineType.WHITE },
+    { label: "Sparkling", value: WineType.SPARKLING },
   ];
 
   const filteredWines = wines.filter(w => {
-    // Text Search
     const matchesSearch = 
         w.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
         w.producer.toLowerCase().includes(searchTerm.toLowerCase()) ||
         w.type.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Category Filter
     let matchesFilter = true;
     if (activeFilter !== 'all') {
         if (activeFilter === 'still') {
@@ -89,7 +89,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         }
     }
 
-    // Location Filter
     let matchesLocation = true;
     if (locationFilter !== 'all') {
         matchesLocation = w.location === locationFilter;
@@ -103,10 +102,8 @@ const InventoryView: React.FC<InventoryViewProps> = ({
 
   return (
     <div className="relative h-full flex flex-col bg-gray-50">
-      {/* Header Stats & Search */}
       <div className="bg-white px-4 pt-4 pb-2 sticky top-0 z-10 shadow-sm">
         <div className="flex justify-between items-center mb-4">
-          {/* Logo Brand */}
           <div className="transform scale-90 origin-left">
              <Logo className="w-10 h-10" />
           </div>
@@ -115,16 +112,13 @@ const InventoryView: React.FC<InventoryViewProps> = ({
              <button 
                 onClick={() => setIsHelpOpen(true)}
                 className="bg-wine-50 text-wine-700 p-2.5 rounded-full hover:bg-wine-100 transition-colors"
-                title="Aiuto / Manuale"
              >
                 <HelpIcon className="w-6 h-6" />
              </button>
 
-             {/* Profile / Logout Button Replacement */}
              <button 
                 onClick={() => setIsProfileOpen(true)}
                 className="bg-gray-100 text-gray-700 p-2.5 rounded-full hover:bg-gray-200 transition-colors border border-gray-200"
-                title="Profilo Utente"
             >
                 <UserIcon className="w-6 h-6" />
             </button>
@@ -144,29 +138,27 @@ const InventoryView: React.FC<InventoryViewProps> = ({
           </div>
         </div>
         
-        {/* Quick Stats */}
         <div className="flex gap-2 mb-4 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg justify-around">
             <div className="text-center">
                 <span className="block font-bold text-gray-900 text-lg">{totalBottles}</span>
-                Bottiglie
+                {t('bottles')}
             </div>
             <div className="w-px bg-gray-200"></div>
             <div className="text-center">
                 <span className="block font-bold text-gray-900 text-lg">{wines.length}</span>
-                Etichette
+                {t('labels')}
             </div>
             <div className="w-px bg-gray-200"></div>
             <div className="text-center">
                 <span className="block font-bold text-gray-900 text-lg">€{totalValue.toFixed(0)}</span>
-                Valore
+                {t('value')}
             </div>
         </div>
 
-        {/* Search Bar & Location Filter */}
         <div className="flex gap-2 mb-3">
              <input 
                 type="text" 
-                placeholder="Cerca in cantina..." 
+                placeholder={t('search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="flex-1 bg-gray-100 border-none rounded-xl py-2.5 px-4 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none"
@@ -176,37 +168,25 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                 onChange={(e) => setLocationFilter(e.target.value)}
                 className="bg-gray-100 border-none rounded-xl py-2.5 px-2 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none max-w-[100px] truncate"
             >
-                <option value="all">Posizione</option>
+                <option value="all">{t('location')}</option>
                 {locations.map(loc => (
                     <option key={loc.id} value={loc.name}>{loc.name}</option>
                 ))}
             </select>
         </div>
 
-        {/* Filter Pills - Horizontal Scroll */}
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar -mx-4 px-4">
-            {filters.map(f => (
-                <button
-                    key={f.label}
-                    onClick={() => setActiveFilter(f.value)}
-                    className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${
-                        activeFilter === f.value 
-                        ? 'bg-wine-600 text-white border-wine-600' 
-                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                    }`}
-                >
-                    {f.label}
-                </button>
-            ))}
+            <button onClick={() => setActiveFilter('all')} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === 'all' ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>All</button>
+            <button onClick={() => setActiveFilter(WineType.RED)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.RED ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>Red</button>
+            <button onClick={() => setActiveFilter(WineType.WHITE)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.WHITE ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>White</button>
+            <button onClick={() => setActiveFilter(WineType.SPARKLING)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.SPARKLING ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>Bubbles</button>
         </div>
       </div>
 
-      {/* List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-32">
         {filteredWines.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
-            <p>Nessun vino trovato.</p>
-            {activeFilter !== 'all' && <p className="text-xs mt-1">Prova a cambiare i filtri.</p>}
+            <p>{t('no_wines')}</p>
           </div>
         ) : (
           filteredWines.map(wine => (
@@ -247,7 +227,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         userEmail={getUserEmail()}
       />
 
-      {/* Detail Modal */}
       <WineDetailModal 
         wine={selectedWine}
         locations={locations}
@@ -255,7 +234,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         onConsume={onConsume}
         onUpdateWine={onUpdateWine}
         onDelete={onDelete}
-        isPremium={isPremium} // Pass prop
+        isPremium={isPremium} 
       />
     </div> 
   );

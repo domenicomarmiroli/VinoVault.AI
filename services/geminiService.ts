@@ -183,15 +183,15 @@ export const analyzePurchase = async (
     if (input.type === 'image') {
         parts = [
             { inlineData: { mimeType: "image/jpeg", data: cleanBase64(input.data) } },
-            { text: `Prezzo offerta: ${inputPrice}€. Analizza questo vino in ${langName}.` }
+            { text: `Prezzo offerta: ${inputPrice}€. Analizza questo vino in ${langName}. Restituisci un JSON con wineDetails (name, producer, year, type, region), marketPriceEstimate, dealRating (Bad, Fair, Good, Excellent) e cellarFit.` }
         ];
     } else {
         tools = [{ googleSearch: {} }];
-        parts = [{ text: `Analizza URL: ${input.data}. Prezzo: ${inputPrice}. Rispondi in ${langName}.` }];
+        parts = [{ text: `Analizza URL: ${input.data}. Prezzo: ${inputPrice}. Rispondi in ${langName}. Restituisci un JSON con wineDetails, marketPriceEstimate, dealRating.` }];
     }
 
     const systemInstruction = `Sei un Advisor di investimenti vinicoli. Rispondi ESCLUSIVAMENTE in ${langName}.
-    Restituisci JSON puro senza markdown.`;
+    Restituisci JSON puro senza markdown. Se mancano dati, fai una stima o usa valori generici.`;
 
     try {
         const response = await ai.models.generateContent({
@@ -200,10 +200,40 @@ export const analyzePurchase = async (
             config: {
                 systemInstruction,
                 tools: tools.length > 0 ? tools : undefined,
+                // Note: responseSchema cannot be used with googleSearch tools, so we rely on prompt engineering and robust parsing
             }
         });
-        return JSON.parse(cleanJson(response.text || "{}"));
+        
+        const rawJson = cleanJson(response.text || "{}");
+        let parsed: any = {};
+        try {
+            parsed = JSON.parse(rawJson);
+        } catch (e) {
+            console.error("JSON Parse Error", e);
+            throw new Error("Errore formato risposta AI");
+        }
+
+        // Robust Defaulting - Prevents "Cannot read properties of undefined (reading 'type')"
+        return {
+            wineDetails: {
+                name: parsed.wineDetails?.name || 'Sconosciuto',
+                producer: parsed.wineDetails?.producer || 'Sconosciuto',
+                year: parsed.wineDetails?.year || 'N/A',
+                type: parsed.wineDetails?.type || 'Rosso', // Default safe type
+                region: parsed.wineDetails?.region || '',
+                grape: parsed.wineDetails?.grape || '',
+                foodPairings: parsed.wineDetails?.foodPairings || []
+            },
+            marketPriceEstimate: parsed.marketPriceEstimate || inputPrice,
+            isGoodDeal: parsed.isGoodDeal || false,
+            dealRating: parsed.dealRating || 'Fair',
+            qualityScore: parsed.qualityScore || 80,
+            sommelierNotes: parsed.sommelierNotes || "Analisi completata con dati parziali.",
+            cellarFit: parsed.cellarFit || { isRecommended: false, reasoning: "Impossibile determinare con certezza." }
+        };
+
     } catch (err: any) {
+        console.error("Gemini Error:", err);
         throw new Error(err.message || "Errore Shop Advisor");
     }
 }
