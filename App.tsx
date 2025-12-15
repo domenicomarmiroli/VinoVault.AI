@@ -31,6 +31,9 @@ const App: React.FC = () => {
   // Instant Review State
   const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
 
+  // Referral / Restaurant Context State
+  const [restaurantRef, setRestaurantRef] = useState<string | null>(null);
+
   // Helper per fetch autenticate
   const API_BASE = '';
 
@@ -85,6 +88,18 @@ const App: React.FC = () => {
       setUserRole('user');
       setUserPremium(false);
   };
+
+  // CHECK URL REFERRAL (QR CODE)
+  useEffect(() => {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref) {
+          setRestaurantRef(ref);
+          // Opzionale: Pulire l'URL per estetica, ma mantenere lo stato
+          window.history.replaceState({}, document.title, window.location.pathname);
+          // Se siamo "al ristorante", potremmo voler switchare tab, ma aspettiamo il login
+      }
+  }, []);
 
   // Load Data
   useEffect(() => {
@@ -234,7 +249,7 @@ const App: React.FC = () => {
           imageUrl: undefined, // Non abbiamo foto bottiglia dal ristorante solitamente
           consumedDate: entryData.consumedDate || new Date().toISOString(),
           rating: 0,
-          notes: ''
+          notes: restaurantRef ? `Bevuto presso ${restaurantRef}` : ''
       };
 
       setHistory(prev => [historyEntry, ...prev]);
@@ -331,7 +346,18 @@ const App: React.FC = () => {
   
   // --- AUTH GUARD ---
   if (!token) {
-      return <AuthForm onLogin={handleLogin} />;
+      return (
+        <>
+            {/* Show Welcome Banner even on Login Screen */}
+            {restaurantRef && (
+                <div className="fixed top-0 left-0 right-0 z-[100] bg-wine-700 text-white p-4 text-center shadow-lg animate-in slide-in-from-top duration-500">
+                    <p className="font-serif font-bold text-lg">Benvenuto da {restaurantRef}!</p>
+                    <p className="text-xs opacity-90">Accedi per usare il Sommelier Digitale.</p>
+                </div>
+            )}
+            <AuthForm onLogin={handleLogin} />
+        </>
+      );
   }
 
   if (!isLoaded && !isOfflineMode) return (
@@ -348,6 +374,22 @@ const App: React.FC = () => {
       {isOfflineMode && (
         <div className="bg-amber-100 text-amber-800 text-xs text-center py-1 px-2 border-b border-amber-200">
           ⚠️ Modalità Offline
+        </div>
+      )}
+
+      {/* Restaurant Welcome Toast */}
+      {restaurantRef && (
+        <div className="bg-wine-700 text-white px-4 py-2 flex justify-between items-center relative z-20 shadow-md">
+            <div>
+                <p className="text-xs font-bold uppercase tracking-wider opacity-80">Sei presso</p>
+                <p className="font-serif font-bold">{restaurantRef}</p>
+            </div>
+            <button 
+                onClick={() => setRestaurantRef(null)} 
+                className="bg-white/20 hover:bg-white/30 rounded-full p-1"
+            >
+                ✕
+            </button>
         </div>
       )}
 
@@ -509,7 +551,7 @@ const App: React.FC = () => {
         isPremium={userPremium} // Pass prop
       />
     </div>
-  );
+  ); 
 };
 
 export default App;

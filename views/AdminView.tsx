@@ -12,6 +12,10 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
   const [loading, setLoading] = useState(false);
   const [resetModalUser, setResetModalUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState('');
+  
+  // QR Generator State
+  const [restaurantName, setRestaurantName] = useState('');
+  const [generatedUrl, setGeneratedUrl] = useState('');
 
   const API_BASE = ''; 
 
@@ -96,6 +100,14 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
       }
   };
 
+  const generateQrCode = () => {
+      if (!restaurantName) return;
+      // Costruisce l'URL corrente + parametro ref
+      const baseUrl = window.location.origin;
+      const url = `${baseUrl}/?ref=${encodeURIComponent(restaurantName)}`;
+      setGeneratedUrl(url);
+  };
+
   // Stats Calculations
   const totalUsers = users.length;
   const totalWines = users.reduce((acc, u) => acc + (parseInt(u.wine_count as any) || 0), 0);
@@ -135,6 +147,56 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                  <span className="block text-3xl font-bold text-blue-600">{totalAiRequests}</span>
                  <span className="text-xs text-gray-500 font-bold uppercase">Richieste AI</span>
              </div>
+         </div>
+
+         {/* QR Generator for Restaurants */}
+         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 bg-gray-50">
+                <h3 className="font-bold text-gray-700">Generatore QR Ristoranti</h3>
+                <p className="text-xs text-gray-500">Crea link personalizzati per i partner.</p>
+            </div>
+            <div className="p-4">
+                <div className="flex gap-2 mb-4">
+                    <input 
+                        type="text" 
+                        placeholder="Nome Ristorante (es. Da Luigi)" 
+                        value={restaurantName}
+                        onChange={(e) => setRestaurantName(e.target.value)}
+                        className="flex-1 p-2 border border-gray-300 rounded-lg outline-none focus:border-wine-500"
+                    />
+                    <button 
+                        onClick={generateQrCode}
+                        className="bg-wine-600 text-white px-4 py-2 rounded-lg font-bold"
+                    >
+                        Genera
+                    </button>
+                </div>
+
+                {generatedUrl && (
+                    <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 flex flex-col md:flex-row items-center gap-6 animate-in fade-in">
+                        <div className="bg-white p-2 rounded shadow-sm border border-gray-200">
+                             {/* Utilizziamo l'API di qrserver.com per generare il QR senza dipendenze npm */}
+                             <img 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(generatedUrl)}`} 
+                                alt="QR Code" 
+                                className="w-32 h-32"
+                             />
+                        </div>
+                        <div className="flex-1 w-full overflow-hidden">
+                            <p className="text-xs font-bold uppercase text-gray-500 mb-1">Link Diretto</p>
+                            <div className="bg-white p-2 rounded border border-gray-300 text-xs text-gray-600 truncate mb-2 font-mono">
+                                {generatedUrl}
+                            </div>
+                            <button 
+                                onClick={() => window.open(generatedUrl, '_blank')}
+                                className="text-wine-600 text-sm font-bold hover:underline"
+                            >
+                                Prova Link
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
          </div>
 
          {/* Users Table */}
@@ -250,7 +312,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                   </form>
               </div>
           </div>
-      )}
+      )} 
     </div>
   );
 };
