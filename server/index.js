@@ -151,6 +151,16 @@ const initDb = async () => {
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'it';`);
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT FALSE;`);
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_usage_count INTEGER DEFAULT 0;`);
+        
+        // Ensure Wine Columns Exist
+        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS storage_temp TEXT;`);
+        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS storage_advice TEXT;`);
+        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS serving_temp TEXT;`);
+        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS serving_advice TEXT;`);
+        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS food_pairings TEXT[];`);
+        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS image_url TEXT;`);
+        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS drink_window TEXT;`);
+        await pool.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS market_price DECIMAL;`);
     } catch (e) {
         console.log("Migration check complete");
     }
@@ -330,7 +340,32 @@ app.post('/api/users/track-ai', authenticateToken, async (req, res) => {
 app.get('/api/wines', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM wines WHERE user_id = $1 ORDER BY created_at DESC', [req.user.userId]);
-        res.json(result.rows);
+        
+        // FIX: Map snake_case DB columns to camelCase API response for frontend
+        const mappedWines = result.rows.map(w => ({
+            id: w.id,
+            name: w.name,
+            producer: w.producer,
+            year: w.year,
+            type: w.type,
+            region: w.region,
+            grape: w.grape,
+            alcohol: w.alcohol,
+            purchaseDate: w.purchase_date,
+            price: parseFloat(w.price),
+            quantity: w.quantity,
+            location: w.location,
+            storageTemp: w.storage_temp,
+            storageAdvice: w.storage_advice,
+            servingTemp: w.serving_temp,
+            servingAdvice: w.serving_advice,
+            foodPairings: w.food_pairings,
+            imageUrl: w.image_url,
+            drinkWindow: w.drink_window,
+            marketPrice: parseFloat(w.market_price)
+        }));
+
+        res.json(mappedWines);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -371,26 +406,14 @@ app.put('/api/wines/:id', authenticateToken, async (req, res) => {
     if (fields.length === 0) return res.sendStatus(200);
 
     try {
+        // FIX: The parameter count placeholder was missing the $ sign
         await pool.query(
-            `UPDATE wines SET ${fields.join(', ')} WHERE id = $1 AND user_id = ${Object.keys(updates).length + 2}`, // Hacky parameter count check, simplified below
+            `UPDATE wines SET ${fields.join(', ')} WHERE id = $1 AND user_id = $${Object.keys(updates).length + 2}`,
             [id, ...Object.values(updates), req.user.userId] 
         );
-        
-        // Correct approach for dynamic update safely
-        // But for simplicity/speed in this context, let's just do a specific update or re-insert if needed.
-        // Actually, the simplest for quantity update is:
-        if (updates.quantity !== undefined && Object.keys(updates).length === 1) {
-            await pool.query('UPDATE wines SET quantity = $1 WHERE id = $2 AND user_id = $3', [updates.quantity, id, req.user.userId]);
-        } else {
-             // Fallback for full update, typically we just send the whole object in a real app or use an ORM
-             // For this demo, let's just allow deleting and re-inserting OR handling specific fields.
-             // Let's implement specific common updates
-             if (updates.location) await pool.query('UPDATE wines SET location = $1 WHERE id = $2 AND user_id = $3', [updates.location, id, req.user.userId]);
-             if (updates.name) await pool.query('UPDATE wines SET name = $1, producer = $2, year = $3, price = $4 WHERE id = $5 AND user_id = $6', 
-                [updates.name, updates.producer, updates.year, updates.price, id, req.user.userId]);
-        }
         res.json({ success: true });
     } catch (err) {
+        console.error("Update Error", err);
         res.status(500).json({ error: 'Update failed' });
     }
 });
