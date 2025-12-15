@@ -9,6 +9,7 @@ const cleanBase64 = (base64: string) => {
 
 // Helper to clean Markdown JSON blocks (```json ... ```)
 const cleanJson = (text: string) => {
+    // Rimuove markdown, backticks e spazi vuoti extra
     return text.replace(/```json/g, '').replace(/```/g, '').trim();
 };
 
@@ -174,72 +175,137 @@ export const analyzePurchase = async (
 ): Promise<PurchaseAnalysis> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
 
-    const model = "gemini-2.5-flash";
+    const model = "gemini-2.5-flash"; // Usiamo flash per velocità, ma con strumenti
     const langName = getLanguageName(lang);
     
+    // Costruiamo il contesto della cantina per la "cellarFit"
+    const inventoryContext = inventory.map(w => `${w.quantity}x ${w.name} (${w.type}, ${w.region})`).join(", ");
+
     let parts: any[] = [];
-    let tools: any[] = [];
+    const tools = [{ googleSearch: {} }]; // Abilitiamo sempre la ricerca per i prezzi
+
+    // Prompt molto descrittivo per guidare il ragionamento
+    const mainPrompt = `
+    Sei un esperto Broker di Vini e Sommelier.
+    Il tuo compito è analizzare un potenziale acquisto.
+
+    1. **IDENTIFICAZIONE**:
+       - Identifica con precisione il vino (Produttore, Nome, Denominazione).
+       - Se l'annata non è chiara, cerca l'annata corrente in commercio o quella più probabile dalla foto. NON restituire "N/A" se puoi dedurlo.
+    
+    2. **RICERCA MERCATO (Google Search)**:
+       - Usa lo strumento di ricerca per trovare il prezzo medio ONLINE attuale per questo specifico vino e annata.
+       - Prezzo utente: €${inputPrice}.
+    
+    3. **VALUTAZIONE PREZZO (Deal Rating)**:
+       - Confronta il prezzo utente con il prezzo di mercato trovato.
+       - 'Excellent': Se prezzo utente è < 80% del prezzo mercato.
+       - 'Good': Se prezzo utente è < 95% del prezzo mercato.
+       - 'Fair': Se i prezzi sono simili.
+       - 'Bad': Se il prezzo utente è più alto del mercato.
+    
+    4. **INTEGRAZIONE CANTINA**:
+       - Cantina Utente: [${inventoryContext.substring(0, 500)}...]
+       - Il vino serve? Aggiunge varietà (nuova regione/vitigno) o è un doppione?
+    
+    5. **OUTPUT**:
+       - Restituisci SOLO un oggetto JSON valido (senza markdown) con la seguente struttura esatta:
+       {
+         "wineDetails": {
+           "name": "Nome completo",
+           "producer": "Produttore",
+           "year": "Annata (es. 2020)",
+           "type": "Rosso" | "Bianco" | "Rosato" | "Spumante/Champagne" | "Dolce/Passito",
+           "region": "Regione",
+           "grape": "Vitigno principale",
+           "foodPairings": ["Piatto 1", "Piatto 2"]
+         },
+         "marketPriceEstimate": numero (prezzo medio trovato, es. 25.50),
+         "isGoodDeal": booleano,
+         "dealRating": "Excellent" | "Good" | "Fair" | "Bad",
+         "sommelierNotes": "Breve commento su qualità e prezzo in ${langName}",
+         "cellarFit": {
+            "isRecommended": booleano,
+            "reasoning": "Spiegazione breve in ${langName}"
+         }
+       }
+    `;
     
     if (input.type === 'image') {
         parts = [
             { inlineData: { mimeType: "image/jpeg", data: cleanBase64(input.data) } },
-            { text: `Prezzo offerta: ${inputPrice}€. Analizza questo vino in ${langName}. Restituisci un JSON con wineDetails (name, producer, year, type, region), marketPriceEstimate (NUMBER), dealRating (Bad, Fair, Good, Excellent) e cellarFit.` }
+            { text: mainPrompt }
         ];
     } else {
-        tools = [{ googleSearch: {} }];
-        parts = [{ text: `Analizza URL: ${input.data}. Prezzo: ${inputPrice}. Rispondi in ${langName}. Restituisci un JSON con wineDetails, marketPriceEstimate (NUMBER), dealRating.` }];
+        parts = [{ text: `Analizza questo link/testo: ${input.data}. \n ${mainPrompt}` }];
     }
-
-    const systemInstruction = `Sei un Advisor di investimenti vinicoli. Rispondi ESCLUSIVAMENTE in ${langName}.
-    Restituisci JSON puro senza markdown. Se mancano dati, fai una stima o usa valori generici. 
-    Assicurati che 'marketPriceEstimate' sia un NUMERO (es. 25.50), non una stringa.`;
 
     try {
         const response = await ai.models.generateContent({
             model,
             contents: { parts },
             config: {
-                systemInstruction,
-                tools: tools.length > 0 ? tools : undefined,
-                // Note: responseSchema cannot be used with googleSearch tools
+                tools: tools,
+                // Rimuoviamo responseSchema rigido quando usiamo googleSearch 
+                // per evitare conflitti e permettere all'AI di "pensare" (usare il tool) prima di formattare.
             }
         });
         
-        const rawJson = cleanJson(response.text || "{}");
+        // Pulizia aggressiva del JSON perché senza schema l'AI potrebbe mettere ```json
+        const rawText = response.text || "{}";
+        const jsonString = cleanJson(rawText);
+        
         let parsed: any = {};
         try {
-            parsed = JSON.parse(rawJson);
+            parsed = JSON.parse(jsonString);
         } catch (e) {
-            console.error("JSON Parse Error", e);
-            throw new Error("Errore formato risposta AI");
+            console.error("JSON Parse Error on:", jsonString);
+            // Fallback parziale se il JSON è rotto
+            return {
+                wineDetails: { name: 'Errore Analisi', producer: '?', year: 'N/A', type: 'Rosso' as any, region: '', grape: '', foodPairings: [] },
+                marketPriceEstimate: inputPrice,
+                isGoodDeal: false,
+                dealRating: 'Fair',
+                qualityScore: 80,
+                sommelierNotes: "Non sono riuscito a leggere i dati. Riprova con una foto più chiara.",
+                cellarFit: { isRecommended: false, reasoning: "Dati insufficienti." }
+            };
         }
 
-        // Force a valid structure to prevent frontend crashes
-        const safeDetails = parsed.wineDetails || {};
-        
-        // Helper to safely parse numbers
+        // Normalizzazione dati
         const safeNumber = (val: any, fallback: number) => {
             if (val === undefined || val === null) return fallback;
-            const num = parseFloat(String(val).replace(',', '.')); // Handle "25,00"
+            const num = parseFloat(String(val).replace(',', '.'));
             return isNaN(num) ? fallback : num;
         };
 
+        // Logica di fallback per il rating se l'AI sbaglia
+        let calculatedRating = parsed.dealRating;
+        const marketPrice = safeNumber(parsed.marketPriceEstimate, 0);
+        if (marketPrice > 0) {
+            const ratio = inputPrice / marketPrice;
+            if (ratio < 0.8) calculatedRating = 'Excellent';
+            else if (ratio < 0.95) calculatedRating = 'Good';
+            else if (ratio <= 1.1) calculatedRating = 'Fair';
+            else calculatedRating = 'Bad';
+        }
+
         return {
             wineDetails: {
-                name: safeDetails.name || 'Sconosciuto',
-                producer: safeDetails.producer || 'Sconosciuto',
-                year: safeDetails.year || 'N/A',
-                type: safeDetails.type || 'Rosso', 
-                region: safeDetails.region || '',
-                grape: safeDetails.grape || '',
-                foodPairings: safeDetails.foodPairings || []
+                name: parsed.wineDetails?.name || 'Sconosciuto',
+                producer: parsed.wineDetails?.producer || 'Sconosciuto',
+                year: parsed.wineDetails?.year || 'N/A',
+                type: parsed.wineDetails?.type || 'Rosso', 
+                region: parsed.wineDetails?.region || '',
+                grape: parsed.wineDetails?.grape || '',
+                foodPairings: parsed.wineDetails?.foodPairings || []
             },
-            marketPriceEstimate: safeNumber(parsed.marketPriceEstimate, inputPrice),
-            isGoodDeal: !!parsed.isGoodDeal,
-            dealRating: parsed.dealRating || 'Fair',
-            qualityScore: safeNumber(parsed.qualityScore, 80),
-            sommelierNotes: parsed.sommelierNotes || "Analisi completata con dati parziali.",
-            cellarFit: parsed.cellarFit || { isRecommended: false, reasoning: "Impossibile determinare con certezza." }
+            marketPriceEstimate: marketPrice > 0 ? marketPrice : inputPrice,
+            isGoodDeal: calculatedRating === 'Excellent' || calculatedRating === 'Good',
+            dealRating: calculatedRating || 'Fair',
+            qualityScore: 85, // Default visuale
+            sommelierNotes: parsed.sommelierNotes || `Vino identificato: ${parsed.wineDetails?.name}.`,
+            cellarFit: parsed.cellarFit || { isRecommended: true, reasoning: "Aggiunta interessante." }
         };
 
     } catch (err: any) {

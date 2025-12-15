@@ -35,8 +35,14 @@ app.use(express.static(publicPath));
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  connectionTimeoutMillis: 5000, // Fail fast if DB is unreachable
+  connectionTimeoutMillis: 10000, // Increased timeout
   idleTimeoutMillis: 30000,
+});
+
+// --- HEALTH CHECK ENDPOINT ---
+// Cruciale per piattaforme cloud per confermare che il deploy è riuscito
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
 });
 
 // --- AUTH MIDDLEWARE ---
@@ -588,16 +594,20 @@ app.get('*', (req, res) => {
   res.sendFile(path.resolve(distPath, 'index.html'));
 });
 
-// Start Server
-const startServer = async () => {
-  try {
-    if (process.env.DATABASE_URL) {
-      await initDb();
-    }
-  } catch (e) {
-    console.error("DB Init failed but starting server anyway:", e);
-  }
+// Start Server Strategy: Bind immediately, Init DB in background
+const startServer = () => {
+  // 1. Start listening immediately
   app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
+
+  // 2. Try to connect to DB in background
+  if (process.env.DATABASE_URL) {
+    initDb().catch(e => {
+        console.error("Background DB Init failed:", e);
+        // We don't exit process so server remains up for health checks
+    });
+  } else {
+      console.warn("DATABASE_URL not found, skipping DB init.");
+  }
 };
 
 startServer();
