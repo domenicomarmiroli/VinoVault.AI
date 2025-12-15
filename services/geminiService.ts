@@ -183,15 +183,16 @@ export const analyzePurchase = async (
     if (input.type === 'image') {
         parts = [
             { inlineData: { mimeType: "image/jpeg", data: cleanBase64(input.data) } },
-            { text: `Prezzo offerta: ${inputPrice}€. Analizza questo vino in ${langName}. Restituisci un JSON con wineDetails (name, producer, year, type, region), marketPriceEstimate, dealRating (Bad, Fair, Good, Excellent) e cellarFit.` }
+            { text: `Prezzo offerta: ${inputPrice}€. Analizza questo vino in ${langName}. Restituisci un JSON con wineDetails (name, producer, year, type, region), marketPriceEstimate (NUMBER), dealRating (Bad, Fair, Good, Excellent) e cellarFit.` }
         ];
     } else {
         tools = [{ googleSearch: {} }];
-        parts = [{ text: `Analizza URL: ${input.data}. Prezzo: ${inputPrice}. Rispondi in ${langName}. Restituisci un JSON con wineDetails, marketPriceEstimate, dealRating.` }];
+        parts = [{ text: `Analizza URL: ${input.data}. Prezzo: ${inputPrice}. Rispondi in ${langName}. Restituisci un JSON con wineDetails, marketPriceEstimate (NUMBER), dealRating.` }];
     }
 
     const systemInstruction = `Sei un Advisor di investimenti vinicoli. Rispondi ESCLUSIVAMENTE in ${langName}.
-    Restituisci JSON puro senza markdown. Se mancano dati, fai una stima o usa valori generici.`;
+    Restituisci JSON puro senza markdown. Se mancano dati, fai una stima o usa valori generici. 
+    Assicurati che 'marketPriceEstimate' sia un NUMERO (es. 25.50), non una stringa.`;
 
     try {
         const response = await ai.models.generateContent({
@@ -215,6 +216,13 @@ export const analyzePurchase = async (
 
         // Force a valid structure to prevent frontend crashes
         const safeDetails = parsed.wineDetails || {};
+        
+        // Helper to safely parse numbers
+        const safeNumber = (val: any, fallback: number) => {
+            if (val === undefined || val === null) return fallback;
+            const num = parseFloat(String(val).replace(',', '.')); // Handle "25,00"
+            return isNaN(num) ? fallback : num;
+        };
 
         return {
             wineDetails: {
@@ -226,10 +234,10 @@ export const analyzePurchase = async (
                 grape: safeDetails.grape || '',
                 foodPairings: safeDetails.foodPairings || []
             },
-            marketPriceEstimate: parsed.marketPriceEstimate || inputPrice,
-            isGoodDeal: parsed.isGoodDeal || false,
+            marketPriceEstimate: safeNumber(parsed.marketPriceEstimate, inputPrice),
+            isGoodDeal: !!parsed.isGoodDeal,
             dealRating: parsed.dealRating || 'Fair',
-            qualityScore: parsed.qualityScore || 80,
+            qualityScore: safeNumber(parsed.qualityScore, 80),
             sommelierNotes: parsed.sommelierNotes || "Analisi completata con dati parziali.",
             cellarFit: parsed.cellarFit || { isRecommended: false, reasoning: "Impossibile determinare con certezza." }
         };

@@ -98,6 +98,9 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
   const handleBuy = () => {
       if (!analysis) return;
       const today = new Date().toISOString().split('T')[0];
+      // Defensive coding here as well
+      const safeMarketPrice = Number(analysis.marketPriceEstimate) || Number(price) || 0;
+      
       const newWine: Wine = {
           id: '',
           name: analysis.wineDetails?.name || 'Nuovo Acquisto',
@@ -108,7 +111,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           grape: analysis.wineDetails?.grape || '',
           alcohol: analysis.wineDetails?.alcohol || '',
           purchaseDate: today,
-          price: Number(price) || analysis.marketPriceEstimate || 0,
+          price: Number(price) || safeMarketPrice,
           quantity: 1,
           location: 'Da posizionare',
           storageTemp: '12-16°C',
@@ -118,7 +121,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           foodPairings: analysis.wineDetails?.foodPairings || [],
           imageUrl: image || undefined,
           drinkWindow: `${new Date().getFullYear()}-${new Date().getFullYear() + 3}`,
-          marketPrice: analysis.marketPriceEstimate || Number(price)
+          marketPrice: safeMarketPrice
       };
       onAddToInventory(newWine);
       setImage(null);
@@ -218,7 +221,11 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                     </div>
                     <div className="flex justify-between items-end mb-4">
                         <div><p className="text-xs opacity-70 mb-1">{t('offer_price')}</p><p className="text-2xl font-bold">€{Number(price).toFixed(2)}</p></div>
-                        <div className="text-right"><p className="text-xs opacity-70 mb-1">{t('market_estimate')}</p><p className="text-xl font-semibold opacity-90">~€{analysis.marketPriceEstimate.toFixed(2)}</p></div>
+                        <div className="text-right">
+                            <p className="text-xs opacity-70 mb-1">{t('market_estimate')}</p>
+                            {/* CRITICAL FIX: Safe Number cast before toFixed to prevent crash */}
+                            <p className="text-xl font-semibold opacity-90">~€{Number(analysis.marketPriceEstimate).toFixed(2)}</p>
+                        </div>
                     </div>
                      <div className="bg-white/50 rounded-xl p-2">
                         <PriceComparison name={analysis.wineDetails?.name || ''} producer={analysis.wineDetails?.producer || ''} year={analysis.wineDetails?.year || ''} isPremium={isPremium} />
