@@ -12,9 +12,10 @@ declare global {
 interface AuthFormProps {
   onLogin: (token: string, userEmail: string) => void;
   onBack?: () => void; // New prop
+  referralRef?: string | null; // NEW: Origin of registration
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack }) => {
+const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -66,7 +67,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack }) => {
               body: JSON.stringify({ 
                   token: response.credential,
                   clientId: googleClientId,
-                  language // Send current detected language
+                  language, // Send current detected language
+                  ref: referralRef // Send referral
               })
           });
           const data = await res.json();
@@ -85,12 +87,18 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack }) => {
     setLoading(true);
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+    const payload: any = { email, password, language };
+    
+    // Add referral only on registration
+    if (!isLogin && referralRef) {
+        payload.ref = referralRef;
+    }
 
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, language }) // Send lang on register
+        body: JSON.stringify(payload) 
       });
 
       const data = await res.json();

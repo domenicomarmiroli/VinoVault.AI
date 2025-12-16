@@ -1,5 +1,4 @@
 
-
 export type Language = 'it' | 'en' | 'fr' | 'es' | 'de';
 
 export enum WineType {
@@ -110,6 +109,7 @@ export interface User {
   language?: Language; // New Language Preference
   created_at?: string;
   last_login?: string;
+  ref_restaurant_slug?: string; // NEW: Origin of registration
   // Stats
   wine_count?: number;     
   ai_usage_count?: number; 
@@ -146,4 +146,7 @@ export interface Restaurant {
     slug: string; // Used in URL ?ref=slug
     menu_context: string; // OCR text of the wine list
     created_at?: string;
+    // Admin Stats
+    user_count?: number;
+    total_ai_usage?: number;
 }

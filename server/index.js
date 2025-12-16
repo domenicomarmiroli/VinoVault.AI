@@ -86,6 +86,7 @@ const initDb = async () => {
         language TEXT DEFAULT 'it',
         ai_usage_count INTEGER DEFAULT 0,
         google_id TEXT,
+        ref_restaurant_slug TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -162,7 +163,8 @@ const initDb = async () => {
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'it';`);
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT FALSE;`);
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_usage_count INTEGER DEFAULT 0;`);
-        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;`); // FIX: Add google_id migration
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;`);
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_restaurant_slug TEXT;`); // FIX: Add ref tracking
         
         // Ensure Wine Columns Exist
         await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS storage_temp TEXT;`);
@@ -190,17 +192,18 @@ const initDb = async () => {
 
 // Register
 app.post('/api/auth/register', async (req, res) => {
-    const { email, password, language } = req.body;
+    const { email, password, language, ref } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const userId = Date.now().toString(36) + Math.random().toString(36).substr(2);
         const userLang = language || 'it';
+        const userRef = ref || null;
 
         await pool.query(
-            "INSERT INTO users (id, email, password, role, is_premium, language) VALUES ($1, $2, $3, 'user', FALSE, $4)",
-            [userId, email, hashedPassword, userLang]
+            "INSERT INTO users (id, email, password, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, 'user', FALSE, $4, $5)",
+            [userId, email, hashedPassword, userLang, userRef]
         );
 
         // Default Locations
@@ -251,7 +254,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 // Google Login
 app.post('/api/auth/google', async (req, res) => {
-    const { token, clientId, language } = req.body;
+    const { token, clientId, language, ref } = req.body;
     try {
         const client = new OAuth2Client(clientId);
         const ticket = await client.verifyIdToken({
@@ -268,12 +271,13 @@ app.post('/api/auth/google', async (req, res) => {
         let userId = '';
         let isNew = false;
         let userLang = language || 'it';
+        let userRef = ref || null;
 
         if (!user) {
              userId = Date.now().toString(36) + Math.random().toString(36).substr(2);
              await pool.query(
-                "INSERT INTO users (id, email, google_id, role, is_premium, language) VALUES ($1, $2, $3, 'user', FALSE, $4)",
-                [userId, email, googleId, userLang]
+                "INSERT INTO users (id, email, google_id, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, 'user', FALSE, $4, $5)",
+                [userId, email, googleId, userLang, userRef]
             );
             // Default Locations
             await pool.query(`
@@ -539,7 +543,8 @@ app.get('/api/restaurants/:ref', async (req, res) => {
 
 app.get('/api/users', authenticateAdmin, async (req, res) => {
     try {
-        const result = await pool.query('SELECT id, email, role, is_premium, ai_usage_count FROM users ORDER BY created_at DESC');
+        // Included ref_restaurant_slug
+        const result = await pool.query('SELECT id, email, role, is_premium, ai_usage_count, ref_restaurant_slug, created_at FROM users ORDER BY created_at DESC');
         res.json(result.rows);
     } catch (e) { res.sendStatus(500); }
 });
@@ -584,9 +589,27 @@ app.put('/api/users/:id/premium', authenticateAdmin, async (req, res) => {
 
 app.get('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM restaurants ORDER BY created_at DESC');
-        res.json(result.rows);
-    } catch(e) { res.sendStatus(500); }
+        // Added stats: count of users and total ai usage
+        const result = await pool.query(`
+            SELECT r.*,
+                   COUNT(u.id) as user_count,
+                   COALESCE(SUM(u.ai_usage_count), 0) as total_ai_usage
+            FROM restaurants r
+            LEFT JOIN users u ON u.ref_restaurant_slug = r.slug
+            GROUP BY r.id
+            ORDER BY r.created_at DESC
+        `);
+        // Map stats to number (Postgres count returns string)
+        const rows = result.rows.map(r => ({
+            ...r,
+            user_count: parseInt(r.user_count || 0),
+            total_ai_usage: parseInt(r.total_ai_usage || 0)
+        }));
+        res.json(rows);
+    } catch(e) { 
+        console.error(e);
+        res.sendStatus(500); 
+    }
 });
 
 app.post('/api/admin/restaurants', authenticateAdmin, async (req, res) => {

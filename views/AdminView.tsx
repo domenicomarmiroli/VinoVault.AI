@@ -235,6 +235,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                              <thead className="bg-gray-50 text-gray-500 font-bold uppercase text-xs">
                                  <tr>
                                      <th className="p-3">Email</th>
+                                     <th className="p-3">Origine</th>
                                      <th className="p-3 text-center">Stato</th>
                                      <th className="p-3 text-center">Stats</th>
                                      <th className="p-3 text-right">Azioni</th>
@@ -246,6 +247,13 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                                          <td className="p-3 font-medium text-gray-900">
                                              {user.email}
                                              {user.role === 'admin' && <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-700">Admin</span>}
+                                         </td>
+                                         <td className="p-3 text-gray-500 text-xs font-mono">
+                                             {user.ref_restaurant_slug ? (
+                                                 <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded">{user.ref_restaurant_slug}</span>
+                                             ) : (
+                                                 <span className="text-gray-400">-</span>
+                                             )}
                                          </td>
                                          <td className="p-3 text-center">
                                              {user.is_premium ? <span className="px-2 py-0.5 rounded text-[10px] bg-amber-100 text-amber-700">Premium</span> : <span className="px-2 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500">Free</span>}
@@ -346,6 +354,18 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                                  </div>
                              </div>
                              
+                             {/* Stats Badge */}
+                             <div className="grid grid-cols-2 gap-2 mb-3">
+                                 <div className="bg-blue-50 p-2 rounded text-center border border-blue-100">
+                                     <span className="block text-xl font-bold text-blue-800">{r.user_count || 0}</span>
+                                     <span className="text-[9px] uppercase font-bold text-blue-500">Utenti Reg.</span>
+                                 </div>
+                                 <div className="bg-purple-50 p-2 rounded text-center border border-purple-100">
+                                     <span className="block text-xl font-bold text-purple-800">{r.total_ai_usage || 0}</span>
+                                     <span className="text-[9px] uppercase font-bold text-purple-500">Usi AI Tot.</span>
+                                 </div>
+                             </div>
+
                              <div className="bg-gray-50 p-2 rounded border border-gray-100 flex gap-4 items-center mb-2">
                                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(generateQrUrl(r.slug))}`} className="w-16 h-16" />
                                  <div className="overflow-hidden">

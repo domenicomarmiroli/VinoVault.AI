@@ -268,7 +268,11 @@ const AppContent: React.FC = () => {
                         <p className="font-serif font-bold text-lg">{restaurantData.name}</p>
                     </div>
                 )}
-                <AuthForm onLogin={handleLogin} onBack={() => setShowAuth(false)} />
+                <AuthForm 
+                    onLogin={handleLogin} 
+                    onBack={() => setShowAuth(false)} 
+                    referralRef={restaurantData?.slug} // Pass referral
+                />
              </>
           );
       } else {
