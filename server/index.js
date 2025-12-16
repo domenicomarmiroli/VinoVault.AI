@@ -162,6 +162,7 @@ const initDb = async () => {
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'it';`);
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT FALSE;`);
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_usage_count INTEGER DEFAULT 0;`);
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;`); // FIX: Add google_id migration
         
         // Ensure Wine Columns Exist
         await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS storage_temp TEXT;`);
