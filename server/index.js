@@ -543,11 +543,35 @@ app.get('/api/users', authenticateAdmin, async (req, res) => {
     } catch (e) { res.sendStatus(500); }
 });
 
+// Robust Delete User (Handles missing CASCADE)
 app.delete('/api/users/:id', authenticateAdmin, async (req, res) => {
+    const client = await pool.connect();
     try {
-        await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
-        res.sendStatus(200);
-    } catch (e) { res.sendStatus(500); }
+        await client.query('BEGIN');
+        const userId = req.params.id;
+        
+        // Manual cleanup in case CASCADE is missing or broken in legacy DBs
+        await client.query('DELETE FROM wines WHERE user_id = $1', [userId]);
+        await client.query('DELETE FROM history WHERE user_id = $1', [userId]);
+        await client.query('DELETE FROM locations WHERE user_id = $1', [userId]);
+        
+        // Finally delete user
+        const result = await client.query('DELETE FROM users WHERE id = $1', [userId]);
+        
+        await client.query('COMMIT');
+        
+        if (result.rowCount === 0) {
+             res.status(404).json({ error: "User not found" });
+        } else {
+             res.sendStatus(200);
+        }
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error("Delete user error:", e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
 });
 
 app.put('/api/users/:id/premium', authenticateAdmin, async (req, res) => {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Restaurant } from '../types';
 import { ShieldCheckIcon, LogoutIcon, TrashIcon, WineIcon, ChartBarIcon, RestaurantIcon, CameraIcon } from '../components/Icons';
@@ -141,14 +142,26 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
 
   // --- USER ACTIONS ---
   const handleDeleteUser = async (id: string) => {
-      if (!confirm("Eliminare utente?")) return;
+      if (!confirm("Eliminare definitivamente l'utente e tutti i suoi dati? Questa azione è irreversibile.")) return;
       try {
           const res = await fetch(`${API_BASE}/api/users/${id}`, {
               method: 'DELETE',
               headers: { 'Authorization': `Bearer ${token}` }
           });
-          if (res.ok) setUsers(prev => prev.filter(u => u.id !== id));
-      } catch (e) { alert("Errore"); }
+          if (res.ok) {
+              setUsers(prev => prev.filter(u => u.id !== id));
+          } else {
+              // Try to parse error
+              let errorMsg = "Errore sconosciuto";
+              try {
+                 const json = await res.json();
+                 errorMsg = json.error || res.statusText;
+              } catch {
+                 errorMsg = res.statusText;
+              }
+              alert(`Impossibile eliminare utente: ${errorMsg}`);
+          }
+      } catch (e) { alert("Errore di connessione al server"); }
   };
 
   const handleTogglePremium = async (id: string) => {

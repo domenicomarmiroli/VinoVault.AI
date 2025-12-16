@@ -9,18 +9,20 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col font-sans">
-      {/* Navbar */}
-      <nav className="flex justify-between items-center p-6 max-w-7xl mx-auto w-full">
-        <div className="transform scale-90 origin-left">
-          <Logo />
+    <div className="h-full overflow-y-auto bg-stone-50 flex flex-col font-sans scroll-smooth">
+      {/* Navbar - Sticky for better accessibility */}
+      <nav className="sticky top-0 z-50 bg-stone-50/80 backdrop-blur-md border-b border-transparent transition-all duration-300">
+        <div className="flex justify-between items-center p-6 max-w-7xl mx-auto w-full">
+            <div className="transform scale-90 origin-left cursor-pointer" onClick={() => document.querySelector('.h-full')?.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <Logo />
+            </div>
+            <button 
+            onClick={onStart}
+            className="text-wine-700 font-bold hover:bg-wine-100 px-4 py-2 rounded-lg transition-colors text-sm border border-wine-100"
+            >
+            Accedi
+            </button>
         </div>
-        <button 
-          onClick={onStart}
-          className="text-wine-700 font-bold hover:bg-wine-50 px-4 py-2 rounded-lg transition-colors text-sm"
-        >
-          Accedi
-        </button>
       </nav>
 
       {/* Hero Section */}
@@ -186,7 +188,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       {/* Footer */}
       <footer className="bg-stone-100 border-t border-gray-200 py-12 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 transition-all">
+          <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 transition-all cursor-pointer" onClick={() => document.querySelector('.h-full')?.scrollTo({ top: 0, behavior: 'smooth' })}>
             <Logo className="w-8 h-8" />
           </div>
           <p className="text-gray-400 text-sm">
