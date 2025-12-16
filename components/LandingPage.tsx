@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Logo } from './Logo';
-import { WineIcon, ChefIcon, ShopIcon, ChartBarIcon } from './Icons';
+import { WineIcon, ChefIcon, ShopIcon, ChartBarIcon, RestaurantIcon } from './Icons';
 
 interface LandingPageProps {
   onStart: () => void;
@@ -67,7 +67,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         </div>
 
         {/* Features Section */}
-        <div id="features" className="bg-white py-16 md:py-24">
+        <div id="features" className="bg-white py-16 md:py-24 border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16 max-w-2xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-4">Tutto ciò che serve al Wine Lover</h2>
@@ -102,10 +102,89 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             </div>
           </div>
         </div>
+
+        {/* User Call To Action (No Dead End) */}
+        <div className="bg-wine-50 py-20 px-6">
+            <div className="max-w-4xl mx-auto text-center space-y-6">
+                <h2 className="text-3xl md:text-4xl font-serif font-bold text-wine-900">
+                    Pronto a stappare la tua prima bottiglia digitale?
+                </h2>
+                <p className="text-wine-800/70 text-lg max-w-xl mx-auto">
+                    Inizia subito a catalogare la tua collezione. È semplice, veloce e intelligente.
+                </p>
+                <button 
+                    onClick={onStart}
+                    className="px-10 py-4 bg-wine-700 text-white font-bold rounded-xl shadow-lg shadow-wine-200 hover:bg-wine-800 transition-all transform hover:scale-105 text-lg"
+                >
+                    Crea la tua Cantina
+                </button>
+            </div>
+        </div>
+
+        {/* B2B / Restaurateur Section */}
+        <div className="bg-gray-900 py-20 px-6 text-white relative overflow-hidden">
+             {/* Background Pattern */}
+             <div className="absolute top-0 right-0 -mr-20 -mt-20 opacity-5">
+                 <RestaurantIcon className="w-96 h-96" filled />
+             </div>
+             
+             <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10">
+                <div className="space-y-6">
+                    <div className="inline-block bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-white/80 border border-white/20">
+                        Area Business
+                    </div>
+                    <h2 className="text-3xl md:text-5xl font-serif font-bold leading-tight">
+                        Sei un Ristoratore?
+                    </h2>
+                    <p className="text-gray-400 text-lg leading-relaxed">
+                        Offri ai tuoi clienti un'esperienza da Sommelier digitale direttamente al tavolo. 
+                        Scrivici e scopri come dare <span className="text-white font-bold">gratuitamente</span> un servizio di qualità innovativo.
+                    </p>
+                    <a 
+                        href="mailto:info@aiknow.wine?subject=Richiesta%20Info%20Ristoratori" 
+                        className="inline-flex items-center gap-2 px-8 py-3 bg-white text-gray-900 font-bold rounded-xl hover:bg-gray-100 transition-colors"
+                    >
+                        Contattaci
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                        </svg>
+                    </a>
+                </div>
+                <div className="bg-white/5 border border-white/10 p-8 rounded-2xl backdrop-blur-sm hidden md:block">
+                     <div className="flex items-start gap-4 mb-6">
+                         <div className="bg-green-500/20 p-2 rounded-lg text-green-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                         </div>
+                         <div>
+                             <h4 className="font-bold text-lg">Menu Digitale AI</h4>
+                             <p className="text-sm text-gray-400 mt-1">Niente più PDF statici. Un sommelier interattivo per ogni piatto.</p>
+                         </div>
+                     </div>
+                     <div className="flex items-start gap-4 mb-6">
+                         <div className="bg-blue-500/20 p-2 rounded-lg text-blue-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                         </div>
+                         <div>
+                             <h4 className="font-bold text-lg">Aumenta le Vendite</h4>
+                             <p className="text-sm text-gray-400 mt-1">Guida il cliente verso la bottiglia giusta, aumentando lo scontrino medio.</p>
+                         </div>
+                     </div>
+                     <div className="flex items-start gap-4">
+                         <div className="bg-purple-500/20 p-2 rounded-lg text-purple-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" /></svg>
+                         </div>
+                         <div>
+                             <h4 className="font-bold text-lg">Gratuito per Te</h4>
+                             <p className="text-sm text-gray-400 mt-1">Configurazione semplice. Nessun costo di gestione mensile.</p>
+                         </div>
+                     </div>
+                </div>
+             </div>
+        </div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-50 border-t border-gray-200 py-12 px-6">
+      <footer className="bg-stone-100 border-t border-gray-200 py-12 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 transition-all">
             <Logo className="w-8 h-8" />
