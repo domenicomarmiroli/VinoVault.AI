@@ -10,6 +10,7 @@ import RestaurantView from './views/RestaurantView';
 import AdminView from './views/AdminView';
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
+import LandingPage from './components/LandingPage'; // Import Landing Page
 import { WineIcon, ChefIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
@@ -29,6 +30,9 @@ const AppContent: React.FC = () => {
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
   const [restaurantData, setRestaurantData] = useState<Restaurant | null>(null);
+  
+  // State per gestire la visualizzazione tra Landing e Auth
+  const [showAuth, setShowAuth] = useState(false);
 
   const API_BASE = '';
 
@@ -52,6 +56,7 @@ const AppContent: React.FC = () => {
   const handleLogin = (newToken: string, email: string) => {
       localStorage.setItem('vinovault_token', newToken);
       setToken(newToken);
+      setShowAuth(false); // Reset stato auth
       
       try {
         const payload = JSON.parse(atob(newToken.split('.')[1]));
@@ -66,7 +71,14 @@ const AppContent: React.FC = () => {
       setHistory([]);
       setLocations([]);
       setIsLoaded(false);
-      setActiveTab('inventory');
+
+      // FIX: Se c'è un ristorante caricato o un ref nell'URL, vai al ristorante
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('ref') || restaurantData) {
+          setActiveTab('restaurant');
+      } else {
+          setActiveTab('inventory');
+      }
   };
 
   const handleLogout = () => {
@@ -74,17 +86,32 @@ const AppContent: React.FC = () => {
       setToken(null);
       setUserRole('user');
       setUserPremium(false);
+      setShowAuth(false); // Torna alla landing page al logout
   };
 
   useEffect(() => {
       const params = new URLSearchParams(window.location.search);
       const ref = params.get('ref');
       if (ref) {
+          // Se c'è un ref (QR Code Ristorante), forziamo la visualizzazione dell'Auth se non loggato
+          if (!localStorage.getItem('vinovault_token')) {
+              setShowAuth(true);
+          }
+
           fetch(`/api/restaurants/${ref}`)
             .then(res => res.json())
             .then(data => {
-                if (data) setRestaurantData(data);
-                else setRestaurantData({ id: 'temp', name: ref, slug: ref, menu_context: '' });
+                if (data) {
+                    setRestaurantData(data);
+                    if (localStorage.getItem('vinovault_token')) {
+                        setActiveTab('restaurant');
+                    }
+                } else {
+                    setRestaurantData({ id: 'temp', name: ref, slug: ref, menu_context: '' });
+                    if (localStorage.getItem('vinovault_token')) {
+                        setActiveTab('restaurant');
+                    }
+                }
             })
             .catch(e => console.error(e));
           window.history.replaceState({}, document.title, window.location.pathname);
@@ -231,17 +258,22 @@ const AppContent: React.FC = () => {
       if(!isOfflineMode) { try { await authFetch(`/api/locations/${id}`, { method: 'DELETE' }); } catch(e) {} }
   };
   
+  // LOGIC TO SHOW LANDING OR AUTH
   if (!token) {
-      return (
-        <>
-            {restaurantData && (
-                <div className="fixed top-0 left-0 right-0 z-[100] bg-wine-700 text-white p-4 text-center shadow-lg animate-in slide-in-from-top">
-                    <p className="font-serif font-bold text-lg">{restaurantData.name}</p>
-                </div>
-            )}
-            <AuthForm onLogin={handleLogin} />
-        </>
-      );
+      if (showAuth) {
+          return (
+             <>
+                {restaurantData && (
+                    <div className="fixed top-0 left-0 right-0 z-[100] bg-wine-700 text-white p-4 text-center shadow-lg animate-in slide-in-from-top">
+                        <p className="font-serif font-bold text-lg">{restaurantData.name}</p>
+                    </div>
+                )}
+                <AuthForm onLogin={handleLogin} onBack={() => setShowAuth(false)} />
+             </>
+          );
+      } else {
+          return <LandingPage onStart={() => setShowAuth(true)} />;
+      }
   }
 
   if (!isLoaded && !isOfflineMode) return (
@@ -266,7 +298,7 @@ const AppContent: React.FC = () => {
                 <p className="text-xs font-bold uppercase tracking-wider opacity-80">Check-in</p>
                 <p className="font-serif font-bold">{restaurantData.name}</p>
             </div>
-            <button onClick={() => setRestaurantData(null)} className="bg-white/20 hover:bg-white/30 rounded-full p-1">✕</button>
+            <button onClick={() => { setRestaurantData(null); setActiveTab('inventory'); }} className="bg-white/20 hover:bg-white/30 rounded-full p-1">✕</button>
         </div>
       )}
 
@@ -424,10 +456,12 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => (
-  <LanguageProvider>
-    <AppContent />
-  </LanguageProvider>
-);
+const App: React.FC = () => {
+    return (
+        <LanguageProvider>
+            <AppContent />
+        </LanguageProvider>
+    );
+};
 
 export default App;

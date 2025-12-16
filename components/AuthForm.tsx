@@ -11,9 +11,10 @@ declare global {
 
 interface AuthFormProps {
   onLogin: (token: string, userEmail: string) => void;
+  onBack?: () => void; // New prop
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
+const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -108,8 +109,20 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 animate-in fade-in zoom-in-95 duration-500">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 animate-in fade-in zoom-in-95 duration-500 relative">
         
+        {onBack && (
+            <button 
+                onClick={onBack}
+                className="absolute top-6 left-6 text-gray-400 hover:text-gray-600 p-1"
+                title="Indietro"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                </svg>
+            </button>
+        )}
+
         <div className="flex flex-col items-center justify-center mb-8">
             <Logo className="w-20 h-20 mb-4" />
         </div>
