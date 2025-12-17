@@ -99,6 +99,7 @@ export interface RestaurantSuggestion {
     type: string;
     reasoning: string; // Perché sta bene col piatto
     matchScore: number; // 1-100
+    priceCategory?: 'Fascia Economica' | 'Fascia Media' | 'Fascia Alta'; // NEW
 }
 
 export interface User {

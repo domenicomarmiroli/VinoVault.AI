@@ -330,11 +330,24 @@ export const suggestRestaurantPairing = async (
 
     const promptText = `
     Sei un Algoritmo Sommelier Deterministico.
-    Analizza il menu fornito e suggerisci i 3 MIGLIORI vini per: "${dish}".
+    Analizza il menu fornito e suggerisci i vini per: "${dish}".
 
     OBIETTIVO: COERENZA ASSOLUTA.
-    Se ricevi lo stesso piatto e lo stesso menu, DEVI suggerire sempre gli stessi vini. Non essere "creativo". Sii analitico.
+    Non essere creativo. Sii analitico.
     Calcola il punteggio di abbinamento basandoti rigorosamente su: Struttura, Persistenza, Concordanza/Contrapposizione.
+
+    ISTRUZIONI CRITICHE - LOGICA DI SELEZIONE:
+    1. Analizza il menu e stima il numero totale di etichette uniche di vino presenti.
+    2. SE IL MENU HA <= 30 VINI:
+       - Restituisci i 3 migliori abbinamenti in assoluto.
+       - Lascia il campo "priceCategory" vuoto o null.
+    3. SE IL MENU HA > 30 VINI:
+       - Devi fornire 6 suggerimenti totali, divisi per fascia di prezzo relativa a QUESTO menu.
+       - Calcola 3 fasce di prezzo (Bassa, Media, Alta) basandoti sulla distribuzione dei prezzi nel menu.
+       - Seleziona i 2 migliori abbinamenti per la "Fascia Economica".
+       - Seleziona i 2 migliori abbinamenti per la "Fascia Media".
+       - Seleziona i 2 migliori abbinamenti per la "Fascia Alta".
+       - Compila il campo "priceCategory" con il nome della fascia.
 
     ISTRUZIONI PREZZI (RIGOROSE):
     1. Estrai il prezzo ESATTAMENTE come scritto accanto al vino.
@@ -350,7 +363,8 @@ export const suggestRestaurantPairing = async (
         "price": numero (es. 25.00) o 0,
         "type": "Rosso/Bianco/etc",
         "reasoning": "Motivo tecnico in ${langName}",
-        "matchScore": intero 70-100 (Calcolato analiticamente)
+        "matchScore": intero 70-100,
+        "priceCategory": "Fascia Economica" | "Fascia Media" | "Fascia Alta" | null
       }
     ]
     `;
@@ -368,7 +382,7 @@ export const suggestRestaurantPairing = async (
             model,
             contents: { parts },
             config: {
-                temperature: 0, // CRITICO: Forza il determinismo (0 = minima creatività)
+                temperature: 0, // CRITICO: Forza il determinismo
                 responseMimeType: "application/json",
             }
         });

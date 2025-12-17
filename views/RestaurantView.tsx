@@ -142,6 +142,20 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
       setImages([]);
   };
 
+  // Group Suggestions by Price Category
+  const groupedSuggestions = suggestions.reduce((acc, curr) => {
+      const category = curr.priceCategory || 'default';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(curr);
+      return acc;
+  }, {} as Record<string, RestaurantSuggestion[]>);
+
+  // Sorting keys to ensure order: Low -> Mid -> High (if keys exist in Italian as defined in Prompt)
+  const categoryOrder = ['Fascia Economica', 'Fascia Media', 'Fascia Alta', 'default'];
+  const sortedCategories = Object.keys(groupedSuggestions).sort((a, b) => {
+      return categoryOrder.indexOf(a) - categoryOrder.indexOf(b);
+  });
+
   const hasPreloadedMenu = restaurantData && restaurantData.menu_context;
 
   return (
@@ -247,7 +261,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
 
         {/* Results Section */}
         {suggestions.length > 0 && (
-            <div className="space-y-4 animate-in slide-in-from-bottom duration-500">
+            <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
                 <div className="flex justify-between items-center">
                      <h2 className="text-xl font-serif font-bold text-gray-900">{t('best_pairings_title')}</h2>
                      <button 
@@ -258,34 +272,52 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                      </button>
                 </div>
 
-                {suggestions.map((wine, idx) => (
-                    <div 
-                        key={idx} 
-                        onClick={() => handleSelectWine(wine)}
-                        className={`bg-white p-4 rounded-xl shadow-sm border border-gray-200 cursor-pointer transition-all hover:shadow-md ${selectedWine === wine ? 'ring-2 ring-wine-600 bg-wine-50' : ''}`}
-                    >
-                        <div className="flex justify-between items-start mb-2">
-                             <div>
-                                 <h3 className="font-bold text-gray-900 leading-tight">{wine.name}</h3>
-                                 <p className="text-xs text-gray-600">{wine.producer} • {wine.year}</p>
-                             </div>
-                             {wine.price && wine.price > 0 ? (
-                                 <div className="text-lg font-bold text-gray-800">€{wine.price}</div>
-                             ) : null}
+                {sortedCategories.map(catKey => {
+                    const items = groupedSuggestions[catKey];
+                    const isDefault = catKey === 'default';
+                    // Map category names to nicer labels if needed
+                    const catLabel = catKey; 
+
+                    return (
+                        <div key={catKey}>
+                            {!isDefault && (
+                                <h3 className="font-bold text-gray-500 uppercase text-xs tracking-wider mb-2 border-b border-gray-200 pb-1">
+                                    {catLabel}
+                                </h3>
+                            )}
+                            <div className="space-y-3">
+                                {items.map((wine, idx) => (
+                                    <div 
+                                        key={idx} 
+                                        onClick={() => handleSelectWine(wine)}
+                                        className={`bg-white p-4 rounded-xl shadow-sm border border-gray-200 cursor-pointer transition-all hover:shadow-md ${selectedWine === wine ? 'ring-2 ring-wine-600 bg-wine-50' : ''}`}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                             <div>
+                                                 <h3 className="font-bold text-gray-900 leading-tight">{wine.name}</h3>
+                                                 <p className="text-xs text-gray-600">{wine.producer} • {wine.year}</p>
+                                             </div>
+                                             {wine.price && wine.price > 0 ? (
+                                                 <div className="text-lg font-bold text-gray-800">€{wine.price}</div>
+                                             ) : null}
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2 mb-3">
+                                             <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded">
+                                                 {t('match_score')} {Math.round(wine.matchScore)}%
+                                             </div>
+                                             <span className="text-xs text-gray-400 uppercase font-bold tracking-wider">{wine.type}</span>
+                                        </div>
+                                        
+                                        <p className="text-sm text-gray-600 italic border-l-2 border-wine-200 pl-3">
+                                            "{wine.reasoning}"
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        
-                        <div className="flex items-center gap-2 mb-3">
-                             <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded">
-                                 {t('match_score')} {Math.round(wine.matchScore)}%
-                             </div>
-                             <span className="text-xs text-gray-400 uppercase font-bold tracking-wider">{wine.type}</span>
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 italic border-l-2 border-wine-200 pl-3">
-                            "{wine.reasoning}"
-                        </p>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         )}
 
