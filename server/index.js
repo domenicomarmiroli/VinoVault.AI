@@ -540,7 +540,7 @@ app.get('/api/restaurants/:ref', async (req, res) => {
     } catch (e) { res.status(500).json({error: "Error fetching restaurant"}); }
 });
 
-// --- PRICE SEARCH ROUTE (MISSING IN PREVIOUS VERSION) ---
+// --- PRICE SEARCH ROUTE ---
 app.get('/api/search-prices', authenticateToken, async (req, res) => {
     const { query } = req.query;
     if (!query) return res.status(400).json({ error: 'Query required' });
@@ -550,18 +550,35 @@ app.get('/api/search-prices', authenticateToken, async (req, res) => {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: `Cerca online i prezzi attuali per: "${query}".
-            Restituisci un array JSON con 3-5 opzioni di acquisto reali o stimate.
-            Schema: [{ "source": "Nome Negozio", "price": numero, "currency": "EUR", "link": "url_negozio", "thumbnail": "url_immagine_opzionale" }]`,
+            Rispondi ESCLUSIVAMENTE con un array JSON valido contenente 3-5 opzioni.
+            NON aggiungere markdown, non aggiungere testo prima o dopo il JSON.
+            Schema oggetto: { "source": "Nome Negozio", "price": numero, "currency": "EUR", "link": "url_negozio", "thumbnail": "url_immagine_opzionale" }`,
             config: {
                 tools: [{ googleSearch: {} }],
-                responseMimeType: "application/json"
+                // responseMimeType e responseSchema NON sono supportati con googleSearch, rimossi per evitare errori 500
             }
         });
         
-        const jsonText = response.text || "[]";
-        // Clean potential markdown code blocks
-        const cleanJson = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
-        res.json(JSON.parse(cleanJson));
+        let jsonText = response.text || "[]";
+        // Rimuove markdown code blocks se presenti (es. ```json ... ```)
+        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
+        
+        let data = [];
+        try {
+            // Tenta di trovare il JSON array anche se circondato da testo
+            const match = jsonText.match(/\[.*\]/s);
+            if (match) {
+                data = JSON.parse(match[0]);
+            } else {
+                // Prova parse diretto se pulito
+                data = JSON.parse(jsonText);
+            }
+        } catch (e) {
+            console.error("JSON Parse Error:", jsonText);
+            // Non crashare, restituisci array vuoto ma logga errore
+        }
+
+        res.json(data);
     } catch (err) {
         console.error("Search Price Error:", err);
         res.status(500).json({ error: 'Search failed' });
