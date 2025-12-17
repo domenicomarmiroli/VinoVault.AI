@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { OnlinePrice } from '../types';
 import { ShoppingCartIcon, ExternalLinkIcon } from './Icons';
@@ -45,6 +46,16 @@ const PriceComparison: React.FC<PriceComparisonProps> = ({ name, producer, year,
       }
   };
 
+  const getGoogleShoppingUrl = () => {
+      const query = `${producer} ${name} ${year}`.trim();
+      return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`;
+  };
+
+  const getStoreSearchUrl = (storeName: string) => {
+      const query = `${producer} ${name} ${year} ${storeName}`.trim();
+      return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+  };
+
   if (!isPremium) {
       return (
           <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl text-center">
@@ -76,62 +87,66 @@ const PriceComparison: React.FC<PriceComparisonProps> = ({ name, producer, year,
         {loading && (
             <div className="flex flex-col items-center justify-center py-4 space-y-2">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-                <span className="text-xs text-indigo-500 font-medium">Cerco le migliori offerte su Google Shopping...</span>
+                <span className="text-xs text-indigo-500 font-medium">Cerco i prezzi di mercato...</span>
             </div>
         )}
 
-        {searched && prices.length === 0 && (
-             <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100">
-                 <p className="text-sm text-gray-500">Nessuna offerta specifica trovata per questa annata.</p>
-                 <button onClick={handleSearch} className="text-xs text-indigo-600 font-bold mt-2 hover:underline">Riprova</button>
-             </div>
-        )}
+        {searched && (
+            <div className="space-y-4 animate-in slide-in-from-bottom duration-300">
+                {/* Main Google Shopping Button */}
+                <a 
+                    href={getGoogleShoppingUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition-colors"
+                >
+                    <ShoppingCartIcon className="w-5 h-5" />
+                    Cerca su Google Shopping
+                </a>
 
-        {prices.length > 0 && (
-            <div className="space-y-3 animate-in slide-in-from-bottom duration-300">
-                <div className="flex justify-between items-center mb-1">
-                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Migliori Offerte</h3>
-                    <span className="text-[10px] text-gray-400">Powered by Google Shopping</span>
-                </div>
-                
-                {prices.map((price, idx) => (
-                    <a 
-                        key={idx} 
-                        href={price.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="block bg-white border border-gray-200 rounded-xl p-3 hover:shadow-md transition-all active:scale-[0.99] group relative overflow-hidden"
-                    >
-                        {idx === 0 && (
-                            <div className="absolute top-0 right-0 bg-green-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg z-10">
-                                BEST PRICE
-                            </div>
-                        )}
-                        <div className="flex items-center gap-3">
-                            {price.thumbnail ? (
-                                <img src={price.thumbnail} alt={price.source} className="w-10 h-10 object-contain rounded-md bg-white border border-gray-100" />
-                            ) : (
-                                <div className="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">
-                                    <ShoppingCartIcon className="w-5 h-5" />
-                                </div>
-                            )}
-                            
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-gray-900 truncate">{price.source}</p>
-                                <div className="flex items-center gap-1 text-xs text-indigo-600 font-medium group-hover:underline">
-                                    Vai all'offerta <ExternalLinkIcon className="w-3 h-3" />
-                                </div>
-                            </div>
-
-                            <div className="text-right">
-                                <span className="block text-lg font-bold text-gray-900">€{price.price?.toFixed(2)}</span>
-                            </div>
+                {prices.length > 0 ? (
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center mb-1 px-1">
+                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Prezzi Rilevati</h3>
+                            <span className="text-[9px] text-gray-400">Clicca per verificare</span>
                         </div>
-                    </a>
-                ))}
+                        
+                        {prices.map((price, idx) => (
+                            <a 
+                                key={idx} 
+                                href={getStoreSearchUrl(price.source)} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="block bg-white border border-gray-200 rounded-xl p-3 hover:shadow-md transition-all active:scale-[0.99] group"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3 overflow-hidden">
+                                        <div className="w-8 h-8 bg-gray-100 rounded-md flex items-center justify-center text-gray-400 shrink-0">
+                                            <ExternalLinkIcon className="w-4 h-4" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-bold text-gray-900 truncate">{price.source}</p>
+                                            <p className="text-[10px] text-indigo-600 font-medium group-hover:underline truncate">
+                                                Cerca "{price.source}" su Google
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-right shrink-0">
+                                        <span className="block text-lg font-bold text-gray-900">€{price.price?.toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            </a>
+                        ))}
+                    </div>
+                ) : (
+                     <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100">
+                         <p className="text-sm text-gray-500">Nessun prezzo specifico trovato.</p>
+                         <p className="text-xs text-gray-400 mt-1">Prova il pulsante Google Shopping sopra.</p>
+                     </div>
+                )}
                 
-                <button onClick={() => setSearched(false)} className="w-full text-center text-xs text-gray-400 hover:text-gray-600 mt-2">
+                <button onClick={() => setSearched(false)} className="w-full text-center text-xs text-gray-400 hover:text-gray-600 mt-2 pb-2">
                     Chiudi ricerca
                 </button>
             </div>

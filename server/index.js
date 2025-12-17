@@ -550,9 +550,14 @@ app.get('/api/search-prices', authenticateToken, async (req, res) => {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: `Cerca online i prezzi attuali per: "${query}".
-            Rispondi ESCLUSIVAMENTE con un array JSON valido contenente 3-5 opzioni.
-            NON aggiungere markdown, non aggiungere testo prima o dopo il JSON.
-            Schema oggetto: { "source": "Nome Negozio", "price": numero, "currency": "EUR", "link": "url_negozio", "thumbnail": "url_immagine_opzionale" }`,
+            Restituisci un array JSON contenente dai 3 ai 5 negozi che vendono questo vino.
+            Schema oggetto: { "source": "Nome Negozio", "price": numero }
+            
+            IMPORTANTE:
+            1. Restituisci SOLO il nome del negozio e il prezzo numerico.
+            2. NON inventare link o URL. I link verranno generati automaticamente dal client.
+            3. NON aggiungere markdown o testo extra. Solo JSON valido.
+            `,
             config: {
                 tools: [{ googleSearch: {} }],
                 // responseMimeType e responseSchema NON sono supportati con googleSearch, rimossi per evitare errori 500
