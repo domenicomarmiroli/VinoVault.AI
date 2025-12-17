@@ -329,17 +329,17 @@ export const suggestRestaurantPairing = async (
     let parts: any[] = [];
 
     const promptText = `
-    Sei un Sommelier esperto. Analizza il menu fornito e suggerisci 3 vini per: "${dish}".
+    Sei un Algoritmo Sommelier Deterministico.
+    Analizza il menu fornito e suggerisci i 3 MIGLIORI vini per: "${dish}".
 
-    ISTRUZIONI CRITICHE PER I PREZZI:
-    1. Il prezzo DEVE essere estratto ESATTAMENTE dal menu fornito.
-    2. Cerca la riga esatta del vino suggerito e leggi il prezzo associato visivamente o testualmente.
-    3. NON prendere il prezzo della riga sopra o sotto.
-    4. Se nel testo vedi un formato strutturato tipo "NOME | PRODUTTORE | ... | PREZZO", usalo con fiducia.
-    5. Se il prezzo non è presente o leggibile, restituisci 0. NON INVENTARE.
-    6. Se ci sono più formati (0.375, calice, bottiglia), specifica nel nome quale hai scelto (es. "Verdicchio (0.375)").
-    
-    Attenzione: L'utente verificherà il prezzo sulla carta. Un errore minerebbe la tua credibilità.
+    OBIETTIVO: COERENZA ASSOLUTA.
+    Se ricevi lo stesso piatto e lo stesso menu, DEVI suggerire sempre gli stessi vini. Non essere "creativo". Sii analitico.
+    Calcola il punteggio di abbinamento basandoti rigorosamente su: Struttura, Persistenza, Concordanza/Contrapposizione.
+
+    ISTRUZIONI PREZZI (RIGOROSE):
+    1. Estrai il prezzo ESATTAMENTE come scritto accanto al vino.
+    2. Se trovi un formato strutturato "NOME | ... | PREZZO", usalo.
+    3. Se il prezzo non è leggibile, metti 0. NON INVENTARE.
     
     Format Risposta (JSON puro):
     [
@@ -349,8 +349,8 @@ export const suggestRestaurantPairing = async (
         "year": "Annata o NV",
         "price": numero (es. 25.00) o 0,
         "type": "Rosso/Bianco/etc",
-        "reasoning": "Motivo abbinamento in ${langName}",
-        "matchScore": intero 70-100
+        "reasoning": "Motivo tecnico in ${langName}",
+        "matchScore": intero 70-100 (Calcolato analiticamente)
       }
     ]
     `;
@@ -368,14 +368,12 @@ export const suggestRestaurantPairing = async (
             model,
             contents: { parts },
             config: {
+                temperature: 0, // CRITICO: Forza il determinismo (0 = minima creatività)
                 responseMimeType: "application/json",
-                // Remove Schema to allow model to think better about price association rules defined in prompt
-                // responseSchema: { ... } 
             }
         });
         
         const rawText = response.text || "[]";
-        // Clean potentially markdown wrapped JSON
         const jsonString = cleanJson(rawText);
         return JSON.parse(jsonString);
 
