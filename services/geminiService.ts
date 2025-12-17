@@ -329,17 +329,28 @@ export const suggestRestaurantPairing = async (
     let parts: any[] = [];
 
     const promptText = `
-    Sei un Sommelier esperto al ristorante.
-    Compito: Analizzare il menu (testo o immagini) e suggerire 3 abbinamenti per il piatto: "${dish}".
+    Sei un Sommelier esperto. Analizza il menu fornito e suggerisci 3 vini per: "${dish}".
+
+    REGOLE ASSOLUTE SUI PREZZI:
+    1. Estrai ed usa SOLO ed ESCLUSIVAMENTE il prezzo scritto nel documento accanto al vino.
+    2. Se un prezzo non è chiaramente associato al vino nel testo, restituisci 0.
+    3. NON inventare prezzi. NON stimare. NON cercare su internet.
+    4. Se ci sono più formati per lo stesso vino (es. 0.375, calice, bottiglia), specifica nel nome del vino il formato scelto (es. "Vino X (0.375)"). Se non specificato, si assume bottiglia standard (0.75).
     
-    Regole Rigorose:
-    1. PREZZO: Estrai il prezzo ESATTO scritto sul menu per quel vino specifico. 
-       - Se il prezzo NON è visibile o leggibile, restituisci 0. 
-       - NON STIMARE, NON INVENTARE, NON CERCARE SU GOOGLE. Usa solo i dati OCR.
+    Attenzione: L'accuratezza del prezzo è fondamentale per la fiducia del cliente.
     
-    2. PUNTEGGIO (matchScore): Restituisci un numero INTERO tra 70 e 100 che indica quanto bene si abbina. (Es. 95, non 9.5).
-    
-    3. Rispondi esclusivamente in ${langName}.
+    Format Risposta (JSON puro):
+    [
+      {
+        "name": "Nome esatto dal menu",
+        "producer": "Produttore",
+        "year": "Annata o NV",
+        "price": numero (es. 25.00) o 0,
+        "type": "Rosso/Bianco/etc",
+        "reasoning": "Motivo abbinamento in ${langName}",
+        "matchScore": intero 70-100
+      }
+    ]
     `;
 
     if (menuSource.type === 'images') {
@@ -356,25 +367,16 @@ export const suggestRestaurantPairing = async (
             contents: { parts },
             config: {
                 responseMimeType: "application/json",
-                responseSchema: {
-                    type: "ARRAY",
-                    items: {
-                        type: "OBJECT",
-                        properties: {
-                            name: { type: "STRING" },
-                            producer: { type: "STRING" },
-                            year: { type: "STRING" },
-                            price: { type: "NUMBER", nullable: true },
-                            type: { type: "STRING" },
-                            reasoning: { type: "STRING" },
-                            matchScore: { type: "INTEGER" } 
-                        },
-                        required: ["name", "producer", "reasoning", "matchScore"]
-                    }
-                }
+                // Remove Schema to allow model to think better about price association rules defined in prompt
+                // responseSchema: { ... } 
             }
         });
-        return JSON.parse(cleanJson(response.text || "[]"));
+        
+        const rawText = response.text || "[]";
+        // Clean potentially markdown wrapped JSON
+        const jsonString = cleanJson(rawText);
+        return JSON.parse(jsonString);
+
     } catch (err: any) {
         throw new Error(err.message || "Errore analisi carta vini");
     } 
@@ -389,7 +391,7 @@ export const extractTextFromMedia = async (base64Data: string, mimeType: string)
             contents: {
                 parts: [
                     { inlineData: { mimeType: mimeType, data: cleanBase64(base64Data) } },
-                    { text: "OCR: Extract all text from this document." }
+                    { text: "OCR Task: Extract all text from this document. IMPORTANT: Preserve the physical layout, line breaks, and association between items and their prices. Do not reformat as a list if it destroys price alignment." }
                 ]
             }
         });
