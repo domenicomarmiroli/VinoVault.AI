@@ -4,6 +4,7 @@ import { Wine, PairingSuggestion } from '../types';
 import { suggestPairing } from '../services/geminiService';
 import { ChefIcon, LogoutIcon, ThermometerIcon, ClockIcon, MapPinIcon, StarIcon, ShoppingCartIcon, WineIcon } from '../components/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import LoadingScreen from '../components/LoadingScreen';
 
 interface SommelierViewProps {
   inventory: Wine[];
@@ -42,7 +43,10 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
   const getInventoryWine = (id?: string) => inventory.find(w => w.id === id);
 
   return (
-    <div className="h-full flex flex-col bg-stone-50 overflow-hidden">
+    <div className="h-full flex flex-col bg-stone-50 overflow-hidden relative">
+      {/* Loading Overlay */}
+      {loading && <LoadingScreen message={t('ai_analyzing')} subMessage="Il Sommelier sta consultando la tua cantina..." />}
+
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
         <div>
             <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
@@ -111,7 +115,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                     loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-wine-600 hover:bg-wine-700'
                 }`}
             >
-                {loading ? t('ai_analyzing') : t('ask_sommelier')}
+                {t('ask_sommelier')}
             </button>
         </form>
 

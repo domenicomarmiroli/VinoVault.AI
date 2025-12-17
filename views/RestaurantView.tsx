@@ -4,6 +4,7 @@ import { suggestRestaurantPairing } from '../services/geminiService';
 import { RestaurantSuggestion, HistoryEntry, Restaurant } from '../types';
 import { CameraIcon, LogoutIcon, RestaurantIcon, PlusIcon, HelpIcon } from '../components/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import LoadingScreen from '../components/LoadingScreen';
 
 interface RestaurantViewProps {
   onLogout: () => void;
@@ -159,7 +160,10 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
   const hasPreloadedMenu = restaurantData && restaurantData.menu_context;
 
   return (
-    <div className="h-full flex flex-col bg-stone-50 overflow-hidden">
+    <div className="h-full flex flex-col bg-stone-50 overflow-hidden relative">
+      {/* Loading Overlay */}
+      {loading && <LoadingScreen message={t('ai_analyzing')} subMessage="Analisi del menu e ricerca abbinamenti in corso..." />}
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
         <div>
@@ -248,14 +252,8 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                     disabled={!dish || (!hasPreloadedMenu && images.length === 0) || loading}
                     className="w-full py-4 bg-wine-700 text-white font-bold rounded-xl shadow-lg hover:bg-wine-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all mt-4"
                 >
-                    {loading ? t('processing_menu') : t('find_pairing_btn')}
+                    {t('find_pairing_btn')}
                 </button>
-                
-                {loading && (
-                    <div className="text-center text-xs text-gray-500 italic animate-pulse">
-                        {t('ai_analyzing')}
-                    </div>
-                )}
             </div>
         )}
 
