@@ -23,11 +23,12 @@ const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLo
   const [sortOrder, setSortOrder] = useState<SortOption>('date_desc');
   const { t } = useLanguage();
 
+  // Use dynamic filters with translations
   const filters: { label: string, value: FilterType }[] = [
-      { label: "All", value: 'all' },
-      { label: "Red", value: WineType.RED },
-      { label: "White", value: WineType.WHITE },
-      { label: "Sparkling", value: WineType.SPARKLING },
+      { label: t('filter_all'), value: 'all' },
+      { label: t('filter_red'), value: WineType.RED },
+      { label: t('filter_white'), value: WineType.WHITE },
+      { label: t('filter_bubbles'), value: WineType.SPARKLING },
   ];
 
   const filteredHistory = history.filter(h => {

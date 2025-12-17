@@ -3,12 +3,13 @@ import React, { useState, useRef } from 'react';
 import { suggestRestaurantPairing } from '../services/geminiService';
 import { RestaurantSuggestion, HistoryEntry, Restaurant } from '../types';
 import { CameraIcon, LogoutIcon, RestaurantIcon, PlusIcon } from '../components/Icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface RestaurantViewProps {
   onLogout: () => void;
   onAddToHistory: (entry: Partial<HistoryEntry>) => void;
   onAiUsed: () => void;
-  restaurantData: Restaurant | null; // NEW PROP
+  restaurantData: Restaurant | null; 
 }
 
 // Compression Helper
@@ -64,6 +65,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
   const [confirmPrice, setConfirmPrice] = useState<string>('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t, language } = useLanguage();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -78,7 +80,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                 setImages(prev => [...prev, compressed]);
             } catch(err) {
                 console.error("Compression error", err);
-                alert("Errore elaborazione immagine");
+                alert(t('error'));
             }
         }
     }
@@ -105,11 +107,11 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
               source = { type: 'images', data: images };
           }
 
-          const results = await suggestRestaurantPairing(source, dish);
+          const results = await suggestRestaurantPairing(source, dish, language);
           setSuggestions(results);
           onAiUsed(); // Track
       } catch (error: any) {
-          alert(`Errore analisi: ${error.message}`);
+          alert(`${t('error')}: ${error.message}`);
       } finally {
           setLoading(false);
       }
@@ -128,7 +130,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
           name: selectedWine.name,
           producer: selectedWine.producer,
           year: selectedWine.year,
-          type: selectedWine.type, // Added type
+          type: selectedWine.type, 
           price: parseFloat(confirmPrice) || 0,
           consumedDate: new Date().toISOString()
       });
@@ -149,12 +151,12 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
         <div>
             <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
                 <RestaurantIcon className="w-8 h-8 text-wine-600" filled />
-                Al Ristorante
+                {t('restaurant_title')}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
                 {hasPreloadedMenu 
-                    ? `Menu di ${restaurantData.name} pronto.` 
-                    : "Scatta foto al menu, dimmi cosa mangi."
+                    ? t('menu_ready').replace('{name}', restaurantData.name)
+                    : t('restaurant_desc_scan')
                 }
             </p>
         </div>
@@ -169,11 +171,11 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
         {suggestions.length === 0 && (
             <div className="space-y-4">
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Cosa stai mangiando?</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">{t('what_eating')}</label>
                     <textarea 
                         value={dish}
                         onChange={(e) => setDish(e.target.value)}
-                        placeholder="Es. Tagliata di manzo con rucola e grana..."
+                        placeholder={t('dish_placeholder')}
                         className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none resize-none h-24"
                     />
                 </div>
@@ -185,13 +187,13 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                             <RestaurantIcon className="w-6 h-6" filled />
                         </div>
                         <div>
-                            <p className="font-bold text-green-800 text-sm">Carta dei Vini Caricata</p>
-                            <p className="text-xs text-green-600">Il Sommelier conosce già i vini di {restaurantData.name}.</p>
+                            <p className="font-bold text-green-800 text-sm">{t('menu_card_loaded')}</p>
+                            <p className="text-xs text-green-600">{t('sommelier_knows').replace('{name}', restaurantData.name)}</p>
                         </div>
                     </div>
                 ) : (
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Carta dei Vini ({images.length}/3)</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">{t('wine_list_photos').replace('{count}', images.length.toString())}</label>
                         <div className="grid grid-cols-3 gap-2">
                             {images.map((img, idx) => (
                                 <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
@@ -211,7 +213,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                                     className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:bg-gray-50 transition-colors bg-white"
                                 >
                                     <CameraIcon className="w-6 h-6 text-gray-400 mb-1" />
-                                    <span className="text-[10px] text-gray-500 font-bold uppercase">Foto</span>
+                                    <span className="text-[10px] text-gray-500 font-bold uppercase">{t('photo_btn')}</span>
                                 </button>
                             )}
                         </div>
@@ -232,12 +234,12 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                     disabled={!dish || (!hasPreloadedMenu && images.length === 0) || loading}
                     className="w-full py-4 bg-wine-700 text-white font-bold rounded-xl shadow-lg hover:bg-wine-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all mt-4"
                 >
-                    {loading ? 'Il Sommelier sta consultando la carta...' : 'Trova Abbinamento'}
+                    {loading ? t('processing_menu') : t('find_pairing_btn')}
                 </button>
                 
                 {loading && (
                     <div className="text-center text-xs text-gray-500 italic animate-pulse">
-                        L'operazione potrebbe richiedere qualche secondo...
+                        {t('ai_analyzing')}
                     </div>
                 )}
             </div>
@@ -247,12 +249,12 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
         {suggestions.length > 0 && (
             <div className="space-y-4 animate-in slide-in-from-bottom duration-500">
                 <div className="flex justify-between items-center">
-                     <h2 className="text-xl font-serif font-bold text-gray-900">Migliori Abbinamenti</h2>
+                     <h2 className="text-xl font-serif font-bold text-gray-900">{t('best_pairings_title')}</h2>
                      <button 
                         onClick={() => setSuggestions([])}
                         className="text-sm text-wine-600 font-medium hover:underline"
                      >
-                        Nuova Ricerca
+                        {t('new_search')}
                      </button>
                 </div>
 
@@ -274,7 +276,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                         
                         <div className="flex items-center gap-2 mb-3">
                              <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded">
-                                 Match {Math.round(wine.matchScore)}%
+                                 {t('match_score')} {Math.round(wine.matchScore)}%
                              </div>
                              <span className="text-xs text-gray-400 uppercase font-bold tracking-wider">{wine.type}</span>
                         </div>
@@ -291,14 +293,13 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
         {selectedWine && (
             <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-end justify-center">
                  <div className="bg-white w-full max-w-md p-6 pb-12 rounded-t-2xl shadow-xl animate-in slide-in-from-bottom duration-300">
-                     <h3 className="font-serif font-bold text-lg mb-4 text-center">Conferma Scelta</h3>
+                     <h3 className="font-serif font-bold text-lg mb-4 text-center">{t('confirm_choice_title')}</h3>
                      <p className="text-sm text-gray-600 text-center mb-4">
-                         Hai scelto <strong>{selectedWine.name}</strong>. <br/>
-                         Conferma il prezzo per aggiungerlo al tuo storico bevute.
+                         {t('confirm_choice_desc').replace('{wine}', selectedWine.name)}
                      </p>
                      
                      <div className="mb-6">
-                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1 text-center">Prezzo Pagato (€)</label>
+                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1 text-center">{t('price_paid_label')}</label>
                          <input 
                              type="number" 
                              value={confirmPrice} 
@@ -313,13 +314,13 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                             onClick={() => setSelectedWine(null)}
                             className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl"
                          >
-                            Annulla
+                            {t('cancel')}
                          </button>
                          <button 
                             onClick={handleConfirmSelection}
                             className="flex-1 py-3 bg-wine-600 text-white font-bold rounded-xl shadow-lg"
                          >
-                            Bevi e Vota
+                            {t('drink_and_rate')}
                          </button>
                      </div>
                  </div>

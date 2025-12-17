@@ -65,14 +65,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({
     }
   };
 
-  const filters: { label: string, value: FilterType }[] = [
-    { label: t('sort_recent'), value: 'all' }, 
-    { label: "All", value: 'all' },
-    { label: "Red", value: WineType.RED },
-    { label: "White", value: WineType.WHITE },
-    { label: "Sparkling", value: WineType.SPARKLING },
-  ];
-
   const filteredWines = wines.filter(w => {
     const nameMatch = w.name?.toLowerCase() || '';
     const producerMatch = w.producer?.toLowerCase() || '';
@@ -176,10 +168,10 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4">
-            <button onClick={() => setActiveFilter('all')} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === 'all' ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>All</button>
-            <button onClick={() => setActiveFilter(WineType.RED)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.RED ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>Red</button>
-            <button onClick={() => setActiveFilter(WineType.WHITE)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.WHITE ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>White</button>
-            <button onClick={() => setActiveFilter(WineType.SPARKLING)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.SPARKLING ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>Bubbles</button>
+            <button onClick={() => setActiveFilter('all')} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === 'all' ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>{t('filter_all')}</button>
+            <button onClick={() => setActiveFilter(WineType.RED)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.RED ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>{t('filter_red')}</button>
+            <button onClick={() => setActiveFilter(WineType.WHITE)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.WHITE ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>{t('filter_white')}</button>
+            <button onClick={() => setActiveFilter(WineType.SPARKLING)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.SPARKLING ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>{t('filter_bubbles')}</button>
         </div>
       </div>
 
@@ -244,7 +236,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         onUpdateWine={onUpdateWine}
         onDelete={onDelete}
         isPremium={isPremium} 
-      /> 
+      />
     </div> 
   );
 };
