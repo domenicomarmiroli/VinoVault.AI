@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { suggestRestaurantPairing } from '../services/geminiService';
 import { RestaurantSuggestion, HistoryEntry, Restaurant } from '../types';
-import { CameraIcon, LogoutIcon, RestaurantIcon, PlusIcon } from '../components/Icons';
+import { CameraIcon, LogoutIcon, RestaurantIcon, PlusIcon, HelpIcon } from '../components/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface RestaurantViewProps {
@@ -179,7 +179,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-6">
         
         {/* Input Section */}
         {suggestions.length === 0 && (
@@ -318,25 +318,38 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                         </div>
                     );
                 })}
+                
+                {/* Information Note */}
+                <div className="mt-6 p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex gap-3 items-start animate-in fade-in duration-700">
+                    <div className="bg-indigo-100 p-2 rounded-full text-indigo-600 shrink-0">
+                        <HelpIcon className="w-4 h-4" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-indigo-900 font-bold">{t('tap_to_rate_title')}</p>
+                        <p className="text-xs text-indigo-700 mt-1 leading-relaxed">
+                            {t('tap_to_rate_desc')}
+                        </p>
+                    </div>
+                </div>
             </div>
         )}
 
-        {/* Confirmation Modal (Bottom Sheet) */}
+        {/* Confirmation Modal (Floating to avoid overlap) */}
         {selectedWine && (
-            <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-end justify-center">
-                 <div className="bg-white w-full max-w-md p-6 pb-12 rounded-t-2xl shadow-xl animate-in slide-in-from-bottom duration-300">
+            <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                 <div className="bg-white w-full max-w-md p-6 rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200">
                      <h3 className="font-serif font-bold text-lg mb-4 text-center">{t('confirm_choice_title')}</h3>
-                     <p className="text-sm text-gray-600 text-center mb-4">
+                     <p className="text-sm text-gray-600 text-center mb-6">
                          {t('confirm_choice_desc').replace('{wine}', selectedWine.name)}
                      </p>
                      
-                     <div className="mb-6">
-                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1 text-center">{t('price_paid_label')}</label>
+                     <div className="mb-8">
+                         <label className="block text-xs font-bold uppercase text-gray-500 mb-2 text-center">{t('price_paid_label')}</label>
                          <input 
                              type="number" 
                              value={confirmPrice} 
                              onChange={(e) => setConfirmPrice(e.target.value)}
-                             className="w-32 mx-auto block text-center p-2 text-xl font-bold border-b-2 border-wine-600 focus:outline-none bg-transparent"
+                             className="w-32 mx-auto block text-center p-2 text-2xl font-bold border-b-2 border-wine-600 focus:outline-none bg-transparent"
                              autoFocus
                          />
                      </div>
@@ -344,13 +357,13 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                      <div className="flex gap-3">
                          <button 
                             onClick={() => setSelectedWine(null)}
-                            className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl"
+                            className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
                          >
                             {t('cancel')}
                          </button>
                          <button 
                             onClick={handleConfirmSelection}
-                            className="flex-1 py-3 bg-wine-600 text-white font-bold rounded-xl shadow-lg"
+                            className="flex-1 py-3.5 bg-wine-600 text-white font-bold rounded-xl shadow-lg hover:bg-wine-700 transition-colors"
                          >
                             {t('drink_and_rate')}
                          </button>

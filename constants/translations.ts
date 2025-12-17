@@ -70,6 +70,8 @@ export const translations: Record<Language, Record<string, string>> = {
     confirm_choice_desc: "Hai scelto {wine}. Conferma il prezzo per aggiungerlo al tuo storico.",
     price_paid_label: "Prezzo Pagato (€)",
     drink_and_rate: "Bevi e Vota",
+    tap_to_rate_title: "Salva e Vota",
+    tap_to_rate_desc: "Tocca un vino per aggiungerlo subito al tuo Storico, dare un voto e scrivere le tue note di degustazione.",
     // History
     history_desc: "Diario delle bottiglie consumate.",
     clear: "Pulisci",
@@ -196,6 +198,8 @@ export const translations: Record<Language, Record<string, string>> = {
     confirm_choice_desc: "You chose {wine}. Confirm price to add to history.",
     price_paid_label: "Price Paid (€)",
     drink_and_rate: "Drink & Rate",
+    tap_to_rate_title: "Save & Rate",
+    tap_to_rate_desc: "Tap a wine to add it to your History, rate it, and save your tasting notes.",
     // History
     history_desc: "Log of consumed bottles.",
     clear: "Clear",
@@ -318,6 +322,8 @@ export const translations: Record<Language, Record<string, string>> = {
     confirm_choice_desc: "Vous avez choisi {wine}. Confirmez le prix pour l'ajouter à l'historique.",
     price_paid_label: "Prix Payé (€)",
     drink_and_rate: "Boire & Noter",
+    tap_to_rate_title: "Sauvegarder et Noter",
+    tap_to_rate_desc: "Appuyez sur un vin pour l'ajouter à votre Historique, le noter et enregistrer vos notes de dégustation.",
     // History
     history_desc: "Journal des bouteilles consommées.",
     clear: "Effacer",
@@ -438,8 +444,10 @@ export const translations: Record<Language, Record<string, string>> = {
     match_score: "Match",
     confirm_choice_title: "Confirmar Elección",
     confirm_choice_desc: "Has elegido {wine}. Confirma el precio para añadir al historial.",
-    price_paid_label: "Precio Pagado (€)",
+    price_paid_label: "Precio Pagato (€)",
     drink_and_rate: "Beber y Puntuar",
+    tap_to_rate_title: "Guardar y Puntuar",
+    tap_to_rate_desc: "Toca un vino para añadirlo a tu Historial, puntuarlo y guardar tus notas de cata.",
     // History
     history_desc: "Diario de botellas consumidas.",
     clear: "Limpiar",
@@ -562,6 +570,8 @@ export const translations: Record<Language, Record<string, string>> = {
     confirm_choice_desc: "Sie haben {wine} gewählt. Bestätigen Sie den Preis für den Verlauf.",
     price_paid_label: "Gezahlter Preis (€)",
     drink_and_rate: "Trinken & Bewerten",
+    tap_to_rate_title: "Speichern & Bewerten",
+    tap_to_rate_desc: "Tippen Sie auf einen Wein, um ihn Ihrem Verlauf hinzuzufügen, zu bewerten und Notizen zu speichern.",
     // History
     history_desc: "Protokoll der konsumierten Flaschen.",
     clear: "Leeren",
