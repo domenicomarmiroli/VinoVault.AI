@@ -331,13 +331,15 @@ export const suggestRestaurantPairing = async (
     const promptText = `
     Sei un Sommelier esperto. Analizza il menu fornito e suggerisci 3 vini per: "${dish}".
 
-    REGOLE ASSOLUTE SUI PREZZI:
-    1. Estrai ed usa SOLO ed ESCLUSIVAMENTE il prezzo scritto nel documento accanto al vino.
-    2. Se un prezzo non è chiaramente associato al vino nel testo, restituisci 0.
-    3. NON inventare prezzi. NON stimare. NON cercare su internet.
-    4. Se ci sono più formati per lo stesso vino (es. 0.375, calice, bottiglia), specifica nel nome del vino il formato scelto (es. "Vino X (0.375)"). Se non specificato, si assume bottiglia standard (0.75).
+    ISTRUZIONI CRITICHE PER I PREZZI:
+    1. Il prezzo DEVE essere estratto ESATTAMENTE dal menu fornito.
+    2. Cerca la riga esatta del vino suggerito e leggi il prezzo associato visivamente o testualmente.
+    3. NON prendere il prezzo della riga sopra o sotto.
+    4. Se nel testo vedi un formato strutturato tipo "NOME | PRODUTTORE | ... | PREZZO", usalo con fiducia.
+    5. Se il prezzo non è presente o leggibile, restituisci 0. NON INVENTARE.
+    6. Se ci sono più formati (0.375, calice, bottiglia), specifica nel nome quale hai scelto (es. "Verdicchio (0.375)").
     
-    Attenzione: L'accuratezza del prezzo è fondamentale per la fiducia del cliente.
+    Attenzione: L'utente verificherà il prezzo sulla carta. Un errore minerebbe la tua credibilità.
     
     Format Risposta (JSON puro):
     [
@@ -391,7 +393,21 @@ export const extractTextFromMedia = async (base64Data: string, mimeType: string)
             contents: {
                 parts: [
                     { inlineData: { mimeType: mimeType, data: cleanBase64(base64Data) } },
-                    { text: "OCR Task: Extract all text from this document. IMPORTANT: Preserve the physical layout, line breaks, and association between items and their prices. Do not reformat as a list if it destroys price alignment." }
+                    { text: `
+                    OCR AVANZATO PER MENU RISTORANTE.
+                    Trascrivi il contenuto mantenendo rigorosamente la struttura.
+                    
+                    FORMATO RICHIESTO PER OGNI VINO (Linea per linea):
+                    [NOME VINO] | [PRODUTTORE] | [ANNATA] | [PREZZO]
+                    
+                    Regole:
+                    1. Scrivi ogni vino su una nuova riga univoca.
+                    2. Se il produttore non è esplicito ma è nell'intestazione della sezione (es. "Vini di Garofoli"), includilo nella riga.
+                    3. Il PREZZO deve essere quello esattamente allineato visivamente al vino.
+                    4. Se ci sono più prezzi per formati diversi, scrivili entrambi nella colonna prezzo (es. "5€ (calice) / 20€ (bt)").
+                    5. Se non è un vino (es. titolo sezione "Rossi"), riportalo semplicemente su una riga a sé.
+                    6. NON inventare dati. Se manca l'annata, lascia lo spazio vuoto tra i separatori.
+                    ` }
                 ]
             }
         });

@@ -176,7 +176,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                         value={dish}
                         onChange={(e) => setDish(e.target.value)}
                         placeholder={t('dish_placeholder')}
-                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none resize-none h-24"
+                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none resize-none h-48"
                     />
                 </div>
 
