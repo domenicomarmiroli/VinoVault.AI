@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
 
@@ -537,6 +538,34 @@ app.get('/api/restaurants/:ref', async (req, res) => {
             res.json(null);
         }
     } catch (e) { res.status(500).json({error: "Error fetching restaurant"}); }
+});
+
+// --- PRICE SEARCH ROUTE (MISSING IN PREVIOUS VERSION) ---
+app.get('/api/search-prices', authenticateToken, async (req, res) => {
+    const { query } = req.query;
+    if (!query) return res.status(400).json({ error: 'Query required' });
+
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Cerca online i prezzi attuali per: "${query}".
+            Restituisci un array JSON con 3-5 opzioni di acquisto reali o stimate.
+            Schema: [{ "source": "Nome Negozio", "price": numero, "currency": "EUR", "link": "url_negozio", "thumbnail": "url_immagine_opzionale" }]`,
+            config: {
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json"
+            }
+        });
+        
+        const jsonText = response.text || "[]";
+        // Clean potential markdown code blocks
+        const cleanJson = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
+        res.json(JSON.parse(cleanJson));
+    } catch (err) {
+        console.error("Search Price Error:", err);
+        res.status(500).json({ error: 'Search failed' });
+    }
 });
 
 // --- ADMIN ROUTES ---
