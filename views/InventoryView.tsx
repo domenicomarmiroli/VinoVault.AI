@@ -106,71 +106,67 @@ const InventoryView: React.FC<InventoryViewProps> = ({
 
   return (
     <div className="relative h-full flex flex-col bg-gray-50">
-      <div className="bg-white px-4 pt-4 pb-2 sticky top-0 z-10 shadow-sm">
-        <div className="flex justify-between items-center mb-4">
+      <div className="bg-white px-4 pt-3 pb-2 sticky top-0 z-10 shadow-sm">
+        <div className="flex justify-between items-center mb-2">
           <div className="transform scale-90 origin-left">
              <Logo className="w-10 h-10" />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
              <button 
                 onClick={() => setIsHelpOpen(true)}
-                className="bg-wine-50 text-wine-700 p-2.5 rounded-full hover:bg-wine-100 transition-colors"
+                className="bg-wine-50 text-wine-700 p-2 rounded-full hover:bg-wine-100 transition-colors"
              >
-                <HelpIcon className="w-6 h-6" />
+                <HelpIcon className="w-5 h-5" />
              </button>
 
              <button 
                 onClick={() => setIsProfileOpen(true)}
-                className="bg-gray-100 text-gray-700 p-2.5 rounded-full hover:bg-gray-200 transition-colors border border-gray-200"
+                className="bg-gray-100 text-gray-700 p-2 rounded-full hover:bg-gray-200 transition-colors border border-gray-200"
             >
-                <UserIcon className="w-6 h-6" />
+                <UserIcon className="w-5 h-5" />
             </button>
 
             <button 
                 onClick={() => setIsLocManagerOpen(true)}
-                className="bg-gray-100 text-gray-600 p-2.5 rounded-full hover:bg-gray-200 transition-colors"
+                className="bg-gray-100 text-gray-600 p-2 rounded-full hover:bg-gray-200 transition-colors"
             >
-                <CogIcon className="w-6 h-6" />
+                <CogIcon className="w-5 h-5" />
             </button>
-            <button 
-                onClick={() => setIsModalOpen(true)}
-                className="bg-wine-600 text-white p-2.5 rounded-full shadow-lg hover:bg-wine-700 transition-colors active:scale-95 flex items-center justify-center"
-            >
-                <PlusIcon className="w-6 h-6" />
-            </button>
+            
+            {/* FAB replaces the header button for better mobile UX */}
           </div>
         </div>
         
-        <div className="flex gap-2 mb-4 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg justify-around">
+        <div className="flex gap-2 mb-3 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg justify-around">
             <div className="text-center">
-                <span className="block font-bold text-gray-900 text-lg">{totalBottles}</span>
+                <span className="block font-bold text-gray-900 text-base">{totalBottles}</span>
                 {t('bottles')}
             </div>
             <div className="w-px bg-gray-200"></div>
             <div className="text-center">
-                <span className="block font-bold text-gray-900 text-lg">{wines.length}</span>
+                <span className="block font-bold text-gray-900 text-base">{wines.length}</span>
                 {t('labels')}
             </div>
             <div className="w-px bg-gray-200"></div>
             <div className="text-center">
-                <span className="block font-bold text-gray-900 text-lg">€{totalValue.toFixed(0)}</span>
+                <span className="block font-bold text-gray-900 text-base">€{totalValue.toFixed(0)}</span>
                 {t('value')}
             </div>
         </div>
 
-        <div className="flex gap-2 mb-3">
+        <div className="flex gap-2 mb-2">
              <input 
                 type="text" 
                 placeholder={t('search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 bg-gray-100 border-none rounded-xl py-2.5 px-4 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none"
+                className="flex-1 bg-gray-100 border-none rounded-xl py-2 px-4 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none"
             />
             <select
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
-                className="bg-gray-100 border-none rounded-xl py-2.5 px-2 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none max-w-[100px] truncate"
+                className="bg-gray-100 border-none rounded-xl py-2 px-2 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none max-w-[100px] truncate"
             >
                 <option value="all">{t('location')}</option>
                 {locations.map(loc => (
@@ -179,7 +175,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
             </select>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar -mx-4 px-4">
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4">
             <button onClick={() => setActiveFilter('all')} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === 'all' ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>All</button>
             <button onClick={() => setActiveFilter(WineType.RED)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.RED ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>Red</button>
             <button onClick={() => setActiveFilter(WineType.WHITE)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.WHITE ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>White</button>
@@ -202,6 +198,15 @@ const InventoryView: React.FC<InventoryViewProps> = ({
           ))
         )}
       </div>
+
+      {/* Floating Action Button (FAB) for adding wine */}
+      <button 
+        onClick={() => setIsModalOpen(true)}
+        className="fixed bottom-24 right-6 z-30 bg-wine-600 text-white w-14 h-14 rounded-full shadow-xl shadow-wine-900/20 flex items-center justify-center hover:bg-wine-700 transition-transform active:scale-95"
+        aria-label={t('add_wine')}
+      >
+        <PlusIcon className="w-8 h-8" />
+      </button>
 
       <AddWineModal 
         isOpen={isModalOpen} 
@@ -239,7 +244,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         onUpdateWine={onUpdateWine}
         onDelete={onDelete}
         isPremium={isPremium} 
-      />
+      /> 
     </div> 
   );
 };

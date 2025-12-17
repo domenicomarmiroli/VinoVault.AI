@@ -92,7 +92,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
               <FeatureCard 
                 icon={<ShopIcon className="w-8 h-8 text-white" />}
                 title="Shop Advisor"
-                desc="Sei in enoteca? Scansiona una bottiglia per sapere se il prezzo è onesto e se vale l'acquisto."
+                desc="Sei in enoteca o stai per acquistare online? Scansiona la bottiglia oppure inserisci il link per sapere se il vino si adatta alla tua cantina e il prezzo è conveniente."
                 color="bg-emerald-600"
               />
               <FeatureCard 
