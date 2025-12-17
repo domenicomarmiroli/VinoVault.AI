@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Restaurant } from '../types';
 import { ShieldCheckIcon, LogoutIcon, TrashIcon, WineIcon, ChartBarIcon, RestaurantIcon, CameraIcon } from '../components/Icons';
-import { extractTextFromImage } from '../services/geminiService';
+import { extractTextFromMedia } from '../services/geminiService';
 
 interface AdminViewProps {
   onLogout: () => void;
@@ -42,6 +42,15 @@ const compressImage = (file: File): Promise<string> => {
     });
 };
 
+const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+    });
+};
+
 const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -50,7 +59,6 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
 
   // Restaurant Form State
   const [editingRest, setEditingRest] = useState<Partial<Restaurant> | null>(null);
-  const [menuImage, setMenuImage] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -98,7 +106,6 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
           if (res.ok) {
               fetchData();
               setEditingRest(null);
-              setMenuImage(null);
           } else {
               alert("Errore salvataggio");
           }
@@ -123,8 +130,21 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
       if (file) {
           try {
               setExtracting(true);
-              const compressed = await compressImage(file);
-              const text = await extractTextFromImage(compressed);
+              let processedData = "";
+              let mimeType = file.type;
+
+              if (file.type === 'application/pdf') {
+                  processedData = await readFileAsBase64(file);
+              } else if (file.type.startsWith('image/')) {
+                  processedData = await compressImage(file);
+                  mimeType = 'image/jpeg';
+              } else {
+                  alert("Formato non supportato. Usa JPG, PNG o PDF.");
+                  setExtracting(false);
+                  return;
+              }
+
+              const text = await extractTextFromMedia(processedData, mimeType);
               setEditingRest(prev => ({
                   ...prev,
                   menu_context: (prev?.menu_context || '') + "\n" + text
@@ -321,15 +341,15 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                                     disabled={extracting}
                                 >
                                     <CameraIcon className="w-3 h-3" />
-                                    {extracting ? 'Analisi in corso...' : 'Estrai da Foto'}
+                                    {extracting ? 'Analisi in corso...' : 'Estrai da Foto/PDF'}
                                 </button>
-                                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleMenuImageUpload} />
+                                <input type="file" ref={fileInputRef} className="hidden" accept="image/*,application/pdf" onChange={handleMenuImageUpload} />
                              </div>
                              <textarea 
                                 value={editingRest?.menu_context || ''} 
                                 onChange={e => setEditingRest(prev => ({ ...prev, menu_context: e.target.value }))}
                                 className="w-full h-32 p-2 border border-gray-300 rounded-lg text-xs font-mono"
-                                placeholder="Incolla qui il testo del menu o usa 'Estrai da Foto'..."
+                                placeholder="Incolla qui il testo del menu o usa 'Estrai da Foto/PDF'..."
                              />
                          </div>
 

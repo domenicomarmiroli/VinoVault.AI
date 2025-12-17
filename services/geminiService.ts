@@ -4,7 +4,7 @@ import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, RestaurantSuggesti
 
 // Helper to remove base64 prefix
 const cleanBase64 = (base64: string) => {
-  return base64.replace(/^data:image\/(png|jpg|jpeg|webp);base64,/, "");
+  return base64.replace(/^data:(image\/(png|jpg|jpeg|webp)|application\/pdf);base64,/, "");
 };
 
 // Helper to clean Markdown JSON blocks (```json ... ```)
@@ -380,7 +380,7 @@ export const suggestRestaurantPairing = async (
     } 
 };
 
-export const extractTextFromImage = async (base64Image: string): Promise<string> => {
+export const extractTextFromMedia = async (base64Data: string, mimeType: string): Promise<string> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
     const model = "gemini-2.5-flash";
     try {
@@ -388,14 +388,14 @@ export const extractTextFromImage = async (base64Image: string): Promise<string>
             model,
             contents: {
                 parts: [
-                    { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } },
-                    { text: "OCR: Extract all text." }
+                    { inlineData: { mimeType: mimeType, data: cleanBase64(base64Data) } },
+                    { text: "OCR: Extract all text from this document." }
                 ]
             }
         });
         return response.text || "";
     } catch (err) {
-        throw new Error("Errore lettura immagine");
+        throw new Error("Errore lettura media");
     }
 };
 
