@@ -188,14 +188,30 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
                       <div><label className="block text-xs text-gray-500">{t('drink_window')}</label><input type="text" value={formData.drinkWindow} onChange={e => setFormData({...formData, drinkWindow: e.target.value})} className="w-full p-2 text-sm bg-white border border-indigo-200 rounded-lg" /></div>
                   </div>
               </div>
-              <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-3">
+              <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-4">
                   <h4 className="text-xs font-bold uppercase text-stone-500 mb-2">Sommelier Data</h4>
                   <div className="grid grid-cols-2 gap-3">
                       <div><label className="block text-xs text-gray-500">{t('storage_temp')}</label><input type="text" value={formData.storageTemp} onChange={e => setFormData({...formData, storageTemp: e.target.value})} className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg" /></div>
                       <div><label className="block text-xs text-gray-500">{t('serving_temp')}</label><input type="text" value={formData.servingTemp} onChange={e => setFormData({...formData, servingTemp: e.target.value})} className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg" /></div>
                   </div>
-                  <div><label className="block text-xs text-gray-500">{t('advice')}</label><input type="text" value={formData.storageAdvice} onChange={e => setFormData({...formData, storageAdvice: e.target.value})} className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg" /></div>
-                  <div><label className="block text-xs text-gray-500">{t('advice')} (Serving)</label><input type="text" value={formData.servingAdvice} onChange={e => setFormData({...formData, servingAdvice: e.target.value})} className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg" /></div>
+                  <div>
+                      <label className="block text-xs text-gray-500 mb-1">{t('advice')}</label>
+                      <textarea 
+                        value={formData.storageAdvice} 
+                        onChange={e => setFormData({...formData, storageAdvice: e.target.value})} 
+                        className="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-lg min-h-[80px] resize-none leading-relaxed"
+                        placeholder="Consigli sulla conservazione..."
+                      />
+                  </div>
+                  <div>
+                      <label className="block text-xs text-gray-500 mb-1">{t('advice')} (Serving)</label>
+                      <textarea 
+                        value={formData.servingAdvice} 
+                        onChange={e => setFormData({...formData, servingAdvice: e.target.value})} 
+                        className="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-lg min-h-[80px] resize-none leading-relaxed"
+                        placeholder="Consigli sul servizio..."
+                      />
+                  </div>
               </div>
             </form>
           )}

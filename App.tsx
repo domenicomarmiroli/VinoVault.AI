@@ -10,7 +10,7 @@ import RestaurantView from './views/RestaurantView';
 import AdminView from './views/AdminView';
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
-import LandingPage from './components/LandingPage'; // Import Landing Page
+import LandingPage from './components/LandingPage'; 
 import { WineIcon, ChefIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
@@ -31,7 +31,6 @@ const AppContent: React.FC = () => {
   const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
   const [restaurantData, setRestaurantData] = useState<Restaurant | null>(null);
   
-  // State per gestire la visualizzazione tra Landing e Auth
   const [showAuth, setShowAuth] = useState(false);
 
   const API_BASE = '';
@@ -56,23 +55,20 @@ const AppContent: React.FC = () => {
   const handleLogin = (newToken: string, email: string) => {
       localStorage.setItem('vinovault_token', newToken);
       setToken(newToken);
-      setShowAuth(false); // Reset stato auth
+      setShowAuth(false);
       
       try {
         const payload = JSON.parse(atob(newToken.split('.')[1]));
         if (payload.role) setUserRole(payload.role);
         if (payload.isPremium) setUserPremium(payload.isPremium);
         if (payload.language) setLanguage(payload.language as Language);
-      } catch (e) {
-          console.error("Token parse error", e);
-      }
+      } catch (e) { console.error("Token parse error", e); }
 
       setWines([]);
       setHistory([]);
       setLocations([]);
       setIsLoaded(false);
 
-      // FIX: Se c'è un ristorante caricato o un ref nell'URL, vai al ristorante
       const params = new URLSearchParams(window.location.search);
       if (params.get('ref') || restaurantData) {
           setActiveTab('restaurant');
@@ -86,31 +82,25 @@ const AppContent: React.FC = () => {
       setToken(null);
       setUserRole('user');
       setUserPremium(false);
-      setShowAuth(false); // Torna alla landing page al logout
+      setShowAuth(false);
   };
 
   useEffect(() => {
       const params = new URLSearchParams(window.location.search);
       const ref = params.get('ref');
       if (ref) {
-          // Se c'è un ref (QR Code Ristorante), forziamo la visualizzazione dell'Auth se non loggato
           if (!localStorage.getItem('vinovault_token')) {
               setShowAuth(true);
           }
-
           fetch(`/api/restaurants/${ref}`)
             .then(res => res.json())
             .then(data => {
                 if (data) {
                     setRestaurantData(data);
-                    if (localStorage.getItem('vinovault_token')) {
-                        setActiveTab('restaurant');
-                    }
+                    if (localStorage.getItem('vinovault_token')) setActiveTab('restaurant');
                 } else {
                     setRestaurantData({ id: 'temp', name: ref, slug: ref, menu_context: '' });
-                    if (localStorage.getItem('vinovault_token')) {
-                        setActiveTab('restaurant');
-                    }
+                    if (localStorage.getItem('vinovault_token')) setActiveTab('restaurant');
                 }
             })
             .catch(e => console.error(e));
@@ -197,7 +187,7 @@ const AppContent: React.FC = () => {
                 authFetch('/api/history', { method: 'POST', body: JSON.stringify(historyEntry) }),
                 authFetch(`/api/wines/${wine.id}`, { method: 'PUT', body: JSON.stringify({ quantity: wine.quantity - 1 }) })
             ]);
-        } catch (e) { alert("Errore sync."); }
+        } catch (e) { console.error(e); }
     }
   };
 
@@ -225,6 +215,40 @@ const AppContent: React.FC = () => {
     setHistory(prev => prev.map(h => h.id === id ? { ...h, rating, notes } : h));
     if (!isOfflineMode) {
         try { await authFetch(`/api/history/${id}`, { method: 'PUT', body: JSON.stringify({ rating, notes }) }); } catch (e) {}
+    }
+  };
+
+  const handleDeleteHistoryEntry = async (id: string) => {
+    if(!confirm(t('confirm'))) return;
+    
+    const entry = history.find(h => h.id === id);
+    if (!entry) return;
+
+    // Remove from history
+    setHistory(prev => prev.filter(h => h.id !== id));
+
+    // Logic: Restore wine quantity if it was from cellar
+    if (entry.wineId && !entry.wineId.startsWith('external_')) {
+        setWines(prev => prev.map(w => {
+            if (w.id === entry.wineId) return { ...w, quantity: w.quantity + 1 };
+            return w;
+        }));
+    }
+
+    if (!isOfflineMode) {
+        try {
+            await authFetch(`/api/history/${id}`, { method: 'DELETE' });
+            // Sync wine quantity restoration to server if applicable
+            if (entry.wineId && !entry.wineId.startsWith('external_')) {
+                const targetWine = wines.find(w => w.id === entry.wineId);
+                if (targetWine) {
+                    await authFetch(`/api/wines/${targetWine.id}`, { 
+                        method: 'PUT', 
+                        body: JSON.stringify({ quantity: targetWine.quantity + 1 }) 
+                    });
+                }
+            }
+        } catch (e) { console.error(e); }
     }
   };
 
@@ -258,7 +282,6 @@ const AppContent: React.FC = () => {
       if(!isOfflineMode) { try { await authFetch(`/api/locations/${id}`, { method: 'DELETE' }); } catch(e) {} }
   };
   
-  // LOGIC TO SHOW LANDING OR AUTH
   if (!token) {
       if (showAuth) {
           return (
@@ -271,7 +294,7 @@ const AppContent: React.FC = () => {
                 <AuthForm 
                     onLogin={handleLogin} 
                     onBack={() => setShowAuth(false)} 
-                    referralRef={restaurantData?.slug} // Pass referral
+                    referralRef={restaurantData?.slug} 
                 />
              </>
           );
@@ -366,6 +389,7 @@ const AppContent: React.FC = () => {
                     onClearHistory={handleClearHistory} 
                     onLogout={handleLogout}
                     onUpdateHistoryEntry={handleUpdateHistoryEntry}
+                    onDeleteHistoryEntry={handleDeleteHistoryEntry}
                     isPremium={userPremium}
                 />
              )}
@@ -454,6 +478,7 @@ const AppContent: React.FC = () => {
         entry={ratingModalEntry}
         onClose={() => setRatingModalEntry(null)}
         onSave={handleUpdateHistoryEntry}
+        onDelete={handleDeleteHistoryEntry}
         isPremium={userPremium}
       />
     </div>

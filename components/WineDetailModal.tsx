@@ -138,16 +138,50 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
 
             <div className="space-y-3">
                 <h3 className="text-lg font-serif font-bold text-gray-900 flex items-center gap-2"><span className="w-1.5 h-5 bg-wine-600 rounded-full"></span> {t('advice')}</h3>
-                <div className="grid grid-cols-1 gap-3">
-                    <div className="bg-stone-50 p-4 rounded-xl border border-stone-100 flex gap-4 items-start"><ThermometerIcon className="w-6 h-6 text-wine-800 mt-0.5" /><div className="flex-1"><p className="text-xs font-bold text-wine-900 uppercase mb-1">{t('serving_temp')}</p>{isEditing ? (<div className="space-y-1"><input type="text" value={formData.servingTemp} onChange={(e) => handleChange('servingTemp', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-1 py-0.5 text-sm" /><input type="text" value={formData.servingAdvice} onChange={(e) => handleChange('servingAdvice', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-1 py-0.5 text-sm" /></div>) : (<><p className="text-sm text-gray-700 font-medium">{formData.servingTemp}</p><p className="text-xs text-gray-500 italic mt-0.5">"{formData.servingAdvice}"</p></>)}</div></div>
-                    <div className="bg-stone-50 p-4 rounded-xl border border-stone-100 flex gap-4 items-start"><BoxIcon className="w-6 h-6 text-wine-800 mt-0.5" /><div className="flex-1"><p className="text-xs font-bold text-wine-900 uppercase mb-1">{t('storage_temp')}</p>{isEditing ? (<div className="space-y-1"><input type="text" value={formData.storageTemp} onChange={(e) => handleChange('storageTemp', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-1 py-0.5 text-sm" /><input type="text" value={formData.storageAdvice} onChange={(e) => handleChange('storageAdvice', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-1 py-0.5 text-sm" /></div>) : (<><p className="text-sm text-gray-700 font-medium">{formData.storageTemp}</p><p className="text-xs text-gray-500 italic mt-0.5">"{formData.storageAdvice}"</p></>)}</div></div>
+                <div className="grid grid-cols-1 gap-4">
+                    {/* Serving Advice */}
+                    <div className="bg-stone-50 p-4 rounded-xl border border-stone-100 flex gap-4 items-start">
+                        <ThermometerIcon className="w-6 h-6 text-wine-800 mt-0.5" />
+                        <div className="flex-1">
+                            <p className="text-xs font-bold text-wine-900 uppercase mb-1">{t('serving_temp')}</p>
+                            {isEditing ? (
+                                <div className="space-y-2">
+                                    <input type="text" value={formData.servingTemp} onChange={(e) => handleChange('servingTemp', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm" placeholder="Temp. servizio..." />
+                                    <textarea value={formData.servingAdvice} onChange={(e) => handleChange('servingAdvice', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm min-h-[60px] resize-none" placeholder="Consigli servizio..." />
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-sm text-gray-700 font-medium">{formData.servingTemp}</p>
+                                    <p className="text-xs text-gray-500 italic mt-1 leading-relaxed">"{formData.servingAdvice}"</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    {/* Storage Advice */}
+                    <div className="bg-stone-50 p-4 rounded-xl border border-stone-100 flex gap-4 items-start">
+                        <BoxIcon className="w-6 h-6 text-wine-800 mt-0.5" />
+                        <div className="flex-1">
+                            <p className="text-xs font-bold text-wine-900 uppercase mb-1">{t('storage_temp')}</p>
+                            {isEditing ? (
+                                <div className="space-y-2">
+                                    <input type="text" value={formData.storageTemp} onChange={(e) => handleChange('storageTemp', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm" placeholder="Temp. conservazione..." />
+                                    <textarea value={formData.storageAdvice} onChange={(e) => handleChange('storageAdvice', e.target.value)} className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm min-h-[60px] resize-none" placeholder="Consigli conservazione..." />
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-sm text-gray-700 font-medium">{formData.storageTemp}</p>
+                                    <p className="text-xs text-gray-500 italic mt-1 leading-relaxed">"{formData.storageAdvice}"</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
 
             {(formData.foodPairings.length > 0 || isEditing) && (
                 <div className="space-y-3">
                      <h3 className="text-lg font-serif font-bold text-gray-900 flex items-center gap-2"><span className="w-1.5 h-5 bg-orange-400 rounded-full"></span> {t('pairings')}</h3>
-                    {isEditing ? <textarea value={formData.foodPairings.join(', ')} onChange={(e) => handleChange('foodPairings', e.target.value.split(',').map(s => s.trim()))} className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm" /> : <div className="flex flex-wrap gap-2">{formData.foodPairings.map((pair, idx) => (<span key={idx} className="bg-orange-50 text-orange-800 px-3 py-1.5 rounded-lg border border-orange-100 text-sm font-medium">{pair}</span>))}</div>}
+                    {isEditing ? <textarea value={formData.foodPairings.join(', ')} onChange={(e) => handleChange('foodPairings', e.target.value.split(',').map(s => s.trim()))} className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm min-h-[80px]" /> : <div className="flex flex-wrap gap-2">{formData.foodPairings.map((pair, idx) => (<span key={idx} className="bg-orange-50 text-orange-800 px-3 py-1.5 rounded-lg border border-orange-100 text-sm font-medium">{pair}</span>))}</div>}
                 </div>
             )}
             

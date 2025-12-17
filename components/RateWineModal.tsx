@@ -1,19 +1,23 @@
+
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { HistoryEntry } from '../types';
-import { StarIcon } from './Icons';
-import PriceComparison from './PriceComparison'; // New import
+import { StarIcon, TrashIcon } from './Icons';
+import PriceComparison from './PriceComparison';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface RateWineModalProps {
   entry: HistoryEntry | null;
   onClose: () => void;
   onSave: (id: string, rating: number, notes: string) => void;
-  isPremium: boolean; // New Prop
+  onDelete?: (id: string) => void;
+  isPremium: boolean;
 }
 
-const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, isPremium }) => {
+const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, onDelete, isPremium }) => {
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState('');
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (entry) {
@@ -30,6 +34,13 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, i
       onClose();
   };
 
+  const handleDelete = () => {
+      if (onDelete) {
+          onDelete(entry.id);
+          onClose();
+      }
+  };
+
   const content = (
     <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
@@ -43,7 +54,6 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, i
 
         <div className="overflow-y-auto p-6 space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Rating Stars */}
                 <div className="flex flex-col items-center justify-center space-y-2">
                     <label className="text-xs font-bold uppercase text-gray-500 tracking-wider">Punteggio</label>
                     <div className="flex gap-2">
@@ -62,7 +72,6 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, i
                     </div>
                 </div>
 
-                {/* Notes */}
                 <div>
                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-2">Note & Commenti</label>
                     <textarea 
@@ -73,22 +82,34 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, i
                     />
                 </div>
                 
-                {/* NEW: Price Comparison Feature */}
                 <div className="border-t border-gray-100 pt-4">
                      <PriceComparison 
                         name={entry.name} 
                         producer={entry.producer} 
                         year={entry.year} 
-                        isPremium={isPremium} // Pass prop
+                        isPremium={isPremium}
                      />
                 </div>
 
-                <button 
-                    type="submit" 
-                    className="w-full py-3 bg-wine-600 text-white font-bold rounded-xl hover:bg-wine-700 transition-colors shadow-lg shadow-wine-100"
-                >
-                    Salva Recensione
-                </button>
+                <div className="space-y-3 pt-2">
+                    <button 
+                        type="submit" 
+                        className="w-full py-3 bg-wine-600 text-white font-bold rounded-xl hover:bg-wine-700 transition-colors shadow-lg shadow-wine-100"
+                    >
+                        Salva Recensione
+                    </button>
+                    
+                    {onDelete && (
+                        <button 
+                            type="button"
+                            onClick={handleDelete}
+                            className="w-full py-2.5 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center gap-2 text-sm border border-red-100"
+                        >
+                            <TrashIcon className="w-4 h-4" />
+                            Elimina Degustazione
+                        </button>
+                    )}
+                </div>
             </form>
         </div>
       </div>

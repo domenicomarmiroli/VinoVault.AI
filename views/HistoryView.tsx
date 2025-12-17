@@ -10,20 +10,20 @@ interface HistoryViewProps {
   onClearHistory: () => void;
   onLogout: () => void;
   onUpdateHistoryEntry: (id: string, rating: number, notes: string) => void;
+  onDeleteHistoryEntry: (id: string) => void;
   isPremium: boolean;
 }
 
 type SortOption = 'date_desc' | 'date_asc' | 'rating_desc' | 'rating_asc';
 type FilterType = 'all' | WineType;
 
-const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLogout, onUpdateHistoryEntry, isPremium }) => {
+const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLogout, onUpdateHistoryEntry, onDeleteHistoryEntry, isPremium }) => {
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [sortOrder, setSortOrder] = useState<SortOption>('date_desc');
   const { t } = useLanguage();
 
-  // Use dynamic filters with translations
   const filters: { label: string, value: FilterType }[] = [
       { label: t('filter_all'), value: 'all' },
       { label: t('filter_red'), value: WineType.RED },
@@ -116,7 +116,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLo
         )}
       </div>
 
-      <RateWineModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} onSave={onUpdateHistoryEntry} isPremium={isPremium} />
+      <RateWineModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} onSave={onUpdateHistoryEntry} onDelete={onDeleteHistoryEntry} isPremium={isPremium} />
     </div>
   );
 };

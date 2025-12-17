@@ -41,7 +41,6 @@ const pool = new Pool({
 });
 
 // --- HEALTH CHECK ENDPOINT ---
-// Cruciale per piattaforme cloud per confermare che il deploy è riuscito
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
@@ -165,9 +164,8 @@ const initDb = async () => {
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT FALSE;`);
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_usage_count INTEGER DEFAULT 0;`);
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;`);
-        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_restaurant_slug TEXT;`); // FIX: Add ref tracking
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_restaurant_slug TEXT;`);
         
-        // Ensure Wine Columns Exist
         await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS storage_temp TEXT;`);
         await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS storage_advice TEXT;`);
         await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS serving_temp TEXT;`);
@@ -183,15 +181,12 @@ const initDb = async () => {
     console.log("Database tables checked/created successfully.");
   } catch (error) {
     console.error("Error initializing database tables:", error);
-    // Don't crash the server if DB init fails, just log it. Server needs to start to pass health checks.
   } finally {
     if (client) client.release();
   }
 };
 
 // --- AUTH ROUTES ---
-
-// Register
 app.post('/api/auth/register', async (req, res) => {
     const { email, password, language, ref } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -207,7 +202,6 @@ app.post('/api/auth/register', async (req, res) => {
             [userId, email, hashedPassword, userLang, userRef]
         );
 
-        // Default Locations
         await pool.query(`
             INSERT INTO locations (id, user_id, name) VALUES 
             ($1, $2, 'Cantina'),
@@ -223,13 +217,11 @@ app.post('/api/auth/register', async (req, res) => {
         res.json({ token, user: { id: userId, email, role: 'user', is_premium: false, language: userLang } });
 
     } catch (err) {
-        console.error(err);
         if (err.code === '23505') return res.status(400).json({ error: 'Email already exists' });
         res.status(500).json({ error: 'Registration failed' });
     }
 });
 
-// Login
 app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -248,12 +240,10 @@ app.post('/api/auth/login', async (req, res) => {
         );
         res.json({ token, user: { id: user.id, email: user.email, role: user.role, is_premium: user.is_premium, language: user.language || 'it' } });
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: 'Login failed' });
     }
 });
 
-// Google Login
 app.post('/api/auth/google', async (req, res) => {
     const { token, clientId, language, ref } = req.body;
     try {
@@ -266,11 +256,9 @@ app.post('/api/auth/google', async (req, res) => {
         const email = payload.email;
         const googleId = payload.sub;
         
-        // Find or create user
         let result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
         let user = result.rows[0];
         let userId = '';
-        let isNew = false;
         let userLang = language || 'it';
         let userRef = ref || null;
 
@@ -280,17 +268,14 @@ app.post('/api/auth/google', async (req, res) => {
                 "INSERT INTO users (id, email, google_id, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, 'user', FALSE, $4, $5)",
                 [userId, email, googleId, userLang, userRef]
             );
-            // Default Locations
             await pool.query(`
                 INSERT INTO locations (id, user_id, name) VALUES 
                 ($1, $2, 'Cantina'),
                 ($3, $2, 'Frigo Cucina'),
                 ($4, $2, 'Scaffale')
             `, [userId + '_l1', userId, userId + '_l2', userId + '_l3']);
-            isNew = true;
             user = { id: userId, email, role: 'user', is_premium: false, language: userLang };
         } else {
-             // Update Google ID if missing
              if (!user.google_id) {
                  await pool.query('UPDATE users SET google_id = $1 WHERE id = $2', [googleId, user.id]);
              }
@@ -305,13 +290,11 @@ app.post('/api/auth/google', async (req, res) => {
         res.json({ token: jwtToken, user: { id: user.id, email: user.email, role: user.role, is_premium: user.is_premium, language: userLang } });
 
     } catch (err) {
-        console.error("Google Auth Error:", err);
         res.status(500).json({ error: 'Google authentication failed' });
     }
 });
 
 // --- USER ROUTES ---
-
 app.get('/api/users/me', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
@@ -356,12 +339,9 @@ app.post('/api/users/track-ai', authenticateToken, async (req, res) => {
 });
 
 // --- WINE ROUTES ---
-
 app.get('/api/wines', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM wines WHERE user_id = $1 ORDER BY created_at DESC', [req.user.userId]);
-        
-        // FIX: Map snake_case DB columns to camelCase API response for frontend
         const mappedWines = result.rows.map(w => ({
             id: w.id,
             name: w.name,
@@ -384,7 +364,6 @@ app.get('/api/wines', authenticateToken, async (req, res) => {
             drinkWindow: w.drink_window,
             marketPrice: parseFloat(w.market_price)
         }));
-
         res.json(mappedWines);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -407,7 +386,6 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
         );
         res.status(201).json(wine);
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: 'Failed to add wine' });
     }
 });
@@ -415,25 +393,18 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
 app.put('/api/wines/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
-    
-    // Costruiamo query dinamica
     const fields = Object.keys(updates).map((key, idx) => {
-        // Map camelCase to snake_case for DB
         const dbKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
         return `${dbKey} = $${idx + 2}`;
     });
-    
     if (fields.length === 0) return res.sendStatus(200);
-
     try {
-        // FIX: The parameter count placeholder was missing the $ sign
         await pool.query(
             `UPDATE wines SET ${fields.join(', ')} WHERE id = $1 AND user_id = $${Object.keys(updates).length + 2}`,
             [id, ...Object.values(updates), req.user.userId] 
         );
         res.json({ success: true });
     } catch (err) {
-        console.error("Update Error", err);
         res.status(500).json({ error: 'Update failed' });
     }
 });
@@ -448,11 +419,9 @@ app.delete('/api/wines/:id', authenticateToken, async (req, res) => {
 });
 
 // --- HISTORY ROUTES ---
-
 app.get('/api/history', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM history WHERE user_id = $1 ORDER BY consumed_date DESC', [req.user.userId]);
-        // Map snake_case to camelCase for frontend
         const mapped = result.rows.map(r => ({
             id: r.id,
             wineId: r.wine_id,
@@ -496,6 +465,16 @@ app.put('/api/history/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// NEW: Delete individual history entry
+app.delete('/api/history/:id', authenticateToken, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM history WHERE id = $1 AND user_id = $2', [req.params.id, req.user.userId]);
+        res.sendStatus(200);
+    } catch (err) {
+        res.status(500).json({ error: 'Delete failed' });
+    }
+});
+
 app.delete('/api/history', authenticateToken, async (req, res) => {
     try {
         await pool.query('DELETE FROM history WHERE user_id = $1', [req.user.userId]);
@@ -504,7 +483,6 @@ app.delete('/api/history', authenticateToken, async (req, res) => {
 });
 
 // --- LOCATION ROUTES ---
-
 app.get('/api/locations', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM locations WHERE user_id = $1', [req.user.userId]);
@@ -528,7 +506,6 @@ app.delete('/api/locations/:id', authenticateToken, async (req, res) => {
 });
 
 // --- RESTAURANT PUBLIC ROUTES ---
-
 app.get('/api/restaurants/:ref', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM restaurants WHERE slug = $1', [req.params.ref]);
@@ -544,91 +521,52 @@ app.get('/api/restaurants/:ref', async (req, res) => {
 app.get('/api/search-prices', authenticateToken, async (req, res) => {
     const { query } = req.query;
     if (!query) return res.status(400).json({ error: 'Query required' });
-
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: `Cerca online i prezzi attuali per: "${query}".
             Restituisci un array JSON contenente dai 3 ai 5 negozi che vendono questo vino.
-            Schema oggetto: { "source": "Nome Negozio", "price": numero }
-            
-            IMPORTANTE:
-            1. Restituisci SOLO il nome del negozio e il prezzo numerico.
-            2. NON inventare link o URL. I link verranno generati automaticamente dal client.
-            3. NON aggiungere markdown o testo extra. Solo JSON valido.
-            `,
-            config: {
-                tools: [{ googleSearch: {} }],
-                // responseMimeType e responseSchema NON sono supportati con googleSearch, rimossi per evitare errori 500
-            }
+            Schema oggetto: { "source": "Nome Negozio", "price": numero }`,
+            config: { tools: [{ googleSearch: {} }] }
         });
-        
         let jsonText = response.text || "[]";
-        // Rimuove markdown code blocks se presenti (es. ```json ... ```)
         jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
-        
         let data = [];
         try {
-            // Tenta di trovare il JSON array anche se circondato da testo
             const match = jsonText.match(/\[.*\]/s);
-            if (match) {
-                data = JSON.parse(match[0]);
-            } else {
-                // Prova parse diretto se pulito
-                data = JSON.parse(jsonText);
-            }
-        } catch (e) {
-            console.error("JSON Parse Error:", jsonText);
-            // Non crashare, restituisci array vuoto ma logga errore
-        }
-
+            data = match ? JSON.parse(match[0]) : JSON.parse(jsonText);
+        } catch (e) { console.error("JSON Parse Error:", jsonText); }
         res.json(data);
     } catch (err) {
-        console.error("Search Price Error:", err);
         res.status(500).json({ error: 'Search failed' });
     }
 });
 
 // --- ADMIN ROUTES ---
-
 app.get('/api/users', authenticateAdmin, async (req, res) => {
     try {
-        // Included ref_restaurant_slug
         const result = await pool.query('SELECT id, email, role, is_premium, ai_usage_count, ref_restaurant_slug, created_at FROM users ORDER BY created_at DESC');
         res.json(result.rows);
     } catch (e) { res.sendStatus(500); }
 });
 
-// Robust Delete User (Handles missing CASCADE)
 app.delete('/api/users/:id', authenticateAdmin, async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         const userId = req.params.id;
-        
-        // Manual cleanup in case CASCADE is missing or broken in legacy DBs
         await client.query('DELETE FROM wines WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM history WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM locations WHERE user_id = $1', [userId]);
-        
-        // Finally delete user
         const result = await client.query('DELETE FROM users WHERE id = $1', [userId]);
-        
         await client.query('COMMIT');
-        
-        if (result.rowCount === 0) {
-             res.status(404).json({ error: "User not found" });
-        } else {
-             res.sendStatus(200);
-        }
+        if (result.rowCount === 0) res.status(404).json({ error: "User not found" });
+        else res.sendStatus(200);
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error("Delete user error:", e);
         res.status(500).json({ error: e.message });
-    } finally {
-        client.release();
-    }
+    } finally { client.release(); }
 });
 
 app.put('/api/users/:id/premium', authenticateAdmin, async (req, res) => {
@@ -640,35 +578,22 @@ app.put('/api/users/:id/premium', authenticateAdmin, async (req, res) => {
 
 app.get('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
     try {
-        // Added stats: count of users and total ai usage
         const result = await pool.query(`
-            SELECT r.*,
-                   COUNT(u.id) as user_count,
-                   COALESCE(SUM(u.ai_usage_count), 0) as total_ai_usage
-            FROM restaurants r
-            LEFT JOIN users u ON u.ref_restaurant_slug = r.slug
-            GROUP BY r.id
-            ORDER BY r.created_at DESC
-        `);
-        // Map stats to number (Postgres count returns string)
+            SELECT r.*, COUNT(u.id) as user_count, COALESCE(SUM(u.ai_usage_count), 0) as total_ai_usage
+            FROM restaurants r LEFT JOIN users u ON u.ref_restaurant_slug = r.slug
+            GROUP BY r.id ORDER BY r.created_at DESC`);
         const rows = result.rows.map(r => ({
-            ...r,
-            user_count: parseInt(r.user_count || 0),
-            total_ai_usage: parseInt(r.total_ai_usage || 0)
+            ...r, user_count: parseInt(r.user_count || 0), total_ai_usage: parseInt(r.total_ai_usage || 0)
         }));
         res.json(rows);
-    } catch(e) { 
-        console.error(e);
-        res.sendStatus(500); 
-    }
+    } catch(e) { res.sendStatus(500); }
 });
 
 app.post('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
     const { id, name, slug, menu_context } = req.body;
     try {
-        if (id) {
-             await pool.query('UPDATE restaurants SET name=$1, slug=$2, menu_context=$3 WHERE id=$4', [name, slug, menu_context, id]);
-        } else {
+        if (id) await pool.query('UPDATE restaurants SET name=$1, slug=$2, menu_context=$3 WHERE id=$4', [name, slug, menu_context, id]);
+        else {
              const newId = Date.now().toString(36);
              await pool.query('INSERT INTO restaurants (id, name, slug, menu_context) VALUES ($1, $2, $3, $4)', [newId, name, slug, menu_context]);
         }
@@ -683,30 +608,19 @@ app.delete('/api/admin/restaurants/:id', authenticateAdmin, async (req, res) => 
     } catch(e) { res.sendStatus(500); }
 });
 
-
 app.get('/api/config', (req, res) => {
     res.json({ googleClientId: GOOGLE_CLIENT_ID || '' });
 });
 
-// Catch-all for SPA
 app.get('*', (req, res) => {
   res.sendFile(path.resolve(distPath, 'index.html'));
 });
 
-// Start Server Strategy: Bind immediately, Init DB in background
 const startServer = () => {
-  // 1. Start listening immediately
   app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
-
-  // 2. Try to connect to DB in background
   if (process.env.DATABASE_URL) {
-    initDb().catch(e => {
-        console.error("Background DB Init failed:", e);
-        // We don't exit process so server remains up for health checks
-    });
-  } else {
-      console.warn("DATABASE_URL not found, skipping DB init.");
-  }
+    initDb().catch(e => console.error("Background DB Init failed:", e));
+  } else console.warn("DATABASE_URL not found, skipping DB init.");
 };
 
 startServer();
