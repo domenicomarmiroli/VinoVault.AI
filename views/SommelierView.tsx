@@ -28,8 +28,10 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
     setLoading(true);
     setSuggestions([]);
     try {
-      // Pass language to Gemini
-      const results = await suggestPairing(menuText, 4, inventory, style, language);
+      // Filtra l'inventario per inviare al Sommelier solo i vini realmente presenti in cantina
+      const availableInventory = inventory.filter(w => w.quantity > 0);
+      
+      const results = await suggestPairing(menuText, 4, availableInventory, style, language);
       setSuggestions(results);
       onAiUsed(); 
     } catch (error: any) {

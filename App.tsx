@@ -176,10 +176,11 @@ const AppContent: React.FC = () => {
       notes: ''
     };
     setHistory(prev => [historyEntry, ...prev]);
+    // Mantengo il vino nello stato anche se quantity 0 per permettere il ripristino in caso di delete history
     setWines(prev => prev.map(w => {
         if (w.id === wine.id) return { ...w, quantity: w.quantity - 1 };
         return w;
-    }).filter(w => w.quantity > 0));
+    }));
     setRatingModalEntry(historyEntry);
     if (!isOfflineMode) {
         try {
@@ -244,7 +245,7 @@ const AppContent: React.FC = () => {
                 if (targetWine) {
                     await authFetch(`/api/wines/${targetWine.id}`, { 
                         method: 'PUT', 
-                        body: JSON.stringify({ quantity: targetWine.quantity + 1 }) 
+                        body: JSON.stringify({ quantity: (targetWine.quantity || 0) + 1 }) 
                     });
                 }
             }

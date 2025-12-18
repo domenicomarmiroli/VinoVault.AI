@@ -66,6 +66,9 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   };
 
   const filteredWines = wines.filter(w => {
+    // FILTRO CRITICO: Non mostrare bottiglie finite
+    if (w.quantity <= 0) return false;
+
     const nameMatch = w.name?.toLowerCase() || '';
     const producerMatch = w.producer?.toLowerCase() || '';
     const typeMatch = w.type?.toLowerCase() || '';
@@ -125,8 +128,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({
             >
                 <CogIcon className="w-5 h-5" />
             </button>
-            
-            {/* FAB replaces the header button for better mobile UX */}
           </div>
         </div>
         
@@ -137,7 +138,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
             </div>
             <div className="w-px bg-gray-200"></div>
             <div className="text-center">
-                <span className="block font-bold text-gray-900 text-base">{wines.length}</span>
+                <span className="block font-bold text-gray-900 text-base">{wines.filter(w => w.quantity > 0).length}</span>
                 {t('labels')}
             </div>
             <div className="w-px bg-gray-200"></div>
