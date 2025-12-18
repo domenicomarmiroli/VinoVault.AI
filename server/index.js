@@ -445,7 +445,7 @@ app.get('/api/search-prices', authenticateToken, async (req, res) => {
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: `Cerca online i prezzi attuali per: "${req.query.query}". Restituisci JSON puro: [{"source": "Nome", "price": numero}]`,
             config: { tools: [{ googleSearch: {} }] }
         });

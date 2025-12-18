@@ -27,12 +27,12 @@ const getLanguageName = (code: Language) => {
 };
 
 /**
- * Analyzes a wine label image to extract details and provide professional advice.
+ * Analyzes a wine label image using Gemini 3 Flash.
  */
 export const analyzeWineLabel = async (base64Image: string, lang: Language = 'it'): Promise<Partial<Wine>> => {
   if (!apiKey) throw new Error("Chiave API mancante.");
 
-  const model = "gemini-2.5-flash"; 
+  const model = "gemini-3-flash-preview"; 
   const langName = getLanguageName(lang);
   
   const systemInstruction = `Sei un sommelier professionista. 
@@ -91,7 +91,7 @@ export const analyzeWineLabel = async (base64Image: string, lang: Language = 'it
 };
 
 /**
- * Suggests wine pairings based on a menu and current inventory.
+ * Suggests wine pairings based on a menu and current inventory using Gemini 3 Flash.
  */
 export const suggestPairing = async (
   menu: string, 
@@ -102,7 +102,7 @@ export const suggestPairing = async (
 ): Promise<PairingSuggestion[]> => {
   if (!apiKey) throw new Error("Chiave API mancante.");
 
-  const model = "gemini-2.5-flash";
+  const model = "gemini-3-flash-preview";
   const langName = getLanguageName(lang);
 
   const inventoryList = inventory.map(w => 
@@ -175,7 +175,7 @@ export const suggestPairing = async (
 
 
 /**
- * Analyzes a potential purchase.
+ * Analyzes a potential purchase using Gemini 3 Flash with Search Grounding.
  */
 export const analyzePurchase = async (
     input: { type: 'image' | 'url', data: string }, 
@@ -185,16 +185,15 @@ export const analyzePurchase = async (
 ): Promise<PurchaseAnalysis> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
 
-    const model = "gemini-2.5-flash"; // Usiamo flash per velocità, ma con strumenti
+    const model = "gemini-3-flash-preview";
     const langName = getLanguageName(lang);
     
     // Costruiamo il contesto della cantina per la "cellarFit"
     const inventoryContext = inventory.map(w => `${w.quantity}x ${w.name} (${w.type}, ${w.region})`).join(", ");
 
     let parts: any[] = [];
-    const tools = [{ googleSearch: {} }]; // Abilitiamo sempre la ricerca per i prezzi
+    const tools = [{ googleSearch: {} }];
 
-    // Prompt molto descrittivo per guidare il ragionamento
     const mainPrompt = `
     Sei un esperto Broker di Vini e Sommelier.
     Il tuo compito è analizzare un potenziale acquisto.
@@ -256,12 +255,9 @@ export const analyzePurchase = async (
             contents: { parts },
             config: {
                 tools: tools,
-                // Rimuoviamo responseSchema rigido quando usiamo googleSearch 
-                // per evitare conflitti e permettere all'AI di "pensare" (usare il tool) prima di formattare.
             }
         });
         
-        // Pulizia aggressiva del JSON perché senza schema l'AI potrebbe mettere ```json
         const rawText = response.text || "{}";
         const jsonString = cleanJson(rawText);
         
@@ -270,7 +266,6 @@ export const analyzePurchase = async (
             parsed = JSON.parse(jsonString);
         } catch (e) {
             console.error("JSON Parse Error on:", jsonString);
-            // Fallback parziale se il JSON è rotto
             return {
                 wineDetails: { name: 'Errore Analisi', producer: '?', year: 'N/A', type: 'Rosso' as any, region: '', grape: '', foodPairings: [] },
                 marketPriceEstimate: inputPrice,
@@ -282,14 +277,12 @@ export const analyzePurchase = async (
             };
         }
 
-        // Normalizzazione dati
         const safeNumber = (val: any, fallback: number) => {
             if (val === undefined || val === null) return fallback;
             const num = parseFloat(String(val).replace(',', '.'));
             return isNaN(num) ? fallback : num;
         };
 
-        // Logica di fallback per il rating se l'AI sbaglia
         let calculatedRating = parsed.dealRating;
         const marketPrice = safeNumber(parsed.marketPriceEstimate, 0);
         if (marketPrice > 0) {
@@ -313,7 +306,7 @@ export const analyzePurchase = async (
             marketPriceEstimate: marketPrice > 0 ? marketPrice : inputPrice,
             isGoodDeal: calculatedRating === 'Excellent' || calculatedRating === 'Good',
             dealRating: calculatedRating || 'Fair',
-            qualityScore: 85, // Default visuale
+            qualityScore: 85, 
             sommelierNotes: parsed.sommelierNotes || `Vino identificato: ${parsed.wineDetails?.name}.`,
             cellarFit: parsed.cellarFit || { isRecommended: true, reasoning: "Aggiunta interessante." }
         };
@@ -325,7 +318,7 @@ export const analyzePurchase = async (
 }
 
 /**
- * Analyzes restaurant wine list.
+ * Analyzes restaurant wine list using Gemini 3 Flash.
  */
 export const suggestRestaurantPairing = async (
     menuSource: { type: 'images' | 'text', data: string[] | string }, 
@@ -334,12 +327,12 @@ export const suggestRestaurantPairing = async (
 ): Promise<RestaurantSuggestion[]> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
 
-    const model = "gemini-2.5-flash";
+    const model = "gemini-3-flash-preview";
     const langName = getLanguageName(lang);
     let parts: any[] = [];
 
     const promptText = `
-    Sei un Algoritmo Sommelier Deterministico.
+    Sei un Algoritmo Sommelier Deterministico di nuova generazione (Gemini 3).
     Analizza il menu fornito e suggerisci i vini per: "${dish}".
 
     OBIETTIVO: COERENZA ASSOLUTA.
@@ -392,7 +385,7 @@ export const suggestRestaurantPairing = async (
             model,
             contents: { parts },
             config: {
-                temperature: 0, // CRITICO: Forza il determinismo
+                temperature: 0,
                 responseMimeType: "application/json",
             }
         });
@@ -408,7 +401,7 @@ export const suggestRestaurantPairing = async (
 
 export const extractTextFromMedia = async (base64Data: string, mimeType: string): Promise<string> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
-    const model = "gemini-2.5-flash";
+    const model = "gemini-3-flash-preview";
     try {
         const response = await ai.models.generateContent({
             model,
@@ -416,7 +409,7 @@ export const extractTextFromMedia = async (base64Data: string, mimeType: string)
                 parts: [
                     { inlineData: { mimeType: mimeType, data: cleanBase64(base64Data) } },
                     { text: `
-                    OCR AVANZATO PER MENU RISTORANTE.
+                    OCR AVANZATO PER MENU RISTORANTE (Modello v3).
                     Trascrivi il contenuto mantenendo rigorosamente la struttura.
                     
                     FORMATO RICHIESTO PER OGNI VINO (Linea per linea):
@@ -445,14 +438,14 @@ export const generateCellarReport = async (
     lang: Language = 'it'
 ): Promise<CellarReport> => {
     if (!apiKey) throw new Error("Chiave API mancante.");
-    const model = "gemini-2.5-flash";
+    const model = "gemini-3-flash-preview";
     const langName = getLanguageName(lang);
 
     const inventorySummary = inventory.map(w => `[${w.quantity}] ${w.name} ${w.year}`).join("\n");
     const historySummary = history.map(h => `Bevuto: ${h.name}, Voto: ${h.rating}`).join("\n");
 
     const prompt = `
-        Analisi Cantina.
+        Analisi Cantina Strategica.
         Inventario: ${inventorySummary}
         Storico: ${historySummary}
         
