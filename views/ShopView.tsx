@@ -5,6 +5,7 @@ import { analyzePurchase } from '../services/geminiService';
 import { CameraIcon, LogoutIcon, ShopIcon, WineIcon, ExternalLinkIcon, ChefIcon } from '../components/Icons';
 import PriceComparison from '../components/PriceComparison';
 import { useLanguage } from '../contexts/LanguageContext';
+import LoadingScreen from '../components/LoadingScreen';
 
 interface ShopViewProps {
   inventory: Wine[];
@@ -149,7 +150,15 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
   };
 
   return (
-    <div className="h-full flex flex-col bg-stone-50 overflow-hidden">
+    <div className="h-full flex flex-col bg-stone-50 overflow-hidden relative">
+      {/* Loading Overlay */}
+      {loading && (
+        <LoadingScreen 
+          message={t('ai_analyzing')} 
+          subMessage="Sto verificando il prezzo di mercato e l'integrazione con la tua cantina..." 
+        />
+      )}
+
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
         <div>
             <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
