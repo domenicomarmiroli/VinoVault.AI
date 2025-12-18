@@ -241,7 +241,7 @@ app.post('/api/auth/google', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Google auth failed' }); }
 });
 
-// Wines & History (simplified mapping for brevity as they are unchanged)
+// Wines & History
 app.get('/api/wines', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM wines WHERE user_id = $1 ORDER BY created_at DESC', [req.user.userId]);
@@ -355,6 +355,84 @@ app.delete('/api/locations/:id', authenticateToken, async (req, res) => {
         res.sendStatus(200);
     } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
 });
+
+// --- ADMIN ROUTES ---
+
+app.get('/api/users', authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT u.*, 
+                   (SELECT COUNT(*) FROM wines WHERE user_id = u.id) as wine_count 
+            FROM users u 
+            ORDER BY created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: 'Admin fetch failed' }); }
+});
+
+app.delete('/api/users/:id', authenticateAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
+        res.sendStatus(200);
+    } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
+});
+
+app.put('/api/users/:id/premium', authenticateAdmin, async (req, res) => {
+    try {
+        await pool.query('UPDATE users SET is_premium = NOT is_premium WHERE id = $1', [req.params.id]);
+        res.sendStatus(200);
+    } catch (err) { res.status(500).json({ error: 'Update failed' }); }
+});
+
+app.put('/api/users/:id/reset-password', authenticateAdmin, async (req, res) => {
+    const { newPassword } = req.body;
+    try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, req.params.id]);
+        res.sendStatus(200);
+    } catch (err) { res.status(500).json({ error: 'Reset failed' }); }
+});
+
+app.get('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT r.*, 
+                   (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count,
+                   (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage
+            FROM restaurants r 
+            ORDER BY created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: 'Admin rest fetch failed' }); }
+});
+
+app.post('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
+    const rest = req.body;
+    try {
+        if (rest.id) {
+            await pool.query(
+                "UPDATE restaurants SET name = $1, slug = $2, menu_context = $3 WHERE id = $4",
+                [rest.name, rest.slug, rest.menu_context, rest.id]
+            );
+        } else {
+            const id = Date.now().toString(36);
+            await pool.query(
+                "INSERT INTO restaurants (id, slug, name, menu_context) VALUES ($1, $2, $3, $4)",
+                [id, rest.slug, rest.name, rest.menu_context]
+            );
+        }
+        res.sendStatus(200);
+    } catch (err) { res.status(500).json({ error: 'Save restaurant failed' }); }
+});
+
+app.delete('/api/admin/restaurants/:id', authenticateAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM restaurants WHERE id = $1', [req.params.id]);
+        res.sendStatus(200);
+    } catch (err) { res.status(500).json({ error: 'Delete restaurant failed' }); }
+});
+
+// --- PUBLIC / COMMON ---
 
 app.get('/api/restaurants/:ref', async (req, res) => {
     try {
