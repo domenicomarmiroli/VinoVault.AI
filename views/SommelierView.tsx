@@ -191,11 +191,15 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                                 return (
                                     <div key={optIdx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow">
                                         <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-100 flex justify-between items-center">
-                                            <span className="text-xs font-bold text-gray-500 uppercase">Option {optIdx + 1}</span>
+                                            <span className="text-xs font-bold text-gray-500 uppercase">{t('option_label')} {optIdx + 1}</span>
                                             {ownedWine ? (
-                                                <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded uppercase">In Cellar</span>
+                                                <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded uppercase max-w-[120px] truncate">
+                                                    {ownedWine.location || t('owned_badge')}
+                                                </span>
                                             ) : (
-                                                <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded uppercase">To Buy</span>
+                                                <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded uppercase">
+                                                    {t('to_buy_badge')}
+                                                </span>
                                             )}
                                         </div>
 
@@ -235,7 +239,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                                                         className="w-full py-2 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 shadow-sm flex items-center justify-center gap-2 mt-2"
                                                     >
                                                         <StarIcon className="w-3 h-3" filled={false} />
-                                                        Open
+                                                        {t('cork_vote')}
                                                     </button>
                                                 </div>
                                             ) : (
