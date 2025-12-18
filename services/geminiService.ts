@@ -109,16 +109,26 @@ export const suggestPairing = async (
     `ID: ${w.id}, Nome: ${w.name} (${w.year}), Tipo: ${w.type}, Vitigno: ${w.grape}`
   ).join("\n");
 
+  const styleInstruction = style === 'single' 
+    ? `L'utente desidera un abbinamento "TUTTO PASTO". 
+       Analizza l'intero menu come un unico blocco: "${menu}".
+       Trova 3 vini versatili (opzioni) che possano accompagnare degnamente TUTTE le portate dall'inizio alla fine.
+       Restituisci un ARRAY con UN SOLO oggetto PairingSuggestion dove courseName è "Menu Completo" e dishName è "Tutto Pasto".`
+    : `L'utente desidera un abbinamento "PER PORTATA".
+       Dividi il menu "${menu}" nelle sue portate logiche (Antipasti, Primi, Secondi, ecc.).
+       Per ogni portata, suggerisci il vino ideale.`;
+
   const prompt = `
-    Menu: "${menu}".
-    Inventario Cantina Utente:
+    ${styleInstruction}
+
+    Inventario Cantina Utente (usa questi ID se disponibili):
     ${inventoryList || "Cantina Vuota"}
     
-    Regole:
+    Regole Generali:
     1. Rispondi in ${langName}.
-    2. Proponi 2 opzioni per suggerimento.
+    2. Per ogni abbinamento, proponi fino a 3 opzioni di vino.
     3. Privilegia l'inventario utente (type='owned').
-    4. Se mancano vini, suggerisci acquisti (type='purchase').
+    4. Se mancano vini adatti in cantina, suggerisci acquisti ideali (type='purchase').
     5. Fornisci 'servingTemp' e 'servingAdvice' in ${langName}.
   `;
 
@@ -127,7 +137,7 @@ export const suggestPairing = async (
         model,
         contents: prompt,
         config: {
-          systemInstruction: `Sei un sommelier. Rispondi in ${langName} con JSON puro.`,
+          systemInstruction: `Sei un sommelier esperto. Analizzi i menu e la cantina dell'utente per fornire consigli di abbinamento. Rispondi in ${langName} con JSON puro.`,
           responseMimeType: "application/json",
           responseSchema: {
             type: "ARRAY",

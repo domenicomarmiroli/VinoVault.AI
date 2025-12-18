@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Wine, PairingSuggestion } from '../types';
 import { suggestPairing } from '../services/geminiService';
-import { ChefIcon, LogoutIcon, ThermometerIcon, ClockIcon, MapPinIcon, StarIcon, ShoppingCartIcon, WineIcon } from '../components/Icons';
+import { ChefIcon, LogoutIcon, ThermometerIcon, ClockIcon, StarIcon, ShoppingCartIcon, WineIcon } from '../components/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import LoadingScreen from '../components/LoadingScreen';
 
@@ -19,6 +19,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<PairingSuggestion[]>([]);
   const [showCopyFeedback, setShowCopyFeedback] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   
   const { t, language } = useLanguage();
 
@@ -41,31 +42,42 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
     }
   };
 
-  const handleShare = () => {
-    if (!menuText || suggestions.length === 0) return;
+  const handleShare = async () => {
+    if (!menuText || suggestions.length === 0 || isSharing) return;
 
-    // Crea un payload compatto per la condivisione
-    const shareData = {
-        menu: menuText,
-        suggestions: suggestions.map(s => ({
-            course: s.courseName,
-            dish: s.dishName,
-            wine: s.options[0]?.wineName, // Condividiamo solo la prima scelta (l'ottimale)
-            reason: s.options[0]?.reasoning,
-            temp: s.options[0]?.servingTemp,
-            advice: s.options[0]?.servingAdvice
-        }))
-    };
+    setIsSharing(true);
+    try {
+        const shareData = {
+            menu: menuText,
+            suggestions: suggestions.map(s => ({
+                course: s.courseName,
+                dish: s.dishName,
+                wine: s.options[0]?.wineName,
+                reason: s.options[0]?.reasoning,
+                temp: s.options[0]?.servingTemp,
+                advice: s.options[0]?.servingAdvice
+            }))
+        };
 
-    // Codifica in Base64 (gestendo caratteri speciali)
-    const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(shareData))));
-    const shareUrl = `${window.location.origin}${window.location.pathname}?pairing=${encodedData}`;
+        const res = await fetch('/api/shares', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: shareData })
+        });
+        
+        if (!res.ok) throw new Error("Sharing failed");
+        
+        const { id } = await res.json();
+        const shareUrl = `${window.location.origin}${window.location.pathname}?s=${id}`;
 
-    // Copia negli appunti
-    navigator.clipboard.writeText(shareUrl).then(() => {
+        await navigator.clipboard.writeText(shareUrl);
         setShowCopyFeedback(true);
         setTimeout(() => setShowCopyFeedback(false), 3000);
-    });
+    } catch (e) {
+        alert("Errore nella generazione del link di condivisione.");
+    } finally {
+        setIsSharing(false);
+    }
   };
 
   const getInventoryWine = (id?: string) => inventory.find(w => w.id === id);
@@ -152,9 +164,10 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                     <h3 className="text-xl font-serif font-bold text-gray-800">Suggerimenti</h3>
                     <button 
                         onClick={handleShare}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${showCopyFeedback ? 'bg-green-600 text-white' : 'bg-wine-50 text-wine-700 hover:bg-wine-100 border border-wine-100'}`}
+                        disabled={isSharing}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${showCopyFeedback ? 'bg-green-600 text-white' : 'bg-wine-50 text-wine-700 hover:bg-wine-100 border border-wine-100'} ${isSharing ? 'opacity-50' : ''}`}
                     >
-                        {showCopyFeedback ? '✓ Link Copiato' : <><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0-10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Zm0 10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" /></svg> {t('share_pairing')}</>}
+                        {showCopyFeedback ? '✓ Link Copiato' : isSharing ? 'Generazione...' : <><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0-10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Zm0 10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" /></svg> {t('share_pairing')}</>}
                     </button>
                 </div>
                 

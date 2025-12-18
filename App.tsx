@@ -47,13 +47,6 @@ const AppContent: React.FC = () => {
       return fetch(fullUrl, { ...options, headers });
   };
 
-  const trackAiUsage = async () => {
-      if (isOfflineMode) return;
-      try {
-          authFetch('/api/users/track-ai', { method: 'POST' });
-      } catch (e) {}
-  };
-
   const handleLogin = (newToken: string, email: string) => {
       localStorage.setItem('vinovault_token', newToken);
       setToken(newToken);
@@ -90,16 +83,16 @@ const AppContent: React.FC = () => {
   useEffect(() => {
       const params = new URLSearchParams(window.location.search);
       const ref = params.get('ref');
-      const pairingToken = params.get('pairing');
+      const shareId = params.get('s');
 
-      // Se c'è un abbinamento condiviso, decodificalo
-      if (pairingToken) {
-          try {
-              const decoded = JSON.parse(decodeURIComponent(escape(atob(pairingToken))));
-              setSharedPairingData(decoded);
-          } catch (e) {
-              console.error("Shared pairing decode error", e);
-          }
+      // Se c'è un ID breve per il pairing, caricalo dal server
+      if (shareId) {
+          fetch(`/api/shares/${shareId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && !data.error) setSharedPairingData(data);
+            })
+            .catch(e => console.error("Failed to load share", e));
       }
 
       if (ref) {
@@ -118,8 +111,7 @@ const AppContent: React.FC = () => {
                 }
             })
             .catch(e => console.error(e));
-          // Rimuoviamo il ref solo se non stiamo gestendo un pairing
-          if (!pairingToken) window.history.replaceState({}, document.title, window.location.pathname);
+          if (!shareId) window.history.replaceState({}, document.title, window.location.pathname);
       }
   }, []);
 
@@ -178,24 +170,12 @@ const AppContent: React.FC = () => {
 
   const handleConsume = async (wine: Wine) => {
     const historyEntry: HistoryEntry = {
-      id: generateId(),
-      wineId: wine.id,
-      name: wine.name,
-      producer: wine.producer,
-      year: wine.year,
-      type: wine.type,
-      price: wine.price,
-      imageUrl: wine.imageUrl,
-      consumedDate: new Date().toISOString(),
-      rating: 0,
-      notes: ''
+      id: generateId(), wineId: wine.id, name: wine.name, producer: wine.producer, year: wine.year, 
+      type: wine.type, price: wine.price, imageUrl: wine.imageUrl, consumedDate: new Date().toISOString(), 
+      rating: 0, notes: ''
     };
     setHistory(prev => [historyEntry, ...prev]);
-    // Mantengo il vino nello stato anche se quantity 0 per permettere il ripristino in caso di delete history
-    setWines(prev => prev.map(w => {
-        if (w.id === wine.id) return { ...w, quantity: w.quantity - 1 };
-        return w;
-    }));
+    setWines(prev => prev.map(w => w.id === wine.id ? { ...w, quantity: w.quantity - 1 } : w));
     setRatingModalEntry(historyEntry);
     if (!isOfflineMode) {
         try {
@@ -203,22 +183,16 @@ const AppContent: React.FC = () => {
                 authFetch('/api/history', { method: 'POST', body: JSON.stringify(historyEntry) }),
                 authFetch(`/api/wines/${wine.id}`, { method: 'PUT', body: JSON.stringify({ quantity: wine.quantity - 1 }) })
             ]);
-        } catch (e) { console.error(e); }
+        } catch (e) {}
     }
   };
 
   const handleAddToHistory = async (entryData: Partial<HistoryEntry>) => {
       const historyEntry: HistoryEntry = {
-          id: generateId(),
-          wineId: 'external_' + generateId(),
-          name: entryData.name || '?',
-          producer: entryData.producer || '?',
-          year: entryData.year || 'N/A',
-          type: entryData.type || 'Altro',
-          price: entryData.price || 0,
-          consumedDate: entryData.consumedDate || new Date().toISOString(),
-          rating: 0,
-          notes: restaurantData ? `Bevuto @ ${restaurantData.name}` : ''
+          id: generateId(), wineId: 'external_' + generateId(), name: entryData.name || '?',
+          producer: entryData.producer || '?', year: entryData.year || 'N/A', type: entryData.type || 'Altro',
+          price: entryData.price || 0, consumedDate: entryData.consumedDate || new Date().toISOString(),
+          rating: 0, notes: restaurantData ? `Bevuto @ ${restaurantData.name}` : ''
       };
       setHistory(prev => [historyEntry, ...prev]);
       setRatingModalEntry(historyEntry);
@@ -236,35 +210,20 @@ const AppContent: React.FC = () => {
 
   const handleDeleteHistoryEntry = async (id: string) => {
     if(!confirm(t('confirm'))) return;
-    
     const entry = history.find(h => h.id === id);
     if (!entry) return;
-
-    // Remove from history
     setHistory(prev => prev.filter(h => h.id !== id));
-
-    // Logic: Restore wine quantity if it was from cellar
     if (entry.wineId && !entry.wineId.startsWith('external_')) {
-        setWines(prev => prev.map(w => {
-            if (w.id === entry.wineId) return { ...w, quantity: w.quantity + 1 };
-            return w;
-        }));
+        setWines(prev => prev.map(w => w.id === entry.wineId ? { ...w, quantity: w.quantity + 1 } : w));
     }
-
     if (!isOfflineMode) {
         try {
             await authFetch(`/api/history/${id}`, { method: 'DELETE' });
-            // Sync wine quantity restoration to server if applicable
             if (entry.wineId && !entry.wineId.startsWith('external_')) {
                 const targetWine = wines.find(w => w.id === entry.wineId);
-                if (targetWine) {
-                    await authFetch(`/api/wines/${targetWine.id}`, { 
-                        method: 'PUT', 
-                        body: JSON.stringify({ quantity: (targetWine.quantity || 0) + 1 }) 
-                    });
-                }
+                if (targetWine) await authFetch(`/api/wines/${targetWine.id}`, { method: 'PUT', body: JSON.stringify({ quantity: (targetWine.quantity || 0) + 1 }) });
             }
-        } catch (e) { console.error(e); }
+        } catch (e) {}
     }
   };
 
@@ -341,13 +300,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full w-full md:max-w-md mx-auto bg-white shadow-2xl overflow-hidden md:border-x md:border-gray-200">
-      
-      {isOfflineMode && (
-        <div className="bg-amber-100 text-amber-800 text-xs text-center py-1 px-2 border-b border-amber-200">
-          ⚠️ Offline Mode
-        </div>
-      )}
-
+      {isOfflineMode && <div className="bg-amber-100 text-amber-800 text-xs text-center py-1 px-2 border-b border-amber-200">⚠️ Offline Mode</div>}
       {restaurantData && (
         <div className="bg-wine-700 text-white px-4 py-2 flex justify-between items-center relative z-20 shadow-md">
             <div>
@@ -357,160 +310,53 @@ const AppContent: React.FC = () => {
             <button onClick={() => { setRestaurantData(null); setActiveTab('inventory'); }} className="bg-white/20 hover:bg-white/30 rounded-full p-1">✕</button>
         </div>
       )}
-
       <main className="flex-1 overflow-hidden relative">
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'inventory' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             {activeTab === 'inventory' && (
-                <InventoryView 
-                    wines={wines} 
-                    locations={locations}
-                    onAddWine={handleAddWine}
-                    onUpdateWine={handleUpdateWine}
-                    onConsume={handleConsume} 
-                    onDelete={handleDelete}
-                    onAddLocation={handleAddLocation}
-                    onDeleteLocation={handleDeleteLocation}
-                    onLogout={handleLogout}
-                    onAiUsed={trackAiUsage} 
-                    isPremium={userPremium}
-                />
-             )}
+             {activeTab === 'inventory' && <InventoryView wines={wines} locations={locations} onAddWine={handleAddWine} onUpdateWine={handleUpdateWine} onConsume={handleConsume} onDelete={handleDelete} onAddLocation={handleAddLocation} onDeleteLocation={handleDeleteLocation} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} />}
         </div>
-        
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'shop' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             {activeTab === 'shop' && (
-                <ShopView 
-                    inventory={wines} 
-                    onLogout={handleLogout}
-                    onAddToInventory={handleAddWine}
-                    onAiUsed={trackAiUsage} 
-                    isPremium={userPremium}
-                />
-             )}
+             {activeTab === 'shop' && <ShopView inventory={wines} onLogout={handleLogout} onAddToInventory={handleAddWine} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} />}
         </div>
-
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'restaurant' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             {activeTab === 'restaurant' && (
-                <RestaurantView 
-                    onLogout={handleLogout}
-                    onAddToHistory={handleAddToHistory}
-                    onAiUsed={trackAiUsage}
-                    restaurantData={restaurantData}
-                />
-             )}
+             {activeTab === 'restaurant' && <RestaurantView onLogout={handleLogout} onAddToHistory={handleAddToHistory} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} restaurantData={restaurantData} />}
         </div>
-
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'sommelier' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             {activeTab === 'sommelier' && (
-                 <SommelierView 
-                    inventory={wines} 
-                    onLogout={handleLogout} 
-                    onAiUsed={trackAiUsage} 
-                    onConsume={handleConsume}
-                 />
-             )}
+             {activeTab === 'sommelier' && <SommelierView inventory={wines} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onConsume={handleConsume} />}
         </div>
-        
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             {activeTab === 'history' && (
-                <HistoryView 
-                    history={history} 
-                    onClearHistory={handleClearHistory} 
-                    onLogout={handleLogout}
-                    onUpdateHistoryEntry={handleUpdateHistoryEntry}
-                    onDeleteHistoryEntry={handleDeleteHistoryEntry}
-                    isPremium={userPremium}
-                />
-             )}
+             {activeTab === 'history' && <HistoryView history={history} onClearHistory={handleClearHistory} onLogout={handleLogout} onUpdateHistoryEntry={handleUpdateHistoryEntry} onDeleteHistoryEntry={handleDeleteHistoryEntry} isPremium={userPremium} />}
         </div>
-
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'analytics' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             {activeTab === 'analytics' && (
-                <AnalyticsView 
-                    inventory={wines} 
-                    history={history}
-                    onLogout={handleLogout}
-                    isPremium={userPremium}
-                    onAiUsed={trackAiUsage}
-                />
-             )}
+             {activeTab === 'analytics' && <AnalyticsView inventory={wines} history={history} onLogout={handleLogout} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} />}
         </div>
-
         {userRole === 'admin' && (
             <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'admin' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
                  {activeTab === 'admin' && <AdminView onLogout={handleLogout} token={token || ''} />}
             </div>
         )}
       </main>
-
       <nav className="bg-white border-t border-gray-200 flex justify-between px-2 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] overflow-x-auto no-scrollbar">
-        <button 
-          onClick={() => setActiveTab('inventory')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === 'inventory' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
-        >
-          <WineIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'inventory'} />
-          <span className={`text-[8px] font-bold uppercase tracking-wider ${activeTab === 'inventory' ? 'opacity-100' : 'opacity-70'}`}>{t('nav_cellar')}</span>
-        </button>
-
-        <button 
-          onClick={() => setActiveTab('shop')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === 'shop' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
-        >
-          <ShopIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'shop'} />
-          <span className={`text-[8px] font-bold uppercase tracking-wider ${activeTab === 'shop' ? 'opacity-100' : 'opacity-70'}`}>{t('nav_shop')}</span>
-        </button>
-
-        <button 
-          onClick={() => setActiveTab('restaurant')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === 'restaurant' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
-        >
-          <RestaurantIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'restaurant'} />
-          <span className={`text-[8px] font-bold uppercase tracking-wider ${activeTab === 'restaurant' ? 'opacity-100' : 'opacity-70'}`}>{t('nav_restaurant')}</span>
-        </button>
-
-        <button 
-          onClick={() => setActiveTab('sommelier')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === 'sommelier' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
-        >
-          <ChefIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'sommelier'} />
-          <span className={`text-[8px] font-bold uppercase tracking-wider ${activeTab === 'sommelier' ? 'opacity-100' : 'opacity-70'}`}>{t('nav_sommelier')}</span>
-        </button>
-        
-        <button 
-          onClick={() => setActiveTab('analytics')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === 'analytics' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
-        >
-          <ChartBarIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'analytics'} />
-          <span className={`text-[8px] font-bold uppercase tracking-wider ${activeTab === 'analytics' ? 'opacity-100' : 'opacity-70'}`}>{t('nav_data')}</span>
-        </button>
-
-        <button 
-          onClick={() => setActiveTab('history')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === 'history' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
-        >
-          <HistoryIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'history'} />
-          <span className={`text-[8px] font-bold uppercase tracking-wider ${activeTab === 'history' ? 'opacity-100' : 'opacity-70'}`}>{t('nav_history')}</span>
-        </button>
-
+        {[
+          { id: 'inventory', icon: WineIcon, label: t('nav_cellar') },
+          { id: 'shop', icon: ShopIcon, label: t('nav_shop') },
+          { id: 'restaurant', icon: RestaurantIcon, label: t('nav_restaurant') },
+          { id: 'sommelier', icon: ChefIcon, label: t('nav_sommelier') },
+          { id: 'analytics', icon: ChartBarIcon, label: t('nav_data') },
+          { id: 'history', icon: HistoryIcon, label: t('nav_history') }
+        ].map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === tab.id ? 'text-wine-700' : 'text-gray-400'}`}>
+            <tab.icon className="w-6 h-6 mb-1" filled={activeTab === tab.id} />
+            <span className="text-[8px] font-bold uppercase tracking-wider">{tab.label}</span>
+          </button>
+        ))}
         {userRole === 'admin' && (
-            <button 
-                onClick={() => setActiveTab('admin')}
-                className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === 'admin' ? 'text-wine-700' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-                <ShieldCheckIcon className="w-6 h-6 mb-1 transition-transform active:scale-90" filled={activeTab === 'admin'} />
-                <span className={`text-[8px] font-bold uppercase tracking-wider ${activeTab === 'admin' ? 'opacity-100' : 'opacity-70'}`}>{t('nav_admin')}</span>
+            <button onClick={() => setActiveTab('admin')} className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === 'admin' ? 'text-wine-700' : 'text-gray-400'}`}>
+                <ShieldCheckIcon className="w-6 h-6 mb-1" filled={activeTab === 'admin'} />
+                <span className="text-[8px] font-bold uppercase tracking-wider">{t('nav_admin')}</span>
             </button>
         )}
       </nav>
-
-      <RateWineModal 
-        entry={ratingModalEntry}
-        onClose={() => setRatingModalEntry(null)}
-        onSave={handleUpdateHistoryEntry}
-        onDelete={handleDeleteHistoryEntry}
-        isPremium={userPremium}
-      />
-
+      <RateWineModal entry={ratingModalEntry} onClose={() => setRatingModalEntry(null)} onSave={handleUpdateHistoryEntry} onDelete={handleDeleteHistoryEntry} isPremium={userPremium} />
       {sharedPairingData && (
         <SharedPairingModal 
             data={sharedPairingData} 
@@ -524,12 +370,5 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
-    return (
-        <LanguageProvider>
-            <AppContent />
-        </LanguageProvider>
-    );
-};
-
+const App: React.FC = () => <LanguageProvider><AppContent /></LanguageProvider>;
 export default App;
