@@ -204,18 +204,19 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                                         </div>
 
                                         <div className="p-3 flex-1 flex flex-col">
-                                            <p className="text-sm text-gray-600 italic mb-3 flex-grow">
+                                            <p className="text-sm text-gray-600 italic mb-3 flex-grow leading-relaxed">
                                                 "{option.reasoning}"
                                             </p>
 
-                                            <div className="flex gap-4 mb-3 text-xs text-gray-500 bg-stone-50 p-2 rounded-lg border border-stone-100">
-                                                <div className="flex items-center gap-1.5">
-                                                    <ThermometerIcon className="w-4 h-4 text-wine-600" />
-                                                    <span>{option.servingTemp || '16-18°C'}</span>
+                                            {/* Informazioni di Servizio Ottimizzate per Leggibilità */}
+                                            <div className="space-y-2 mb-4 p-2.5 bg-stone-50 rounded-lg border border-stone-100">
+                                                <div className="flex items-center gap-2 text-xs text-gray-700">
+                                                    <ThermometerIcon className="w-4 h-4 text-wine-600 shrink-0" />
+                                                    <span className="font-bold">{option.servingTemp || '16-18°C'}</span>
                                                 </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <ClockIcon className="w-4 h-4 text-wine-600" />
-                                                    <span className="truncate">{option.servingAdvice || 'Aprire prima'}</span>
+                                                <div className="flex items-start gap-2 text-xs text-gray-500">
+                                                    <ClockIcon className="w-4 h-4 text-wine-600 shrink-0 mt-0.5" />
+                                                    <span className="leading-tight">{option.servingAdvice || 'Consiglio di servizio non disponibile'}</span>
                                                 </div>
                                             </div>
 
@@ -247,8 +248,9 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                                                      <div className="w-10 h-10 bg-white rounded flex items-center justify-center flex-shrink-0 border border-blue-100">
                                                         <ShoppingCartIcon className="text-blue-400 w-5 h-5" />
                                                     </div>
-                                                    <div>
-                                                        <p className="font-bold text-gray-900 text-sm leading-tight">{option.wineName}</p>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-tight mb-0.5">Consiglio d'acquisto</p>
+                                                        <p className="font-bold text-gray-900 text-sm leading-tight truncate">{option.wineName}</p>
                                                     </div>
                                                 </div>
                                             )}

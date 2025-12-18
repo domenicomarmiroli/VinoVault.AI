@@ -56,6 +56,7 @@ export const analyzeWineLabel = async (base64Image: string, lang: Language = 'it
         },
         config: {
           systemInstruction,
+          temperature: 0.5,
           responseMimeType: "application/json",
           responseSchema: {
             type: "OBJECT",
@@ -112,11 +113,11 @@ export const suggestPairing = async (
   const styleInstruction = style === 'single' 
     ? `L'utente desidera un abbinamento "TUTTO PASTO". 
        Analizza l'intero menu come un unico blocco: "${menu}".
-       Trova 3 vini versatili (opzioni) che possano accompagnare degnamente TUTTE le portate dall'inizio alla fine.
+       Trova ESATTAMENTE 2 vini versatili (opzioni) che possano accompagnare degnamente TUTTE le portate dall'inizio alla fine.
        Restituisci un ARRAY con UN SOLO oggetto PairingSuggestion dove courseName è "Menu Completo" e dishName è "Tutto Pasto".`
     : `L'utente desidera un abbinamento "PER PORTATA".
        Dividi il menu "${menu}" nelle sue portate logiche (Antipasti, Primi, Secondi, ecc.).
-       Per ogni portata, suggerisci il vino ideale.`;
+       Per ogni portata, suggerisci ESATTAMENTE 2 vini ideali.`;
 
   const prompt = `
     ${styleInstruction}
@@ -126,10 +127,10 @@ export const suggestPairing = async (
     
     Regole Generali:
     1. Rispondi in ${langName}.
-    2. Per ogni abbinamento, proponi fino a 3 opzioni di vino.
+    2. Per ogni portata, proponi SEMPRE 2 opzioni di vino.
     3. Privilegia l'inventario utente (type='owned').
-    4. Se mancano vini adatti in cantina, suggerisci acquisti ideali (type='purchase').
-    5. Fornisci 'servingTemp' e 'servingAdvice' in ${langName}.
+    4. Se mancano vini adatti in cantina per un piatto, DEVI suggerire un "Consiglio d'acquisto" specifico (type='purchase').
+    5. Fornisci 'servingTemp' preciso e 'servingAdvice' dettagliato in ${langName}.
   `;
 
   try {
@@ -137,7 +138,8 @@ export const suggestPairing = async (
         model,
         contents: prompt,
         config: {
-          systemInstruction: `Sei un sommelier esperto. Analizzi i menu e la cantina dell'utente per fornire consigli di abbinamento. Rispondi in ${langName} con JSON puro.`,
+          systemInstruction: `Sei un sommelier esperto. Analizzi i menu e la cantina dell'utente. Sii tecnico e preciso. Rispondi in ${langName} con JSON puro.`,
+          temperature: 0.5,
           responseMimeType: "application/json",
           responseSchema: {
             type: "ARRAY",
@@ -255,6 +257,7 @@ export const analyzePurchase = async (
             contents: { parts },
             config: {
                 tools: tools,
+                temperature: 0.5
             }
         });
         
@@ -385,7 +388,7 @@ export const suggestRestaurantPairing = async (
             model,
             contents: { parts },
             config: {
-                temperature: 0,
+                temperature: 0.5,
                 responseMimeType: "application/json",
             }
         });
@@ -424,6 +427,9 @@ export const extractTextFromMedia = async (base64Data: string, mimeType: string)
                     6. NON inventare dati. Se manca l'annata, lascia lo spazio vuoto tra i separatori.
                     ` }
                 ]
+            },
+            config: {
+                temperature: 0.1
             }
         });
         return response.text || "";
@@ -458,6 +464,7 @@ export const generateCellarReport = async (
             contents: prompt,
             config: {
                 systemInstruction: `Sei un Sommelier Senior. Rispondi in ${langName}.`,
+                temperature: 0.5,
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: "OBJECT",
