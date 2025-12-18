@@ -11,6 +11,7 @@ import AdminView from './views/AdminView';
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
+import SharedPairingModal from './components/SharedPairingModal';
 import { WineIcon, ChefIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
@@ -30,6 +31,7 @@ const AppContent: React.FC = () => {
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
   const [restaurantData, setRestaurantData] = useState<Restaurant | null>(null);
+  const [sharedPairingData, setSharedPairingData] = useState<any | null>(null);
   
   const [showAuth, setShowAuth] = useState(false);
 
@@ -88,6 +90,18 @@ const AppContent: React.FC = () => {
   useEffect(() => {
       const params = new URLSearchParams(window.location.search);
       const ref = params.get('ref');
+      const pairingToken = params.get('pairing');
+
+      // Se c'è un abbinamento condiviso, decodificalo
+      if (pairingToken) {
+          try {
+              const decoded = JSON.parse(decodeURIComponent(escape(atob(pairingToken))));
+              setSharedPairingData(decoded);
+          } catch (e) {
+              console.error("Shared pairing decode error", e);
+          }
+      }
+
       if (ref) {
           if (!localStorage.getItem('vinovault_token')) {
               setShowAuth(true);
@@ -104,7 +118,8 @@ const AppContent: React.FC = () => {
                 }
             })
             .catch(e => console.error(e));
-          window.history.replaceState({}, document.title, window.location.pathname);
+          // Rimuoviamo il ref solo se non stiamo gestendo un pairing
+          if (!pairingToken) window.history.replaceState({}, document.title, window.location.pathname);
       }
   }, []);
 
@@ -300,7 +315,20 @@ const AppContent: React.FC = () => {
              </>
           );
       } else {
-          return <LandingPage onStart={() => setShowAuth(true)} />;
+          return (
+            <>
+                <LandingPage onStart={() => setShowAuth(true)} />
+                {sharedPairingData && (
+                    <SharedPairingModal 
+                        data={sharedPairingData} 
+                        onClose={() => {
+                            setSharedPairingData(null);
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                        }} 
+                    />
+                )}
+            </>
+          );
       }
   }
 
@@ -482,6 +510,16 @@ const AppContent: React.FC = () => {
         onDelete={handleDeleteHistoryEntry}
         isPremium={userPremium}
       />
+
+      {sharedPairingData && (
+        <SharedPairingModal 
+            data={sharedPairingData} 
+            onClose={() => {
+                setSharedPairingData(null);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }} 
+        />
+      )}
     </div>
   );
 };

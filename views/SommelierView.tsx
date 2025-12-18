@@ -18,6 +18,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
   const [style, setStyle] = useState<'single' | 'multiple'>('multiple');
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<PairingSuggestion[]>([]);
+  const [showCopyFeedback, setShowCopyFeedback] = useState(false);
   
   const { t, language } = useLanguage();
 
@@ -28,9 +29,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
     setLoading(true);
     setSuggestions([]);
     try {
-      // Filtra l'inventario per inviare al Sommelier solo i vini realmente presenti in cantina
       const availableInventory = inventory.filter(w => w.quantity > 0);
-      
       const results = await suggestPairing(menuText, 4, availableInventory, style, language);
       setSuggestions(results);
       onAiUsed(); 
@@ -42,11 +41,37 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
     }
   };
 
+  const handleShare = () => {
+    if (!menuText || suggestions.length === 0) return;
+
+    // Crea un payload compatto per la condivisione
+    const shareData = {
+        menu: menuText,
+        suggestions: suggestions.map(s => ({
+            course: s.courseName,
+            dish: s.dishName,
+            wine: s.options[0]?.wineName, // Condividiamo solo la prima scelta (l'ottimale)
+            reason: s.options[0]?.reasoning,
+            temp: s.options[0]?.servingTemp,
+            advice: s.options[0]?.servingAdvice
+        }))
+    };
+
+    // Codifica in Base64 (gestendo caratteri speciali)
+    const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(shareData))));
+    const shareUrl = `${window.location.origin}${window.location.pathname}?pairing=${encodedData}`;
+
+    // Copia negli appunti
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        setShowCopyFeedback(true);
+        setTimeout(() => setShowCopyFeedback(false), 3000);
+    });
+  };
+
   const getInventoryWine = (id?: string) => inventory.find(w => w.id === id);
 
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden relative">
-      {/* Loading Overlay */}
       {loading && <LoadingScreen message={t('ai_analyzing')} subMessage="Il Sommelier sta consultando la tua cantina..." />}
 
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
@@ -122,8 +147,16 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
         </form>
 
         {suggestions.length > 0 && (
-            <div className="space-y-8 animate-in slide-in-from-bottom duration-500">
-                <h3 className="text-xl font-serif font-bold text-gray-800 border-l-4 border-wine-500 pl-3">Suggestions</h3>
+            <div className="space-y-8 animate-in slide-in-from-bottom duration-500 pb-12">
+                <div className="flex justify-between items-center border-l-4 border-wine-500 pl-3">
+                    <h3 className="text-xl font-serif font-bold text-gray-800">Suggerimenti</h3>
+                    <button 
+                        onClick={handleShare}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${showCopyFeedback ? 'bg-green-600 text-white' : 'bg-wine-50 text-wine-700 hover:bg-wine-100 border border-wine-100'}`}
+                    >
+                        {showCopyFeedback ? '✓ Link Copiato' : <><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0-10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Zm0 10.628a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" /></svg> {t('share_pairing')}</>}
+                    </button>
+                </div>
                 
                 {suggestions.map((suggestion, idx) => (
                     <div key={idx} className="space-y-2">
