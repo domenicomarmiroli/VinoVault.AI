@@ -13,7 +13,8 @@ import SommelierHomeGuide from './views/SommelierHomeGuide';
 import RestaurantGuide from './views/RestaurantGuide';
 import ShopGuide from './views/ShopGuide';
 import AnalyticsGuide from './views/AnalyticsGuide';
-import SommelierAnalysisGuide from './views/SommelierAnalysisGuide'; // NEW
+import SommelierAnalysisGuide from './views/SommelierAnalysisGuide';
+import HistoryGuide from './views/HistoryGuide'; // NEW
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
@@ -254,6 +255,10 @@ const AppContent: React.FC = () => {
 
   if (currentPath === '/guida/analisi-sommelier') {
     return <SommelierAnalysisGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
+  }
+
+  if (currentPath === '/guida/storico-degustazioni') {
+    return <HistoryGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
   }
 
   if (!token && showAuth) {
