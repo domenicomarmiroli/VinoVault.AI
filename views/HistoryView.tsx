@@ -56,9 +56,9 @@ const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLo
             <div>
                 <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
                     <ClockIcon className="w-8 h-8 text-wine-600" />
-                    {t('nav_history')}
+                    Il Tuo Diario
                 </h1>
-                <p className="text-sm text-gray-500 mt-1">{t('history_desc')}</p>
+                <p className="text-sm text-gray-500 mt-1">Ogni calice ha una storia da ricordare.</p>
             </div>
              <div className="flex gap-2">
                 {history.length > 0 && (
@@ -89,27 +89,41 @@ const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLo
 
       <div className="flex-1 overflow-y-auto p-4 pb-24">
         {filteredHistory.length === 0 ? (
-          <div className="text-center py-12 text-gray-400"><p>{t('no_history')}</p></div>
+          <div className="text-center py-12 text-gray-400">
+            <WineIcon className="w-12 h-12 mx-auto mb-4 opacity-20" />
+            <p>Non hai ancora registrato bevute.</p>
+          </div>
         ) : (
             <div className="space-y-4">
                 {filteredHistory.map((entry) => (
-                    <div key={entry.id} onClick={() => setSelectedEntry(entry)} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex gap-4 items-start cursor-pointer hover:shadow-md transition-shadow relative group">
-                         <div className="absolute top-2 right-2 text-gray-300 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><PencilIcon className="w-4 h-4" /></div>
-                         <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 mt-1 relative">
-                            {entry.imageUrl ? <img src={entry.imageUrl} alt={entry.name} className="w-full h-full object-cover opacity-90 grayscale-[20%]" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><WineIcon className="w-6 h-6" /></div>}
-                            {entry.type && <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-[8px] text-white text-center py-0.5 truncate px-1 backdrop-blur-sm">{entry.type}</div>}
+                    <div key={entry.id} onClick={() => setSelectedEntry(entry)} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-3 cursor-pointer hover:shadow-md transition-all relative group">
+                         <div className="absolute top-4 right-4 text-gray-300 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><PencilIcon className="w-4 h-4" /></div>
+                         
+                         <div className="flex gap-4 items-center">
+                            <div className="w-14 h-14 bg-gray-50 rounded-xl overflow-hidden flex-shrink-0 relative border border-gray-100">
+                                {entry.imageUrl ? <img src={entry.imageUrl} alt={entry.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><WineIcon className="w-6 h-6" /></div>}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-gray-900 font-bold truncate leading-tight">{entry.name}</h3>
+                                <p className="text-xs text-gray-500 truncate">{entry.producer} • {entry.year}</p>
+                            </div>
+                            <div className="flex flex-col items-end">
+                                {entry.rating ? (
+                                    <div className="flex text-yellow-400 gap-0.5">
+                                        {[...Array(entry.rating)].map((_, i) => (<StarIcon key={i} filled className="w-3 h-3" />))}
+                                    </div>
+                                ) : (
+                                    <span className="text-[9px] text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded-full uppercase font-bold">Da votare</span>
+                                )}
+                                <span className="text-[10px] text-gray-400 mt-1 font-mono uppercase">{new Date(entry.consumedDate).toLocaleDateString()}</span>
+                            </div>
                          </div>
-                         <div className="flex-1 min-w-0">
-                             <div className="flex justify-between items-start mb-1">
-                                <div><h3 className="text-gray-900 font-bold line-through decoration-gray-400 decoration-2 truncate">{entry.name}</h3><p className="text-xs text-gray-500 truncate">{entry.producer} • {entry.year}</p></div>
-                                {entry.price > 0 && <div className="text-sm font-bold text-gray-600 whitespace-nowrap ml-2">€{entry.price.toFixed(2)}</div>}
-                             </div>
-                             <div className="flex items-center flex-wrap gap-2 mb-2">
-                                <span className="text-xs bg-wine-50 text-wine-800 border border-wine-100 px-2 py-0.5 rounded font-medium flex items-center gap-1"><ClockIcon className="w-3 h-3" /> {t('drunk_on')} {new Date(entry.consumedDate).toLocaleDateString()}</span>
-                                 {entry.rating ? <div className="flex text-yellow-400">{[...Array(entry.rating)].map((_, i) => (<StarIcon key={i} filled className="w-3 h-3" />))}</div> : <span className="text-[10px] text-gray-400 font-medium border border-dashed border-gray-300 px-2 py-0.5 rounded-full">{t('not_rated')}</span>}
-                             </div>
-                             {entry.notes && <p className="text-xs text-gray-600 italic border-l-2 border-wine-200 pl-2 mt-2 line-clamp-2">"{entry.notes}"</p>}
-                         </div>
+
+                         {entry.notes && (
+                            <div className="bg-stone-50 p-3 rounded-xl border border-stone-100 italic text-sm text-gray-600 line-clamp-3">
+                                "{entry.notes}"
+                            </div>
+                         )}
                     </div>
                 ))}
             </div>

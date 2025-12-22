@@ -6,6 +6,7 @@ import SommelierView from './views/SommelierView';
 import HistoryView from './views/HistoryView';
 import ShopView from './views/ShopView';
 import AnalyticsView from './views/AnalyticsView';
+import AnalysisView from './views/AnalysisView'; 
 import RestaurantView from './views/RestaurantView';
 import AdminView from './views/AdminView';
 import DigitalCellarGuide from './views/DigitalCellarGuide';
@@ -15,12 +16,12 @@ import ShopGuide from './views/ShopGuide';
 import AnalyticsGuide from './views/AnalyticsGuide';
 import SommelierAnalysisGuide from './views/SommelierAnalysisGuide';
 import HistoryGuide from './views/HistoryGuide';
-import AllGuidesView from './views/AllGuidesView'; // NEW
+import AllGuidesView from './views/AllGuidesView';
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
 import SharedPairingModal from './components/SharedPairingModal';
-import { WineIcon, ChefIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon } from './components/Icons';
+import { WineIcon, ChefIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon, UserIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
@@ -31,9 +32,7 @@ const AppContent: React.FC = () => {
   const [userPremium, setUserPremium] = useState(false);
   const { t, setLanguage } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState<'inventory' | 'sommelier' | 'shop' | 'history' | 'analytics' | 'restaurant' | 'admin'>('inventory');
-  
-  // --- ROUTING STATE ---
+  const [activeTab, setActiveTab] = useState<'inventory' | 'analysis' | 'shop' | 'history' | 'analytics' | 'restaurant' | 'admin'>('inventory');
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   
   const [wines, setWines] = useState<Wine[]>([]);
@@ -121,12 +120,14 @@ const AppContent: React.FC = () => {
     }
 
     if (ref) {
-        if (!localStorage.getItem('vinovault_token')) setShowAuth(true);
         fetch(`/api/restaurants/${ref}`)
           .then(res => res.json())
           .then(data => {
-              if (data) setRestaurantData(data);
-              if (localStorage.getItem('vinovault_token')) setActiveTab('restaurant');
+              if (data) {
+                setRestaurantData(data);
+                if (!localStorage.getItem('vinovault_token')) setShowAuth(true);
+                else setActiveTab('restaurant');
+              }
           })
           .catch(e => console.error(e));
     }
@@ -163,7 +164,7 @@ const AppContent: React.FC = () => {
          const res = await authFetch('/api/wines', { method: 'POST', body: JSON.stringify(wineToAdd) });
          if (!res.ok) throw new Error();
          setWines(prev => [wineToAdd, ...prev]);
-     } catch (e) { alert("Errore"); }
+     } catch (e) { alert("Errore Salvataggio"); }
   };
 
   const handleUpdateWine = async (updatedWine: Wine) => {
@@ -181,12 +182,12 @@ const AppContent: React.FC = () => {
       rating: 0, notes: ''
     };
     setHistory(prev => [historyEntry, ...prev]);
-    setWines(prev => prev.map(w => w.id === wine.id ? { ...w, quantity: w.quantity - 1 } : w));
+    setWines(prev => prev.map(w => w.id === wine.id ? { ...w, quantity: Math.max(0, w.quantity - 1) } : w));
     setRatingModalEntry(historyEntry);
     try {
         await Promise.all([
             authFetch('/api/history', { method: 'POST', body: JSON.stringify(historyEntry) }),
-            authFetch(`/api/wines/${wine.id}`, { method: 'PUT', body: JSON.stringify({ quantity: wine.quantity - 1 }) })
+            authFetch(`/api/wines/${wine.id}`, { method: 'PUT', body: JSON.stringify({ quantity: Math.max(0, wine.quantity - 1) }) })
         ]);
     } catch (e) {}
   };
@@ -196,7 +197,7 @@ const AppContent: React.FC = () => {
           id: generateId(), wineId: 'external_' + generateId(), name: entryData.name || '?',
           producer: entryData.producer || '?', year: entryData.year || 'N/A', type: entryData.type || 'Altro',
           price: entryData.price || 0, consumedDate: entryData.consumedDate || new Date().toISOString(),
-          rating: 0, notes: restaurantData ? `Bevuto @ ${restaurantData.name}` : ''
+          rating: 0, notes: restaurantData ? `Bevuto presso ${restaurantData.name}` : ''
       };
       setHistory(prev => [historyEntry, ...prev]);
       setRatingModalEntry(historyEntry);
@@ -210,7 +211,6 @@ const AppContent: React.FC = () => {
 
   const handleDeleteHistoryEntry = (id: string) => {
     if(!confirm(t('confirm'))) return;
-    const entry = history.find(h => h.id === id);
     setHistory(prev => prev.filter(h => h.id !== id));
     authFetch(`/api/history/${id}`, { method: 'DELETE' });
   };
@@ -314,8 +314,8 @@ const AppContent: React.FC = () => {
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'restaurant' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
              <RestaurantView onLogout={handleLogout} onAddToHistory={handleAddToHistory} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} restaurantData={restaurantData} />
         </div>
-        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'sommelier' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             <SommelierView inventory={wines} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onConsume={handleConsume} />
+        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'analysis' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+             <AnalysisView inventory={wines} history={history} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} />
         </div>
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
              <HistoryView history={history} onClearHistory={() => setHistory([])} onLogout={handleLogout} onUpdateHistoryEntry={handleUpdateHistoryEntry} onDeleteHistoryEntry={handleDeleteHistoryEntry} isPremium={userPremium} />
@@ -334,7 +334,7 @@ const AppContent: React.FC = () => {
           { id: 'inventory', icon: WineIcon, label: t('nav_cellar') },
           { id: 'shop', icon: ShopIcon, label: t('nav_shop') },
           { id: 'restaurant', icon: RestaurantIcon, label: t('nav_restaurant') },
-          { id: 'sommelier', icon: ChefIcon, label: t('nav_sommelier') },
+          { id: 'analysis', icon: UserIcon, label: "IA Analisi" },
           { id: 'analytics', icon: ChartBarIcon, label: t('nav_data') },
           { id: 'history', icon: HistoryIcon, label: t('nav_history') }
         ].map(tab => (
