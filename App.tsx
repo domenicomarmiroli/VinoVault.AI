@@ -71,10 +71,13 @@ const AppContent: React.FC = () => {
       navigateTo('/'); 
       
       try {
-        const payload = JSON.parse(atob(newToken.split('.')[1]));
-        if (payload.role) setUserRole(payload.role);
-        if (payload.isPremium) setUserPremium(payload.isPremium);
-        if (payload.language) setLanguage(payload.language as Language);
+        const parts = newToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          if (payload.role) setUserRole(payload.role);
+          if (payload.isPremium !== undefined) setUserPremium(payload.isPremium);
+          if (payload.language) setLanguage(payload.language as Language);
+        }
       } catch (e) { console.error("Token parse error", e); }
 
       setWines([]);

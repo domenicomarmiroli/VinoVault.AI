@@ -108,9 +108,9 @@ const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLo
                                 <p className="text-xs text-gray-500 truncate">{entry.producer} • {entry.year}</p>
                             </div>
                             <div className="flex flex-col items-end">
-                                {entry.rating ? (
+                                {entry.rating && Number(entry.rating) > 0 ? (
                                     <div className="flex text-yellow-400 gap-0.5">
-                                        {[...Array(entry.rating)].map((_, i) => (<StarIcon key={i} filled className="w-3 h-3" />))}
+                                        {Array.from({ length: Number(entry.rating) }).map((_, i) => (<StarIcon key={i} filled className="w-3 h-3" />))}
                                     </div>
                                 ) : (
                                     <span className="text-[9px] text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded-full uppercase font-bold">Da votare</span>
