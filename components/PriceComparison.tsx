@@ -32,13 +32,18 @@ const PriceComparison: React.FC<PriceComparisonProps> = ({ name, producer, year,
           });
           
           if (!res.ok) {
-              const err = await res.json();
+              const err = await res.json().catch(() => ({ error: "Servizio non disponibile" }));
               throw new Error(err.error || "Servizio non disponibile");
           }
 
           const data: OnlinePrice[] = await res.json();
-          setPrices(data);
+          if (Array.isArray(data)) {
+              setPrices(data);
+          } else {
+              setPrices([]);
+          }
       } catch (err: any) {
+          console.error("Search error:", err);
           alert(`Errore: ${err.message}`);
       } finally {
           setLoading(false);
