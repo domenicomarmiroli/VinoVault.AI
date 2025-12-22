@@ -52,7 +52,7 @@ const authenticateAdmin = (req, res, next) => {
     });
 };
 
-// --- API ROUTES (MUST BE BEFORE STATIC CATCH-ALL) ---
+// --- API ROUTES ---
 
 // Config
 app.get('/api/config', (req, res) => {
@@ -245,6 +245,8 @@ app.post('/api/users/track-ai', authenticateToken, async (req, res) => {
 });
 
 // --- ADMIN ROUTES ---
+
+// Get all users
 app.get('/api/users', authenticateAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
@@ -256,6 +258,37 @@ app.get('/api/users', authenticateAdmin, async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Fetch failed' }); }
 });
 
+// Delete user
+app.delete('/api/users/:id', authenticateAdmin, async (req, res) => {
+    try {
+        // First check if it's an admin - optional but safe
+        const check = await pool.query('SELECT role FROM users WHERE id = $1', [req.params.id]);
+        if (check.rows[0]?.role === 'admin') return res.status(403).json({ error: 'Cannot delete admin' });
+
+        await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
+});
+
+// Toggle Premium
+app.put('/api/users/:id/premium', authenticateAdmin, async (req, res) => {
+    try {
+        await pool.query('UPDATE users SET is_premium = NOT is_premium WHERE id = $1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Update failed' }); }
+});
+
+// Reset Password
+app.put('/api/users/:id/reset-password', authenticateAdmin, async (req, res) => {
+    const { newPassword } = req.body;
+    try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Reset failed' }); }
+});
+
+// Restaurants Management
 app.get('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
