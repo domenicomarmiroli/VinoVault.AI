@@ -1,23 +1,27 @@
 
 import React, { useState } from 'react';
-import { HistoryEntry, WineType } from '../types';
-import { WineIcon, ClockIcon, LogoutIcon, StarIcon, PencilIcon } from '../components/Icons';
+import { HistoryEntry, WineType, Wine } from '../types';
+import { WineIcon, ClockIcon, LogoutIcon, StarIcon, PencilIcon, UserIcon } from '../components/Icons';
 import RateWineModal from '../components/RateWineModal';
 import { useLanguage } from '../contexts/LanguageContext';
+import AnalysisView from './AnalysisView';
 
 interface HistoryViewProps {
+  wines: Wine[];
   history: HistoryEntry[];
   onClearHistory: () => void;
   onLogout: () => void;
   onUpdateHistoryEntry: (id: string, rating: number, notes: string) => void;
   onDeleteHistoryEntry: (id: string) => void;
   isPremium: boolean;
+  onAiUsed: () => void;
 }
 
 type SortOption = 'date_desc' | 'date_asc' | 'rating_desc' | 'rating_asc';
 type FilterType = 'all' | WineType;
 
-const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLogout, onUpdateHistoryEntry, onDeleteHistoryEntry, isPremium }) => {
+const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistory, onLogout, onUpdateHistoryEntry, onDeleteHistoryEntry, isPremium, onAiUsed }) => {
+  const [viewMode, setViewMode] = useState<'diary' | 'analysis'>('diary');
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -44,10 +48,27 @@ const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLo
   }).sort((a, b) => {
       if (sortOrder === 'date_desc') return new Date(b.consumedDate).getTime() - new Date(a.consumedDate).getTime();
       if (sortOrder === 'date_asc') return new Date(a.consumedDate).getTime() - new Date(b.consumedDate).getTime();
-      if (sortOrder === 'rating_desc') return (b.rating || 0) - (a.rating || 0);
-      if (sortOrder === 'rating_asc') return (a.rating || 0) - (b.rating || 0);
+      if (sortOrder === 'rating_desc') return (Number(b.rating) || 0) - (Number(a.rating) || 0);
+      if (sortOrder === 'rating_asc') return (Number(a.rating) || 0) - (Number(b.rating) || 0);
       return 0;
   });
+
+  if (viewMode === 'analysis') {
+      return (
+          <div className="h-full flex flex-col bg-slate-50">
+              <div className="bg-white border-b border-gray-200 px-6 pt-6 pb-2 shadow-sm z-10 sticky top-0 flex justify-between items-center">
+                  <button onClick={() => setViewMode('diary')} className="text-wine-600 font-bold text-sm flex items-center gap-1">
+                      ← {t('nav_history')}
+                  </button>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">Analisi Sommelier</h2>
+                  <div className="w-10"></div>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <AnalysisView inventory={wines} history={history} onLogout={onLogout} onAiUsed={onAiUsed} isPremium={isPremium} />
+              </div>
+          </div>
+      );
+  }
 
   return (
     <div className="h-full flex flex-col bg-stone-50">
@@ -61,11 +82,9 @@ const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLo
                 <p className="text-sm text-gray-500 mt-1">Ogni calice ha una storia da ricordare.</p>
             </div>
              <div className="flex gap-2">
-                {history.length > 0 && (
-                    <button onClick={onClearHistory} className="text-xs text-red-500 hover:text-red-700 underline self-center mr-2">
-                        {t('clear')}
-                    </button>
-                )}
+                <button onClick={() => setViewMode('analysis')} className="bg-purple-50 text-purple-700 p-2 rounded-full border border-purple-100 hover:bg-purple-100 transition-colors" title="Analisi IA">
+                    <UserIcon className="w-6 h-6" filled />
+                </button>
                 <button onClick={onLogout} className="text-gray-400 hover:text-wine-700" title={t('logout')}><LogoutIcon className="w-6 h-6" /></button>
              </div>
         </div>
@@ -108,9 +127,9 @@ const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory, onLo
                                 <p className="text-xs text-gray-500 truncate">{entry.producer} • {entry.year}</p>
                             </div>
                             <div className="flex flex-col items-end">
-                                {entry.rating ? (
+                                {entry.rating && Number(entry.rating) > 0 ? (
                                     <div className="flex text-yellow-400 gap-0.5">
-                                        {[...Array(entry.rating)].map((_, i) => (<StarIcon key={i} filled className="w-3 h-3" />))}
+                                        {Array.from({ length: Number(entry.rating) }).map((_, i) => (<StarIcon key={i} filled className="w-3 h-3" />))}
                                     </div>
                                 ) : (
                                     <span className="text-[9px] text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded-full uppercase font-bold">Da votare</span>

@@ -2,11 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Wine, HistoryEntry, Location, Restaurant, Language } from './types';
 import InventoryView from './views/InventoryView';
-import SommelierView from './views/SommelierView';
 import HistoryView from './views/HistoryView';
 import ShopView from './views/ShopView';
 import AnalyticsView from './views/AnalyticsView';
-import AnalysisView from './views/AnalysisView'; 
 import RestaurantView from './views/RestaurantView';
 import AdminView from './views/AdminView';
 import DigitalCellarGuide from './views/DigitalCellarGuide';
@@ -21,7 +19,7 @@ import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
 import SharedPairingModal from './components/SharedPairingModal';
-import { WineIcon, ChefIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon, UserIcon } from './components/Icons';
+import { WineIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
@@ -32,7 +30,7 @@ const AppContent: React.FC = () => {
   const [userPremium, setUserPremium] = useState(false);
   const { t, setLanguage } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState<'inventory' | 'analysis' | 'shop' | 'history' | 'analytics' | 'restaurant' | 'admin'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'shop' | 'restaurant' | 'analytics' | 'history' | 'admin'>('inventory');
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   
   const [wines, setWines] = useState<Wine[]>([]);
@@ -71,10 +69,13 @@ const AppContent: React.FC = () => {
       navigateTo('/'); 
       
       try {
-        const payload = JSON.parse(atob(newToken.split('.')[1]));
-        if (payload.role) setUserRole(payload.role);
-        if (payload.isPremium) setUserPremium(payload.isPremium);
-        if (payload.language) setLanguage(payload.language as Language);
+        const parts = newToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          if (payload.role) setUserRole(payload.role);
+          if (payload.isPremium !== undefined) setUserPremium(payload.isPremium);
+          if (payload.language) setLanguage(payload.language as Language);
+        }
       } catch (e) { console.error("Token parse error", e); }
 
       setWines([]);
@@ -314,11 +315,8 @@ const AppContent: React.FC = () => {
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'restaurant' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
              <RestaurantView onLogout={handleLogout} onAddToHistory={handleAddToHistory} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} restaurantData={restaurantData} />
         </div>
-        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'analysis' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             <AnalysisView inventory={wines} history={history} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} />
-        </div>
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             <HistoryView history={history} onClearHistory={() => setHistory([])} onLogout={handleLogout} onUpdateHistoryEntry={handleUpdateHistoryEntry} onDeleteHistoryEntry={handleDeleteHistoryEntry} isPremium={userPremium} />
+             <HistoryView wines={wines} history={history} onClearHistory={() => setHistory([])} onLogout={handleLogout} onUpdateHistoryEntry={handleUpdateHistoryEntry} onDeleteHistoryEntry={handleDeleteHistoryEntry} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} />
         </div>
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'analytics' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
              <AnalyticsView inventory={wines} history={history} onLogout={handleLogout} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} />
@@ -334,7 +332,6 @@ const AppContent: React.FC = () => {
           { id: 'inventory', icon: WineIcon, label: t('nav_cellar') },
           { id: 'shop', icon: ShopIcon, label: t('nav_shop') },
           { id: 'restaurant', icon: RestaurantIcon, label: t('nav_restaurant') },
-          { id: 'analysis', icon: UserIcon, label: "IA Analisi" },
           { id: 'analytics', icon: ChartBarIcon, label: t('nav_data') },
           { id: 'history', icon: HistoryIcon, label: t('nav_history') }
         ].map(tab => (

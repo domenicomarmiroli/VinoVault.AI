@@ -45,17 +45,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
     <div className="h-full flex flex-col bg-slate-50 overflow-hidden relative">
       {loading && <LoadingScreen message="Analisi Sommelier in corso..." subMessage="L'IA sta studiando le tue abitudini e la tua cantina..." />}
 
-      <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
-        <div>
-            <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
-                <UserIcon className="w-8 h-8 text-purple-600" filled />
-                Analisi Sommelier
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">Il tuo profilo sensoriale e strategia di cantina.</p>
-        </div>
-        <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2"><LogoutIcon className="w-6 h-6" /></button>
-      </div>
-
       <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-6">
         {!report ? (
           <div className="bg-white rounded-2xl p-8 text-center border border-gray-200 shadow-sm space-y-6">
