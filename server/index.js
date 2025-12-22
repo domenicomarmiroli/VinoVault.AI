@@ -221,24 +221,58 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.post('/api/auth/google', async (req, res) => {
-    const { token, clientId, language, ref } = req.body;
+    const { token, language, ref } = req.body;
+    
+    if (!GOOGLE_CLIENT_ID) {
+        console.error("GOOGLE_CLIENT_ID not configured on server.");
+        return res.status(500).json({ error: 'Server configuration error' });
+    }
+
     try {
-        const client = new OAuth2Client(clientId);
-        const ticket = await client.verifyIdToken({ idToken: token, audience: clientId });
-        const { email, sub: googleId } = ticket.getPayload();
-        let result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+        const ticket = await client.verifyIdToken({ 
+            idToken: token, 
+            audience: GOOGLE_CLIENT_ID 
+        });
+        
+        const payload = ticket.getPayload();
+        if (!payload || !payload.email) throw new Error("Invalid Google token payload");
+
+        const { email, sub: googleId } = payload;
+        
+        // 1. Cerca utente esistente per google_id o per email
+        let result = await pool.query('SELECT * FROM users WHERE google_id = $1 OR email = $2', [googleId, email]);
         let user = result.rows[0];
+
         if (!user) {
-             const userId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-             await pool.query(
-                "INSERT INTO users (id, email, google_id, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, 'user', FALSE, $4, $5)",
+            // 2. Nuovo utente: Crea l'account direttamente
+            const userId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+            const newUserResult = await pool.query(
+                "INSERT INTO users (id, email, google_id, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, 'user', FALSE, $4, $5) RETURNING *",
                 [userId, email, googleId, language || 'it', ref || null]
             );
-            user = { id: userId, email, role: 'user', is_premium: false, language: language || 'it' };
+            user = newUserResult.rows[0];
+        } else if (!user.google_id) {
+            // 3. Utente esistente (registrato con email): Collega google_id
+            await pool.query('UPDATE users SET google_id = $1 WHERE id = $2', [googleId, user.id]);
+            user.google_id = googleId;
         }
-        const jwtToken = jwt.sign({ userId: user.id, email: user.email, role: user.role, isPremium: user.is_premium, language: user.language || language || 'it' }, JWT_SECRET, { expiresIn: '30d' });
+
+        // 4. Genera Token JWT
+        const jwtToken = jwt.sign({ 
+            userId: user.id, 
+            email: user.email, 
+            role: user.role, 
+            isPremium: user.is_premium, 
+            language: user.language || language || 'it' 
+        }, JWT_SECRET, { expiresIn: '30d' });
+
         res.json({ token: jwtToken, user });
-    } catch (err) { res.status(500).json({ error: 'Google auth failed' }); }
+
+    } catch (err) {
+        console.error("Google Auth API Error:", err);
+        res.status(500).json({ error: 'Autenticazione Google fallita. Riprova.' });
+    }
 });
 
 // Wines & History
