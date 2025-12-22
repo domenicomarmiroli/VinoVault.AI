@@ -14,7 +14,8 @@ import RestaurantGuide from './views/RestaurantGuide';
 import ShopGuide from './views/ShopGuide';
 import AnalyticsGuide from './views/AnalyticsGuide';
 import SommelierAnalysisGuide from './views/SommelierAnalysisGuide';
-import HistoryGuide from './views/HistoryGuide'; // NEW
+import HistoryGuide from './views/HistoryGuide';
+import AllGuidesView from './views/AllGuidesView'; // NEW
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
@@ -261,6 +262,10 @@ const AppContent: React.FC = () => {
     return <HistoryGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
   }
 
+  if (currentPath === '/guide') {
+    return <AllGuidesView onBack={() => navigateTo('/')} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} />;
+  }
+
   if (!token && showAuth) {
     return (
        <AuthForm 
@@ -277,6 +282,7 @@ const AppContent: React.FC = () => {
           <LandingPage 
               onStart={() => setShowAuth(true)} 
               onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)}
+              onViewAllGuides={() => navigateTo('/guide')}
           />
           {sharedPairingData && (
               <SharedPairingModal 
