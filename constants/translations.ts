@@ -60,7 +60,7 @@ export const translations: Record<Language, Record<string, string>> = {
     cellar_fit: "Integrazione Cantina",
     // Restaurant
     restaurant_title: "Al Ristorante",
-    restaurant_desc_scan: "Scatta foto al menu, dimmi cosa mangi.",
+    restaurant_desc_scan: "Scatta la foto alla carta dei vini, dimmi cosa mangi.",
     menu_ready: "Menu di {name} pronto.",
     what_eating: "Cosa stai mangiando?",
     dish_placeholder: "Es. Tagliata di manzo con rucola...",
@@ -79,11 +79,12 @@ export const translations: Record<Language, Record<string, string>> = {
     drink_and_rate: "Bevi e Vota",
     tap_to_rate_title: "Salva e Vota",
     tap_to_rate_desc: "Tocca un vino per aggiungerlo subito al tuo Storico, dare un voto e scrivere le tue note di degustazione.",
+    exit_restaurant: "Esci dal Ristorante",
     // History
     history_desc: "Diario delle bottiglie consumate.",
     clear: "Pulisci",
     search_history: "Cerca nello storico...",
-    sort_recent: "Plus Récent",
+    sort_recent: "Più Recenti",
     sort_oldest: "Meno Recenti",
     sort_rating_high: "Voto Alto",
     sort_rating_low: "Voto Basso",
@@ -195,7 +196,7 @@ export const translations: Record<Language, Record<string, string>> = {
     cellar_fit: "Cellar Fit",
     // Restaurant
     restaurant_title: "At the Restaurant",
-    restaurant_desc_scan: "Snap the menu, tell me what you're eating.",
+    restaurant_desc_scan: "Snap the wine list, tell me what you're eating.",
     menu_ready: "{name}'s menu is ready.",
     what_eating: "What are you eating?",
     dish_placeholder: "E.g. Beef steak with arugula...",
@@ -214,6 +215,7 @@ export const translations: Record<Language, Record<string, string>> = {
     drink_and_rate: "Drink & Rate",
     tap_to_rate_title: "Save & Rate",
     tap_to_rate_desc: "Tap a wine to add it to your History, rate it, and save your tasting notes.",
+    exit_restaurant: "Exit Restaurant",
     // History
     history_desc: "Log of consumed bottles.",
     clear: "Clear",
@@ -345,6 +347,7 @@ export const translations: Record<Language, Record<string, string>> = {
     drink_and_rate: "Boire & Noter",
     tap_to_rate_title: "Sauvegarder et Noter",
     tap_to_rate_desc: "Appuyez sur un vin pour l'ajouter à votre Historique, le noter et enregistrer vos notes de dégustation.",
+    exit_restaurant: "Quitter Restaurant",
     // History
     history_desc: "Journal des bouteilles consommées.",
     clear: "Effacer",
@@ -476,6 +479,7 @@ export const translations: Record<Language, Record<string, string>> = {
     drink_and_rate: "Beber y Puntuar",
     tap_to_rate_title: "Guardar y Puntuar",
     tap_to_rate_desc: "Toca un vino para añadirlo a tu Historial, puntuarlo y guardar tus notas de cata.",
+    exit_restaurant: "Salir del Restaurante",
     // History
     history_desc: "Diario de botellas consumidas.",
     clear: "Limpiar",
@@ -533,7 +537,7 @@ export const translations: Record<Language, Record<string, string>> = {
     logout: "Salir",
     profile: "Perfil de Usuario",
     language: "Idioma",
-    ai_analyzing: "El Sommelier está analizando...",
+    ai_analyzing: "El Sommelier está analizzando...",
   },
   de: {
     nav_cellar: "Keller",
@@ -607,6 +611,7 @@ export const translations: Record<Language, Record<string, string>> = {
     drink_and_rate: "Trinken & Bewerten",
     tap_to_rate_title: "Speichern & Bewerten",
     tap_to_rate_desc: "Tippen Sie auf einen Wein, um ihn Ihrem Verlauf hinzuzufügen, zu bewerten und Notizen zu speichern.",
+    exit_restaurant: "Restaurant Verlassen",
     // History
     history_desc: "Protokoll der konsumierten Flaschen.",
     clear: "Leeren",

@@ -10,6 +10,7 @@ interface RestaurantViewProps {
   onLogout: () => void;
   onAddToHistory: (entry: Partial<HistoryEntry>) => void;
   onAiUsed: () => void;
+  onClearRestaurant: () => void; // Nuova prop per tornare alla modalità generale
   restaurantData: Restaurant | null; 
 }
 
@@ -57,7 +58,7 @@ const compressImage = (file: File): Promise<string> => {
     });
 };
 
-const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistory, onAiUsed, restaurantData }) => {
+const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistory, onAiUsed, onClearRestaurant, restaurantData }) => {
   const [dish, setDish] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -166,19 +167,28 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
 
       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
-        <div>
+        <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
                 <RestaurantIcon className="w-8 h-8 text-wine-600" filled />
                 {t('restaurant_title')}
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 mt-1 leading-tight">
                 {hasPreloadedMenu 
                     ? t('menu_ready').replace('{name}', restaurantData.name)
                     : t('restaurant_desc_scan')
                 }
             </p>
+            {hasPreloadedMenu && (
+                <button 
+                  onClick={onClearRestaurant}
+                  className="mt-3 text-[10px] font-bold text-wine-600 uppercase tracking-widest bg-wine-50 px-2.5 py-1.5 rounded-lg border border-wine-100 hover:bg-wine-100 transition-all flex items-center gap-1 shadow-sm"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
+                  {t('exit_restaurant')}
+                </button>
+            )}
         </div>
-        <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2">
+        <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2 shrink-0">
             <LogoutIcon className="w-6 h-6" />
         </button>
       </div>
@@ -194,7 +204,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                         value={dish}
                         onChange={(e) => setDish(e.target.value)}
                         placeholder={t('dish_placeholder')}
-                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none resize-none h-48"
+                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none resize-none h-40"
                     />
                 </div>
 
