@@ -7,9 +7,10 @@ interface LandingPageProps {
   onStart: () => void;
   onOpenGuide?: (slug: string) => void;
   onViewAllGuides?: () => void;
+  onOpenBusiness?: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewAllGuides }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewAllGuides, onOpenBusiness }) => {
   
   const guideItems = [
     { slug: 'cantina-digitale', title: 'La Cantina Digitale', desc: 'Digitalizza le tue bottiglie.', icon: WineIcon, color: 'bg-wine-800', tag: 'Gestione' },
@@ -23,6 +24,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
 
   return (
     <div className="h-full overflow-y-auto bg-white flex flex-col font-sans scroll-smooth">
+      {/* Banner Business */}
+      <div 
+        onClick={onOpenBusiness}
+        className="bg-emerald-600 text-white text-center py-2 px-4 text-xs md:text-sm font-bold cursor-pointer hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+      >
+        <RestaurantIcon className="w-4 h-4" filled />
+        Sei un Ristorante? Sostituisci la tua carta vini con la nostra IA. Gratis! <span className="underline ml-1">Scopri come →</span>
+      </div>
+
       {/* Navbar Estesa */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
         <div className="flex justify-between items-center p-4 md:p-6 max-w-7xl mx-auto w-full">
@@ -30,6 +40,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
                 <Logo className="w-10 h-10" />
             </div>
             <div className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-500 uppercase tracking-widest">
+                <button onClick={onOpenBusiness} className="hover:text-emerald-600 transition-colors flex items-center gap-1 font-black">Ristoranti</button>
                 <a href="#how-it-works" className="hover:text-wine-700 transition-colors">Come Funziona</a>
                 <a href="#features" className="hover:text-wine-700 transition-colors">Funzionalità</a>
                 <a href="#academy" className="hover:text-wine-700 transition-colors">Academy</a>
@@ -254,6 +265,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
             <ul className="space-y-2 text-sm">
                 <li><button onClick={() => window.scrollTo({top:0, behavior:'smooth'})} className="hover:text-wine-400">Home</button></li>
                 <li><button onClick={onViewAllGuides} className="hover:text-wine-400">Academy</button></li>
+                <li><button onClick={onOpenBusiness} className="hover:text-emerald-400">Ristoranti</button></li>
                 <li><a href="mailto:info@aiknow.wine" className="hover:text-wine-400">Supporto</a></li>
             </ul>
           </div>

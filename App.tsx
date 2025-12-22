@@ -16,6 +16,7 @@ import AnalyticsGuide from './views/AnalyticsGuide';
 import SommelierAnalysisGuide from './views/SommelierAnalysisGuide';
 import HistoryGuide from './views/HistoryGuide';
 import AllGuidesView from './views/AllGuidesView';
+import RestaurantBusinessView from './views/RestaurantBusinessView';
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
@@ -236,6 +237,10 @@ const AppContent: React.FC = () => {
   
   // --- ROUTER LOGIC ---
 
+  if (currentPath === '/ristoranti') {
+    return <RestaurantBusinessView onBack={() => navigateTo('/')} onContact={() => {}} />;
+  }
+
   if (currentPath === '/guida/cantina-digitale') {
     return <DigitalCellarGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
   }
@@ -285,6 +290,7 @@ const AppContent: React.FC = () => {
               onStart={() => setShowAuth(true)} 
               onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)}
               onViewAllGuides={() => navigateTo('/guide')}
+              onOpenBusiness={() => navigateTo('/ristoranti')}
           />
           {sharedPairingData && (
               <SharedPairingModal 
