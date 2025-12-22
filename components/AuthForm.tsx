@@ -11,8 +11,8 @@ declare global {
 
 interface AuthFormProps {
   onLogin: (token: string, userEmail: string) => void;
-  onBack?: () => void;
-  referralRef?: string | null;
+  onBack?: () => void; // New prop
+  referralRef?: string | null; // NEW: Origin of registration
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => {
@@ -45,8 +45,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
         try {
             window.google.accounts.id.initialize({
                 client_id: googleClientId,
-                callback: handleGoogleCallback,
-                auto_select: false
+                callback: handleGoogleCallback
             });
             window.google.accounts.id.renderButton(
                 document.getElementById("googleSignInBtn"),
@@ -67,15 +66,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
                   token: response.credential,
-                  language,
-                  ref: referralRef
+                  clientId: googleClientId,
+                  language, // Send current detected language
+                  ref: referralRef // Send referral
               })
           });
           const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Autenticazione Google fallita');
+          if (!res.ok) throw new Error(data.error || 'Google login failed');
           onLogin(data.token, data.user.email);
       } catch (err: any) {
-          setError(err.message);
+          setError("Errore login Google: " + err.message);
       } finally {
           setLoading(false);
       }
@@ -88,7 +88,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
     const payload: any = { email, password, language };
-    if (!isLogin && referralRef) payload.ref = referralRef;
+    
+    // Add referral only on registration
+    if (!isLogin && referralRef) {
+        payload.ref = referralRef;
+    }
 
     try {
       const res = await fetch(endpoint, {
@@ -96,8 +100,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload) 
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Autenticazione fallita');
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Autenticazione fallita');
+      }
+
       onLogin(data.token, data.user.email);
     } catch (err: any) {
       setError(err.message);
