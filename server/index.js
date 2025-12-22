@@ -69,7 +69,7 @@ const initDb = async () => {
   let client;
   try {
     client = await pool.connect();
-    // 1. Users
+    // 1. Users - Assicuriamoci che tutte le colonne necessarie esistano
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
@@ -85,81 +85,12 @@ const initDb = async () => {
       );
     `);
 
-    // 2. Wines
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS wines (
-        id TEXT PRIMARY KEY,
-        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        producer TEXT,
-        year TEXT,
-        type TEXT,
-        region TEXT,
-        grape TEXT,
-        alcohol TEXT,
-        purchase_date TEXT,
-        price DECIMAL,
-        quantity INTEGER DEFAULT 1,
-        location TEXT,
-        storage_temp TEXT,
-        storage_advice TEXT,
-        serving_temp TEXT,
-        serving_advice TEXT,
-        food_pairings TEXT[],
-        image_url TEXT,
-        drink_window TEXT,
-        market_price DECIMAL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // 3. History
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS history (
-        id TEXT PRIMARY KEY,
-        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-        wine_id TEXT,
-        name TEXT,
-        producer TEXT,
-        year TEXT,
-        type TEXT,
-        price DECIMAL,
-        image_url TEXT,
-        consumed_date TEXT,
-        rating INTEGER DEFAULT 0,
-        notes TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // 4. Locations
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS locations (
-        id TEXT PRIMARY KEY,
-        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-        name TEXT NOT NULL
-      );
-    `);
-
-    // 5. Restaurants
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS restaurants (
-        id TEXT PRIMARY KEY,
-        slug TEXT UNIQUE NOT NULL,
-        name TEXT NOT NULL,
-        menu_context TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // 6. Shares (NEW: for short links)
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS shares (
-        id TEXT PRIMARY KEY,
-        data JSONB NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    // Altre tabelle...
+    await client.query(`CREATE TABLE IF NOT EXISTS wines (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, producer TEXT, year TEXT, type TEXT, region TEXT, grape TEXT, alcohol TEXT, purchase_date TEXT, price DECIMAL, quantity INTEGER DEFAULT 1, location TEXT, storage_temp TEXT, storage_advice TEXT, serving_temp TEXT, serving_advice TEXT, food_pairings TEXT[], image_url TEXT, drink_window TEXT, market_price DECIMAL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
+    await client.query(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, wine_id TEXT, name TEXT, producer TEXT, year TEXT, type TEXT, price DECIMAL, image_url TEXT, consumed_date TEXT, rating INTEGER DEFAULT 0, notes TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
+    await client.query(`CREATE TABLE IF NOT EXISTS locations (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL);`);
+    await client.query(`CREATE TABLE IF NOT EXISTS restaurants (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, menu_context TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
+    await client.query(`CREATE TABLE IF NOT EXISTS shares (id TEXT PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
 
     console.log("Database tables initialized.");
   } catch (error) {
@@ -170,25 +101,6 @@ const initDb = async () => {
 };
 
 // --- ROUTES ---
-
-// Shares Management
-app.post('/api/shares', async (req, res) => {
-    const { data } = req.body;
-    if (!data) return res.status(400).json({ error: "Missing data" });
-    const id = Date.now().toString(36).substring(4) + Math.random().toString(36).substring(2, 6);
-    try {
-        await pool.query("INSERT INTO shares (id, data) VALUES ($1, $2)", [id, JSON.stringify(data)]);
-        res.json({ id });
-    } catch (e) { res.status(500).json({ error: "Failed to save share" }); }
-});
-
-app.get('/api/shares/:id', async (req, res) => {
-    try {
-        const result = await pool.query("SELECT data FROM shares WHERE id = $1", [req.params.id]);
-        if (result.rows.length === 0) return res.status(404).json({ error: "Share not found" });
-        res.json(result.rows[0].data);
-    } catch (e) { res.status(500).json({ error: "Failed to fetch share" }); }
-});
 
 // Auth Routes
 app.post('/api/auth/register', async (req, res) => {
@@ -224,41 +136,56 @@ app.post('/api/auth/google', async (req, res) => {
     const { token, language, ref } = req.body;
     
     if (!GOOGLE_CLIENT_ID) {
-        console.error("GOOGLE_CLIENT_ID not configured on server.");
-        return res.status(500).json({ error: 'Server configuration error' });
+        console.error("GOOGLE_CLIENT_ID missing in env variables.");
+        return res.status(500).json({ error: 'Server: Google Client ID not configured.' });
     }
 
     try {
         const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+        // Verifica del token
         const ticket = await client.verifyIdToken({ 
             idToken: token, 
             audience: GOOGLE_CLIENT_ID 
         });
         
         const payload = ticket.getPayload();
-        if (!payload || !payload.email) throw new Error("Invalid Google token payload");
+        if (!payload || !payload.email) {
+            console.error("Google ticket payload invalid.");
+            return res.status(400).json({ error: 'Token Google non valido o email mancante.' });
+        }
 
         const { email, sub: googleId } = payload;
+        console.log(`Google Auth attempt for email: ${email}`);
         
         // 1. Cerca utente esistente per google_id o per email
         let result = await pool.query('SELECT * FROM users WHERE google_id = $1 OR email = $2', [googleId, email]);
         let user = result.rows[0];
 
         if (!user) {
+            console.log(`Creating new Google user: ${email}`);
             // 2. Nuovo utente: Crea l'account direttamente
             const userId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-            const newUserResult = await pool.query(
-                "INSERT INTO users (id, email, google_id, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, 'user', FALSE, $4, $5) RETURNING *",
-                [userId, email, googleId, language || 'it', ref || null]
-            );
-            user = newUserResult.rows[0];
-        } else if (!user.google_id) {
-            // 3. Utente esistente (registrato con email): Collega google_id
-            await pool.query('UPDATE users SET google_id = $1 WHERE id = $2', [googleId, user.id]);
-            user.google_id = googleId;
+            try {
+                const newUserResult = await pool.query(
+                    "INSERT INTO users (id, email, google_id, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, 'user', FALSE, $4, $5) RETURNING *",
+                    [userId, email, googleId, language || 'it', ref || null]
+                );
+                user = newUserResult.rows[0];
+            } catch (insertErr) {
+                console.error("Error creating new Google user in DB:", insertErr);
+                return res.status(500).json({ error: 'Errore durante la creazione del nuovo account.' });
+            }
+        } else {
+            console.log(`Existing user found for: ${email}`);
+            // 3. Utente esistente: aggiorna google_id se non presente
+            if (!user.google_id) {
+                console.log(`Linking Google ID to existing email account: ${email}`);
+                await pool.query('UPDATE users SET google_id = $1 WHERE id = $2', [googleId, user.id]);
+                user.google_id = googleId;
+            }
         }
 
-        // 4. Genera Token JWT
+        // 4. Genera Token JWT per la sessione dell'app
         const jwtToken = jwt.sign({ 
             userId: user.id, 
             email: user.email, 
@@ -270,8 +197,8 @@ app.post('/api/auth/google', async (req, res) => {
         res.json({ token: jwtToken, user });
 
     } catch (err) {
-        console.error("Google Auth API Error:", err);
-        res.status(500).json({ error: 'Autenticazione Google fallita. Riprova.' });
+        console.error("Detailed Google Auth Error:", err);
+        res.status(500).json({ error: 'Errore critico durante l\'autenticazione con Google: ' + err.message });
     }
 });
 
@@ -341,150 +268,11 @@ app.post('/api/history', authenticateToken, async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed to add history' }); }
 });
 
-app.delete('/api/history/:id', authenticateToken, async (req, res) => {
-    try {
-        await pool.query('DELETE FROM history WHERE id = $1 AND user_id = $2', [req.params.id, req.user.userId]);
-        res.sendStatus(200);
-    } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
-});
-
 app.get('/api/users/me', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT id, email, role, is_premium, language, ai_usage_count FROM users WHERE id = $1', [req.user.userId]);
         res.json(result.rows[0]);
     } catch (err) { res.status(500).json({ error: 'Fetch failed' }); }
-});
-
-app.put('/api/users/me/language', authenticateToken, async (req, res) => {
-    try {
-        await pool.query('UPDATE users SET language = $1 WHERE id = $2', [req.body.language, req.user.userId]);
-        res.sendStatus(200);
-    } catch (err) { res.status(500).json({ error: 'Update failed' }); }
-});
-
-app.post('/api/users/track-ai', authenticateToken, async (req, res) => {
-    try {
-        await pool.query('UPDATE users SET ai_usage_count = ai_usage_count + 1 WHERE id = $1', [req.user.userId]);
-        res.sendStatus(200);
-    } catch (e) { res.sendStatus(500); }
-});
-
-app.get('/api/locations', authenticateToken, async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM locations WHERE user_id = $1', [req.user.userId]);
-        res.json(result.rows);
-    } catch (err) { res.status(500).json({ error: 'Fetch failed' }); }
-});
-
-app.post('/api/locations', authenticateToken, async (req, res) => {
-    try {
-        await pool.query('INSERT INTO locations (id, user_id, name) VALUES ($1, $2, $3)', [req.body.id, req.user.userId, req.body.name]);
-        res.sendStatus(201);
-    } catch (err) { res.status(500).json({ error: 'Add failed' }); }
-});
-
-app.delete('/api/locations/:id', authenticateToken, async (req, res) => {
-    try {
-        await pool.query('DELETE FROM locations WHERE id = $1 AND user_id = $2', [req.params.id, req.user.userId]);
-        res.sendStatus(200);
-    } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
-});
-
-// --- ADMIN ROUTES ---
-
-app.get('/api/users', authenticateAdmin, async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT u.*, 
-                   (SELECT COUNT(*) FROM wines WHERE user_id = u.id) as wine_count 
-            FROM users u 
-            ORDER BY created_at DESC
-        `);
-        res.json(result.rows);
-    } catch (err) { res.status(500).json({ error: 'Admin fetch failed' }); }
-});
-
-app.delete('/api/users/:id', authenticateAdmin, async (req, res) => {
-    try {
-        await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
-        res.sendStatus(200);
-    } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
-});
-
-app.put('/api/users/:id/premium', authenticateAdmin, async (req, res) => {
-    try {
-        await pool.query('UPDATE users SET is_premium = NOT is_premium WHERE id = $1', [req.params.id]);
-        res.sendStatus(200);
-    } catch (err) { res.status(500).json({ error: 'Update failed' }); }
-});
-
-app.put('/api/users/:id/reset-password', authenticateAdmin, async (req, res) => {
-    const { newPassword } = req.body;
-    try {
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, req.params.id]);
-        res.sendStatus(200);
-    } catch (err) { res.status(500).json({ error: 'Reset failed' }); }
-});
-
-app.get('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT r.*, 
-                   (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count,
-                   (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage
-            FROM restaurants r 
-            ORDER BY created_at DESC
-        `);
-        res.json(result.rows);
-    } catch (err) { res.status(500).json({ error: 'Admin rest fetch failed' }); }
-});
-
-app.post('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
-    const rest = req.body;
-    try {
-        if (rest.id) {
-            await pool.query(
-                "UPDATE restaurants SET name = $1, slug = $2, menu_context = $3 WHERE id = $4",
-                [rest.name, rest.slug, rest.menu_context, rest.id]
-            );
-        } else {
-            const id = Date.now().toString(36);
-            await pool.query(
-                "INSERT INTO restaurants (id, slug, name, menu_context) VALUES ($1, $2, $3, $4)",
-                [id, rest.slug, rest.name, rest.menu_context]
-            );
-        }
-        res.sendStatus(200);
-    } catch (err) { res.status(500).json({ error: 'Save restaurant failed' }); }
-});
-
-app.delete('/api/admin/restaurants/:id', authenticateAdmin, async (req, res) => {
-    try {
-        await pool.query('DELETE FROM restaurants WHERE id = $1', [req.params.id]);
-        res.sendStatus(200);
-    } catch (err) { res.status(500).json({ error: 'Delete restaurant failed' }); }
-});
-
-// --- PUBLIC / COMMON ---
-
-app.get('/api/restaurants/:ref', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM restaurants WHERE slug = $1', [req.params.ref]);
-        res.json(result.rows[0] || null);
-    } catch (e) { res.status(500).json({error: "Error"}); }
-});
-
-app.get('/api/search-prices', authenticateToken, async (req, res) => {
-    try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: `Cerca online i prezzi attuali per: "${req.query.query}". Restituisci JSON puro: [{"source": "Nome", "price": numero}]`,
-            config: { tools: [{ googleSearch: {} }] }
-        });
-        res.json(JSON.parse(response.text.replace(/```json/g, '').replace(/```/g, '').trim()));
-    } catch (err) { res.status(500).json({ error: 'Search failed' }); }
 });
 
 app.get('/api/config', (req, res) => res.json({ googleClientId: GOOGLE_CLIENT_ID || '' }));
