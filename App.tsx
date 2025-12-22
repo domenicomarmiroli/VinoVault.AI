@@ -6,6 +6,7 @@ import HistoryView from './views/HistoryView';
 import ShopView from './views/ShopView';
 import AnalyticsView from './views/AnalyticsView';
 import RestaurantView from './views/RestaurantView';
+import SommelierView from './views/SommelierView';
 import AdminView from './views/AdminView';
 import DigitalCellarGuide from './views/DigitalCellarGuide';
 import SommelierHomeGuide from './views/SommelierHomeGuide';
@@ -19,7 +20,7 @@ import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
 import SharedPairingModal from './components/SharedPairingModal';
-import { WineIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon } from './components/Icons';
+import { WineIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon, ChefIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
@@ -30,7 +31,7 @@ const AppContent: React.FC = () => {
   const [userPremium, setUserPremium] = useState(false);
   const { t, setLanguage } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState<'inventory' | 'shop' | 'restaurant' | 'analytics' | 'history' | 'admin'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'shop' | 'sommelier' | 'restaurant' | 'analytics' | 'history' | 'admin'>('inventory');
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   
   const [wines, setWines] = useState<Wine[]>([]);
@@ -312,6 +313,9 @@ const AppContent: React.FC = () => {
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'shop' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
              <ShopView inventory={wines} onLogout={handleLogout} onAddToInventory={handleAddWine} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} />
         </div>
+        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'sommelier' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+             <SommelierView inventory={wines} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onConsume={handleConsume} />
+        </div>
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'restaurant' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
              <RestaurantView onLogout={handleLogout} onAddToHistory={handleAddToHistory} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} restaurantData={restaurantData} />
         </div>
@@ -331,6 +335,7 @@ const AppContent: React.FC = () => {
         {[
           { id: 'inventory', icon: WineIcon, label: t('nav_cellar') },
           { id: 'shop', icon: ShopIcon, label: t('nav_shop') },
+          { id: 'sommelier', icon: ChefIcon, label: t('nav_sommelier') },
           { id: 'restaurant', icon: RestaurantIcon, label: t('nav_restaurant') },
           { id: 'analytics', icon: ChartBarIcon, label: t('nav_data') },
           { id: 'history', icon: HistoryIcon, label: t('nav_history') }
