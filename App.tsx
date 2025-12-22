@@ -10,7 +10,8 @@ import RestaurantView from './views/RestaurantView';
 import AdminView from './views/AdminView';
 import DigitalCellarGuide from './views/DigitalCellarGuide';
 import SommelierHomeGuide from './views/SommelierHomeGuide';
-import RestaurantGuide from './views/RestaurantGuide'; // NEW
+import RestaurantGuide from './views/RestaurantGuide';
+import ShopGuide from './views/ShopGuide'; // NEW
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
@@ -54,7 +55,6 @@ const AppContent: React.FC = () => {
       return fetch(fullUrl, { ...options, headers });
   };
 
-  // Funzione per navigare senza ricaricare la pagina (History API)
   const navigateTo = (path: string) => {
     window.history.pushState({}, '', path);
     setCurrentPath(path);
@@ -242,7 +242,10 @@ const AppContent: React.FC = () => {
     return <RestaurantGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
   }
 
-  // 2. Auth View
+  if (currentPath === '/guida/acquisti-intelligenti') {
+    return <ShopGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
+  }
+
   if (!token && showAuth) {
     return (
        <AuthForm 
@@ -253,7 +256,6 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // 3. Landing View (Root Path e No Token)
   if (!token) {
     return (
       <>
@@ -271,7 +273,6 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // 4. App Principale (Logged In)
   if (!isLoaded && !isOfflineMode) return (
     <div className="h-screen flex items-center justify-center bg-gray-50 flex-col gap-2">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-wine-800"></div>

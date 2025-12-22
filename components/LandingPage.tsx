@@ -115,25 +115,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide }) => {
                  </div>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-8">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                  {/* Card Guida 1 */}
                  <div 
                     onClick={() => onOpenGuide?.('cantina-digitale')}
                     className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer group flex flex-col h-full"
                  >
-                    <div className="h-48 bg-wine-800 flex items-center justify-center relative overflow-hidden shrink-0">
+                    <div className="h-40 bg-wine-800 flex items-center justify-center relative overflow-hidden shrink-0">
                         <WineIcon className="w-20 h-20 text-white/20 absolute -right-4 -bottom-4 transform rotate-12" filled />
-                        <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20">
-                            <WineIcon className="w-12 h-12 text-white" filled />
+                        <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+                            <WineIcon className="w-10 h-10 text-white" filled />
                         </div>
                     </div>
-                    <div className="p-8 flex-1 flex flex-col">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-wine-600 mb-3 block">Digitalizzazione</span>
-                        <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4 group-hover:text-wine-700 transition-colors">La Cantina Digitale: Organizza le tue bottiglie</h3>
-                        <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                           Scopri come trasformare la tua collezione fisica in un inventario digitale accessibile ovunque.
+                    <div className="p-6 flex-1 flex flex-col">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-wine-600 mb-2 block">Digitalizzazione</span>
+                        <h3 className="text-lg font-serif font-bold text-gray-900 mb-2 group-hover:text-wine-700 transition-colors">La Cantina Digitale</h3>
+                        <p className="text-gray-500 text-xs leading-relaxed mb-4">
+                           Trasforma la tua collezione fisica in un inventario digitale.
                         </p>
-                        <div className="mt-auto pt-6 border-t border-gray-50 flex items-center text-wine-700 font-bold text-sm">
+                        <div className="mt-auto pt-4 border-t border-gray-50 flex items-center text-wine-700 font-bold text-[10px] uppercase">
                             Leggi la guida <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
                         </div>
                     </div>
@@ -144,42 +144,65 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide }) => {
                     onClick={() => onOpenGuide?.('sommelier-a-casa')}
                     className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer group flex flex-col h-full"
                  >
-                    <div className="h-48 bg-amber-600 flex items-center justify-center relative overflow-hidden shrink-0">
+                    <div className="h-40 bg-amber-600 flex items-center justify-center relative overflow-hidden shrink-0">
                         <ChefIcon className="w-20 h-20 text-white/20 absolute -right-4 -bottom-4 transform rotate-12" filled />
-                        <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20">
-                            <ChefIcon className="w-12 h-12 text-white" filled />
+                        <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+                            <ChefIcon className="w-10 h-10 text-white" filled />
                         </div>
                     </div>
-                    <div className="p-8 flex-1 flex flex-col">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-3 block">Convivialità</span>
-                        <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4 group-hover:text-amber-700 transition-colors">Il Sommelier a Casa: Abbinamenti Perfetti</h3>
-                        <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                           Non sai cosa bere? Inserisci il menu e lascia che l'IA trovi il vino ideale dalla tua cantina.
+                    <div className="p-6 flex-1 flex flex-col">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-2 block">Convivialità</span>
+                        <h3 className="text-lg font-serif font-bold text-gray-900 mb-2 group-hover:text-amber-700 transition-colors">Il Sommelier a Casa</h3>
+                        <p className="text-gray-500 text-xs leading-relaxed mb-4">
+                           Abbinamenti perfetti dalla tua cantina per ogni menu.
                         </p>
-                        <div className="mt-auto pt-6 border-t border-gray-50 flex items-center text-amber-600 font-bold text-sm">
+                        <div className="mt-auto pt-4 border-t border-gray-50 flex items-center text-amber-600 font-bold text-[10px] uppercase">
                             Leggi la guida <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
                         </div>
                     </div>
                  </div>
 
-                 {/* Card Guida 3 (NOW ACTIVE) */}
+                 {/* Card Guida 3 */}
                  <div 
                     onClick={() => onOpenGuide?.('al-ristorante')}
                     className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer group flex flex-col h-full"
                  >
-                    <div className="h-48 bg-emerald-600 flex items-center justify-center relative overflow-hidden shrink-0">
+                    <div className="h-40 bg-emerald-600 flex items-center justify-center relative overflow-hidden shrink-0">
                         <RestaurantIcon className="w-20 h-20 text-white/20 absolute -right-4 -bottom-4 transform rotate-12" filled />
-                        <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20">
-                            <RestaurantIcon className="w-12 h-12 text-white" filled />
+                        <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+                            <RestaurantIcon className="w-10 h-10 text-white" filled />
                         </div>
                     </div>
-                    <div className="p-8 flex-1 flex flex-col">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-3 block">Fuori Casa</span>
-                        <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4 group-hover:text-emerald-700 transition-colors">Al Ristorante: Come scegliere dalla Carta</h3>
-                        <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                           Sempre il vino giusto al tavolo. Scansiona la lista dei vini e ricevi consigli istantanei.
+                    <div className="p-6 flex-1 flex flex-col">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-2 block">Fuori Casa</span>
+                        <h3 className="text-lg font-serif font-bold text-gray-900 mb-2 group-hover:text-emerald-700 transition-colors">Al Ristorante</h3>
+                        <p className="text-gray-500 text-xs leading-relaxed mb-4">
+                           Scegli dalla carta dei vini come un vero professionista.
                         </p>
-                        <div className="mt-auto pt-6 border-t border-gray-50 flex items-center text-emerald-600 font-bold text-sm">
+                        <div className="mt-auto pt-4 border-t border-gray-50 flex items-center text-emerald-600 font-bold text-[10px] uppercase">
+                            Leggi la guida <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
+                        </div>
+                    </div>
+                 </div>
+
+                 {/* Card Guida 4 (NOW ACTIVE) */}
+                 <div 
+                    onClick={() => onOpenGuide?.('acquisti-intelligenti')}
+                    className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer group flex flex-col h-full"
+                 >
+                    <div className="h-40 bg-indigo-600 flex items-center justify-center relative overflow-hidden shrink-0">
+                        <ShopIcon className="w-20 h-20 text-white/20 absolute -right-4 -bottom-4 transform rotate-12" filled />
+                        <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+                            <ShopIcon className="w-10 h-10 text-white" filled />
+                        </div>
+                    </div>
+                    <div className="p-6 flex-1 flex flex-col">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 mb-2 block">Investimento</span>
+                        <h3 className="text-lg font-serif font-bold text-gray-900 mb-2 group-hover:text-indigo-700 transition-colors">Acquisti Intelligenti</h3>
+                        <p className="text-gray-500 text-xs leading-relaxed mb-4">
+                           Valuta prezzi e coerenza prima di comprare nuove bottiglie.
+                        </p>
+                        <div className="mt-auto pt-4 border-t border-gray-50 flex items-center text-indigo-700 font-bold text-[10px] uppercase">
                             Leggi la guida <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
                         </div>
                     </div>
