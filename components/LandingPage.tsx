@@ -5,7 +5,7 @@ import { WineIcon, ChefIcon, ShopIcon, ChartBarIcon, RestaurantIcon } from './Ic
 
 interface LandingPageProps {
   onStart: () => void;
-  onOpenGuide?: (slug: string) => void; // New Prop
+  onOpenGuide?: (slug: string) => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide }) => {
@@ -92,7 +92,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide }) => {
               <FeatureCard 
                 icon={<ShopIcon className="w-8 h-8 text-white" />}
                 title="Shop Advisor"
-                desc="Sei in enoteca o stai per acquistare online? Scansiona la bottiglia oppure inserisci il link per sapere se il vino si adatta alla tua cantina e il prezzo è conveniente."
+                desc="Sei in enoteca o stai per acquistare online? Scansiona la bottiglia oppure inserisci il link per sapere se il vino si adatta alla tua cantina."
                 color="bg-emerald-600"
               />
               <FeatureCard 
@@ -105,7 +105,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide }) => {
           </div>
         </div>
 
-        {/* --- NEW: Guide SEO Section --- */}
+        {/* --- Guide SEO Section --- */}
         <div className="bg-stone-50 py-20 border-b border-gray-200">
            <div className="max-w-7xl mx-auto px-6">
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
@@ -113,13 +113,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide }) => {
                     <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-2">Guide per il Wine Lover</h2>
                     <p className="text-gray-500">Approfondimenti e tutorial su come migliorare la gestione del tuo vino.</p>
                  </div>
-                 <button 
-                    onClick={() => onOpenGuide?.('cantina-digitale')}
-                    className="text-wine-700 font-bold hover:underline flex items-center gap-2"
-                  >
-                    Vedi tutte le guide
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
-                 </button>
               </div>
 
               <div className="grid md:grid-cols-3 gap-8">
@@ -138,7 +131,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide }) => {
                         <span className="text-[10px] font-bold uppercase tracking-widest text-wine-600 mb-3 block">Digitalizzazione</span>
                         <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4 group-hover:text-wine-700 transition-colors">La Cantina Digitale: Organizza le tue bottiglie</h3>
                         <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                           Scopri come trasformare la tua collezione fisica in un inventario digitale accessibile ovunque, con valutazioni in tempo reale.
+                           Scopri come trasformare la tua collezione fisica in un inventario digitale accessibile ovunque.
                         </p>
                         <div className="mt-auto pt-6 border-t border-gray-50 flex items-center text-wine-700 font-bold text-sm">
                             Leggi la guida <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
@@ -146,17 +139,50 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide }) => {
                     </div>
                  </div>
 
-                 {/* Placeholders for future guides */}
-                 <div className="bg-stone-100 rounded-3xl p-8 border border-dashed border-stone-200 flex flex-col justify-center items-center text-center opacity-60">
-                    <ChefIcon className="w-10 h-10 text-stone-400 mb-4" />
-                    <h3 className="font-bold text-stone-500 mb-2">Abbinamenti Perfetti</h3>
-                    <p className="text-xs text-stone-400">In arrivo: La scienza dietro l'abbinamento cibo-vino con l'IA.</p>
+                 {/* Card Guida 2 */}
+                 <div 
+                    onClick={() => onOpenGuide?.('sommelier-a-casa')}
+                    className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer group flex flex-col h-full"
+                 >
+                    <div className="h-48 bg-amber-600 flex items-center justify-center relative overflow-hidden shrink-0">
+                        <ChefIcon className="w-20 h-20 text-white/20 absolute -right-4 -bottom-4 transform rotate-12" filled />
+                        <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20">
+                            <ChefIcon className="w-12 h-12 text-white" filled />
+                        </div>
+                    </div>
+                    <div className="p-8 flex-1 flex flex-col">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-3 block">Convivialità</span>
+                        <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4 group-hover:text-amber-700 transition-colors">Il Sommelier a Casa: Abbinamenti Perfetti</h3>
+                        <p className="text-gray-500 text-sm leading-relaxed mb-6">
+                           Non sai cosa bere? Inserisci il menu e lascia che l'IA trovi il vino ideale dalla tua cantina.
+                        </p>
+                        <div className="mt-auto pt-6 border-t border-gray-50 flex items-center text-amber-600 font-bold text-sm">
+                            Leggi la guida <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
+                        </div>
+                    </div>
                  </div>
 
-                 <div className="bg-stone-100 rounded-3xl p-8 border border-dashed border-stone-200 flex flex-col justify-center items-center text-center opacity-60">
-                    <ChartBarIcon className="w-10 h-10 text-stone-400 mb-4" />
-                    <h3 className="font-bold text-stone-500 mb-2">Investire nel Vino</h3>
-                    <p className="text-xs text-stone-400">In arrivo: Come monitorare le annate che aumentano di valore.</p>
+                 {/* Card Guida 3 (NOW ACTIVE) */}
+                 <div 
+                    onClick={() => onOpenGuide?.('al-ristorante')}
+                    className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer group flex flex-col h-full"
+                 >
+                    <div className="h-48 bg-emerald-600 flex items-center justify-center relative overflow-hidden shrink-0">
+                        <RestaurantIcon className="w-20 h-20 text-white/20 absolute -right-4 -bottom-4 transform rotate-12" filled />
+                        <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20">
+                            <RestaurantIcon className="w-12 h-12 text-white" filled />
+                        </div>
+                    </div>
+                    <div className="p-8 flex-1 flex flex-col">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-3 block">Fuori Casa</span>
+                        <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4 group-hover:text-emerald-700 transition-colors">Al Ristorante: Come scegliere dalla Carta</h3>
+                        <p className="text-gray-500 text-sm leading-relaxed mb-6">
+                           Sempre il vino giusto al tavolo. Scansiona la lista dei vini e ricevi consigli istantanei.
+                        </p>
+                        <div className="mt-auto pt-6 border-t border-gray-50 flex items-center text-emerald-600 font-bold text-sm">
+                            Leggi la guida <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
+                        </div>
+                    </div>
                  </div>
               </div>
            </div>
@@ -196,7 +222,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide }) => {
                     </h2>
                     <p className="text-gray-400 text-lg leading-relaxed">
                         Offri ai tuoi clienti un'esperienza da Sommelier digitale direttamente al tavolo. 
-                        Scrivici e scopri come dare <span className="text-white font-bold">gratuitamente</span> un servizio di qualità innovativo.
                     </p>
                     <a 
                         href="mailto:info@aiknow.wine?subject=Richiesta%20Info%20Ristoratori" 
@@ -216,24 +241,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide }) => {
                          <div>
                              <h4 className="font-bold text-lg">Menu Digitale AI</h4>
                              <p className="text-sm text-gray-400 mt-1">Niente più PDF statici. Un sommelier interattivo per ogni piatto.</p>
-                         </div>
-                     </div>
-                     <div className="flex items-start gap-4 mb-6">
-                         <div className="bg-blue-500/20 p-2 rounded-lg text-blue-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-                         </div>
-                         <div>
-                             <h4 className="font-bold text-lg">Aumenta le Vendite</h4>
-                             <p className="text-sm text-gray-400 mt-1">Guida il cliente verso la bottiglia giusta, aumentando lo scontrino medio.</p>
-                         </div>
-                     </div>
-                     <div className="flex items-start gap-4">
-                         <div className="bg-purple-500/20 p-2 rounded-lg text-purple-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" /></svg>
-                         </div>
-                         <div>
-                             <h4 className="font-bold text-lg">Gratuito per Te</h4>
-                             <p className="text-sm text-gray-400 mt-1">Configurazione semplice. Nessun costo di gestione mensile.</p>
                          </div>
                      </div>
                 </div>

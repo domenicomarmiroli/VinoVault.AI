@@ -9,6 +9,8 @@ import AnalyticsView from './views/AnalyticsView';
 import RestaurantView from './views/RestaurantView';
 import AdminView from './views/AdminView';
 import DigitalCellarGuide from './views/DigitalCellarGuide';
+import SommelierHomeGuide from './views/SommelierHomeGuide';
+import RestaurantGuide from './views/RestaurantGuide'; // NEW
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
@@ -63,7 +65,7 @@ const AppContent: React.FC = () => {
       localStorage.setItem('vinovault_token', newToken);
       setToken(newToken);
       setShowAuth(false);
-      navigateTo('/'); // Torna alla home dopo il login
+      navigateTo('/'); 
       
       try {
         const payload = JSON.parse(atob(newToken.split('.')[1]));
@@ -94,7 +96,6 @@ const AppContent: React.FC = () => {
       navigateTo('/');
   };
 
-  // Gestione inizializzazione e navigazione browser (indietro/avanti)
   useEffect(() => {
     const handlePopState = () => {
       setCurrentPath(window.location.pathname);
@@ -229,14 +230,16 @@ const AppContent: React.FC = () => {
   
   // --- ROUTER LOGIC ---
 
-  // 1. Pagina Guida Cantina Digitale
   if (currentPath === '/guida/cantina-digitale') {
-    return (
-      <DigitalCellarGuide 
-          onBack={() => navigateTo('/')} 
-          onStart={() => { setShowAuth(true); navigateTo('/'); }} 
-      />
-    );
+    return <DigitalCellarGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
+  }
+  
+  if (currentPath === '/guida/sommelier-a-casa') {
+    return <SommelierHomeGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
+  }
+
+  if (currentPath === '/guida/al-ristorante') {
+    return <RestaurantGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
   }
 
   // 2. Auth View
