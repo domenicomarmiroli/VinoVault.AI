@@ -12,13 +12,13 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewAllGuides }) => {
   
   const guideItems = [
-    { slug: 'cantina-digitale', title: 'La Cantina Digitale', desc: 'Digitalizza le tue bottiglie con un click.', icon: WineIcon, color: 'bg-wine-800', tag: 'Gestione' },
-    { slug: 'sommelier-a-casa', title: 'Il Sommelier a Casa', desc: 'Abbinamenti perfetti per le tue cene.', icon: ChefIcon, color: 'bg-amber-600', tag: 'Cena' },
-    { slug: 'al-ristorante', title: 'Al Ristorante', desc: 'Scegli dalla carta dei vini come un pro.', icon: RestaurantIcon, color: 'bg-emerald-600', tag: 'Gourmet' },
-    { slug: 'acquisti-intelligenti', title: 'Acquisti Intelligenti', desc: 'Analisi prezzi e coerenza di acquisto.', icon: ShopIcon, color: 'bg-indigo-600', tag: 'Shopping' },
-    { slug: 'analisi-e-roi', title: 'Analisi & ROI', desc: 'Il valore del tuo patrimonio vinicolo.', icon: ChartBarIcon, color: 'bg-slate-800', tag: 'Finanza' },
-    { slug: 'analisi-sommelier', title: 'Profilo Sensoriale IA', desc: 'Il tuo profilo palato e gap analysis.', icon: UserIcon, color: 'bg-purple-700', tag: 'Strategia' },
-    { slug: 'storico-degustazioni', title: 'Storico & Memorie', desc: 'Il diario immortale delle tue bevute.', icon: HistoryIcon, color: 'bg-stone-700', tag: 'Memoria' },
+    { slug: 'cantina-digitale', title: 'La Cantina Digitale', desc: 'Digitalizza le tue bottiglie.', icon: WineIcon, color: 'bg-wine-800', tag: 'Gestione' },
+    { slug: 'sommelier-a-casa', title: 'Il Sommelier a Casa', desc: 'Abbinamenti perfetti per le cene.', icon: ChefIcon, color: 'bg-amber-600', tag: 'Cena' },
+    { slug: 'al-ristorante', title: 'Al Ristorante', desc: 'Scegli il vino come un professionista.', icon: RestaurantIcon, color: 'bg-emerald-600', tag: 'Gourmet' },
+    { slug: 'acquisti-intelligenti', title: 'Acquisti Intelligenti', desc: 'Analisi prezzi e coerenza acquisto.', icon: ShopIcon, color: 'bg-indigo-600', tag: 'Shopping' },
+    { slug: 'analisi-e-roi', title: 'Analisi & ROI', desc: 'Il valore del tuo patrimonio.', icon: ChartBarIcon, color: 'bg-slate-800', tag: 'Finanza' },
+    { slug: 'analisi-sommelier', title: 'Analisi Sommelier IA', desc: 'Il tuo profilo palato e gap analysis.', icon: UserIcon, color: 'bg-purple-700', tag: 'Strategia' },
+    { slug: 'storico-degustazioni', title: 'Storico & Memorie', desc: 'Il diario delle tue bevute.', icon: HistoryIcon, color: 'bg-stone-700', tag: 'Memoria' },
   ];
 
   return (
@@ -53,18 +53,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
             <h1 className="text-5xl md:text-7xl font-serif font-black text-gray-900 leading-[1.1]">
               Il tuo Sommelier <br/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-wine-700 to-wine-500">
-                Personale guidato dall'IA.
+                Personale IA.
               </span>
             </h1>
             <p className="text-xl text-gray-500 leading-relaxed max-w-xl">
-              AIKNOW.WINE è l'applicazione definitiva per la <strong>gestione cantina digitale</strong> e l'analisi sensoriale. Digitalizza le tue etichette, scopri abbinamenti perfetti e monitora i tuoi investimenti vinicoli con l'intelligenza artificiale.
+              AIKNOW.WINE è l'applicazione definitiva per la <strong>gestione cantina digitale</strong> e l'analisi sensoriale. Digitalizza le tue etichette, scopri abbinamenti perfetti e monitora i tuoi investimenti vinicoli con l'intelligenza artificiale di ultima generazione.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <button 
                 onClick={onStart}
                 className="px-10 py-5 bg-wine-700 text-white font-bold rounded-2xl shadow-xl shadow-wine-200 hover:bg-wine-800 transition-all transform hover:scale-105 text-lg text-center"
               >
-                Inizia Ora Gratis
+                Inizia Gratuitamente
               </button>
               <a href="#how-it-works" className="px-10 py-5 bg-white text-gray-700 border border-gray-200 font-bold rounded-2xl hover:bg-gray-50 transition-colors text-lg text-center">
                 Scopri di più
@@ -84,64 +84,64 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
           </div>
         </section>
 
-        {/* Content Section SEO */}
+        {/* Content Section: Perché AIKNOW? */}
         <section id="how-it-works" className="bg-stone-50 py-24 px-6 border-y border-gray-100">
            <div className="max-w-4xl mx-auto space-y-12">
               <div className="text-center">
-                 <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 mb-6">Un'Esperienza da Sommelier Digitale</h2>
+                 <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 mb-6">Cos'è un Sommelier Digitale?</h2>
                  <p className="text-lg text-gray-600 leading-relaxed">
-                   AIKNOW.WINE non è un semplice database, ma un assistente evoluto che utilizza modelli linguistici di ultima generazione per interpretare le tue preferenze sensoriali. La nostra piattaforma risolve il problema della <strong>gestione cantina domestica</strong>, offrendo strumenti per catalogare bottiglie, monitorare il ROI degli investimenti e ricevere consigli di abbinamento cibo-vino basati sul profilo molecolare delle pietanze.
+                   Non è solo un catalogo, è un'esperienza. AIKNOW.WINE utilizza modelli linguistici avanzati per interpretare le tue preferenze. Che tu sia un collezionista esperto o un neofita curioso, l'app ti guida nella scelta della bottiglia giusta per ogni occasione, analizzando il <strong>profilo molecolare del cibo</strong> e le caratteristiche organolettiche dei tuoi vini.
                  </p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-12 pt-8">
                  <div className="space-y-4">
-                    <h3 className="text-2xl font-serif font-bold text-wine-800">Ottimizzazione Cantina</h3>
+                    <h3 className="text-2xl font-serif font-bold text-wine-800">Per l'Appassionato</h3>
                     <p className="text-gray-500 leading-relaxed">
-                      Cataloghiamo automaticamente annate, vitigni e regioni partendo da una semplice foto dell'etichetta. Saprai sempre quando una bottiglia raggiunge il suo <strong>picco di bevibilità</strong>, evitando di stappare i tuoi vini troppo presto o troppo tardi.
+                      Tieni traccia di ogni singola bottiglia. Sai esattamente dove si trova (cantinetta, scaffale o cucina) e quando è il momento perfetto per stapparla grazie alla nostra analisi del <strong>periodo di maturazione ottimale</strong>.
                     </p>
                  </div>
                  <div className="space-y-4">
-                    <h3 className="text-2xl font-serif font-bold text-cyan-700">Analisi e Valutazione ROI</h3>
+                    <h3 className="text-2xl font-serif font-bold text-cyan-700">Per l'Investitore</h3>
                     <p className="text-gray-500 leading-relaxed">
-                      Il vino è un patrimonio liquido. Aiknow monitora le fluttuazioni di mercato per fornirti una stima in tempo reale del valore della tua collezione. Identifica i migliori affari in enoteca grazie al nostro <strong>Shop Advisor intelligente</strong>.
+                      Il vino è un patrimonio. Monitoriamo le fluttuazioni di mercato per darti una stima del <strong>ROI (Return on Investment)</strong> della tua collezione in tempo reale. Compra bene, vendi meglio, bevi divinamente.
                     </p>
                  </div>
               </div>
            </div>
         </section>
 
-        {/* Features section */}
+        {/* Features Grid */}
         <section id="features" className="bg-white py-24">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">Potenzia la tua Passione</h2>
-              <p className="text-gray-500 max-w-2xl mx-auto">Tutte le funzionalità di cui un Wine Lover moderno ha bisogno, racchiuse in un'unica web-app.</p>
+              <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">Funzionalità all'avanguardia</h2>
+              <p className="text-gray-500 max-w-2xl mx-auto">Tecnologia Gemini 3 Flash al servizio della tua passione enologica.</p>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               <FeatureCard 
                 icon={<WineIcon className="w-8 h-8 text-white" />}
                 title="Cantina Digitale"
-                desc="Aggiungi vini fotografando l'etichetta. IA riconosce istantaneamente tutti i dati tecnici."
+                desc="Scatta una foto, l'IA fa il resto. Cataloga annate, vitigni e regioni istantaneamente."
                 color="bg-wine-600"
               />
               <FeatureCard 
                 icon={<ChefIcon className="w-8 h-8 text-white" />}
-                title="Sommelier IA"
-                desc="Inserisci il menu della serata e ricevi l'abbinamento perfetto pescando dalla tua cantina reale."
+                title="Abbinamenti AI"
+                desc="Inserisci un menu e ricevi il consiglio perfetto pescando dalla tua cantina reale."
                 color="bg-amber-500"
               />
               <FeatureCard 
                 icon={<ShopIcon className="w-8 h-8 text-white" />}
                 title="Shop Advisor"
-                desc="Benchmark prezzi in tempo reale. Scopri se il vino in enoteca è un affare o se è troppo caro."
+                desc="Benchmark prezzi in tempo reale. Scopri se stai facendo un affare prima di pagare."
                 color="bg-emerald-600"
               />
               <FeatureCard 
                 icon={<ChartBarIcon className="w-8 h-8 text-white" />}
                 title="Analisi Strategica"
-                desc="Report sul profilo del palato, ROI della collezione e analisi dei gap della tua cantina."
+                desc="Report professionali sul tuo profilo palato e sui gap della tua collezione."
                 color="bg-indigo-600"
               />
             </div>
@@ -154,13 +154,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
                  <div>
                     <h2 className="text-4xl font-serif font-bold text-gray-900 mb-2">Wine Academy</h2>
-                    <p className="text-gray-500 text-lg">Scopri come gestire la tua collezione come un professionista.</p>
+                    <p className="text-gray-500 text-lg">Approfondimenti gratuiti per gestire la tua passione come un professionista.</p>
                  </div>
                  <button 
                     onClick={onViewAllGuides}
                     className="text-wine-700 font-bold text-sm uppercase tracking-widest hover:bg-wine-100 px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-wine-100"
                  >
-                    Vedi Tutto <span className="text-xl">→</span>
+                    Archivio Completo <span className="text-xl">→</span>
                  </button>
               </div>
 
@@ -183,9 +183,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
                            <div className="p-8 flex-1 flex flex-col">
                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3 block">{item.tag}</span>
                                <h3 className="text-2xl font-serif font-bold text-gray-900 mb-3 group-hover:text-wine-700 transition-colors leading-tight">{item.title}</h3>
-                               <p className="text-gray-500 text-sm leading-relaxed mb-6">{item.desc}</p>
+                               <p className="text-gray-500 text-sm leading-relaxed mb-6">
+                                  {item.desc}
+                               </p>
                                <div className="mt-auto pt-6 border-t border-gray-50 flex items-center text-wine-700 font-bold text-xs uppercase tracking-wider">
-                                   Leggi <span className="ml-3 transition-transform group-hover:translate-x-2">→</span>
+                                   Leggi la guida <span className="ml-3 transition-transform group-hover:translate-x-2">→</span>
                                </div>
                            </div>
                         </div>
@@ -195,27 +197,39 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
            </div>
         </section>
 
-        {/* FAQ SEO */}
+        {/* FAQ Section for SEO */}
         <section className="bg-white py-24 px-6">
            <div className="max-w-4xl mx-auto">
               <h2 className="text-3xl font-serif font-bold text-gray-900 mb-12 text-center">Domande Frequenti</h2>
-              <div className="grid gap-8">
+              <div className="space-y-8">
                  <div>
-                    <h4 className="font-bold text-lg text-gray-900 mb-2">Come funziona l'analisi del vino con IA?</h4>
-                    <p className="text-gray-500 leading-relaxed">Utilizziamo la tecnologia Google Gemini per analizzare le immagini delle etichette e interpretare i dati storici del mercato, offrendo una valutazione oggettiva della qualità e del prezzo.</p>
+                    <h4 className="font-bold text-lg text-gray-900 mb-2">L'app è adatta anche ai principianti?</h4>
+                    <p className="text-gray-500 leading-relaxed">Assolutamente sì. AIKNOW.WINE spiega ogni termine tecnico e ti aiuta a capire perché un vino si abbina a un piatto, trasformando ogni bevuta in un'occasione di apprendimento.</p>
                  </div>
                  <div>
-                    <h4 className="font-bold text-lg text-gray-900 mb-2">Posso usare Aiknow.wine su iPhone o Android?</h4>
-                    <p className="text-gray-500 leading-relaxed">Aiknow è una Progressive Web App ottimizzata per tutti i dispositivi mobile. Non serve scaricare nulla dallo store, basta accedere via browser.</p>
+                    <h4 className="font-bold text-lg text-gray-900 mb-2">Come funziona il riconoscimento delle etichette?</h4>
+                    <p className="text-gray-500 leading-relaxed">Utilizziamo la tecnologia di visione artificiale di Google Gemini per analizzare la foto dell'etichetta. L'IA riconosce il produttore, l'annata e recupera automaticamente le note di degustazione e i prezzi medi.</p>
+                 </div>
+                 <div>
+                    <h4 className="font-bold text-lg text-gray-900 mb-2">Posso usare l'app al ristorante?</h4>
+                    <p className="text-gray-500 leading-relaxed">Sì, la funzione "Al Ristorante" ti permette di fotografare la carta dei vini e ricevere consigli istantanei basati sul piatto che hai ordinato.</p>
                  </div>
               </div>
            </div>
         </section>
 
-        {/* CTA finale */}
+        {/* Final CTA */}
         <section className="bg-wine-900 py-32 px-6 text-white text-center relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10">
+                <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path d="M0 100 C 20 0 50 0 100 100 Z" fill="currentColor" />
+                </svg>
+            </div>
             <div className="max-w-4xl mx-auto relative z-10 space-y-10">
-                <h2 className="text-4xl md:text-6xl font-serif font-bold leading-tight">Pronto a trasformare <br/>la tua cantina?</h2>
+                <h2 className="text-4xl md:text-6xl font-serif font-bold leading-tight">
+                    Dai valore a ogni sorso. <br/>
+                    Inizia oggi la tua collezione.
+                </h2>
                 <button 
                     onClick={onStart}
                     className="px-12 py-6 bg-white text-wine-900 font-black rounded-[2rem] shadow-2xl hover:bg-stone-100 transition-all transform hover:scale-105 text-xl"
@@ -226,27 +240,34 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
         </section>
       </main>
 
-      {/* Footer SEO */}
-      <footer className="bg-gray-950 text-gray-400 py-20 px-6">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-12">
+      {/* Footer Pro */}
+      <footer className="bg-gray-950 text-gray-400 py-20 px-6 border-t border-white/5">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-2 space-y-6">
             <Logo light className="w-12 h-12" />
-            <p className="max-w-sm text-sm">Aiknow.wine: La piattaforma intelligente per il Wine Lover moderno. Powered by AIKNOW.IO.</p>
+            <p className="max-w-sm text-sm leading-relaxed">
+              La prima piattaforma integrata che unisce la passione enologica alla potenza dell'intelligenza artificiale. Gestisci, analizza e goditi il tuo vino come mai prima d'ora.
+            </p>
           </div>
           <div className="space-y-4">
-            <h5 className="text-white font-bold text-sm uppercase">Link</h5>
+            <h5 className="text-white font-bold text-sm uppercase tracking-widest">Link Utili</h5>
             <ul className="space-y-2 text-sm">
-                <li><a href="#how-it-works" className="hover:text-wine-400">Come funziona</a></li>
+                <li><button onClick={() => window.scrollTo({top:0, behavior:'smooth'})} className="hover:text-wine-400">Home</button></li>
                 <li><button onClick={onViewAllGuides} className="hover:text-wine-400">Academy</button></li>
+                <li><a href="mailto:info@aiknow.wine" className="hover:text-wine-400">Supporto</a></li>
             </ul>
           </div>
           <div className="space-y-4">
-            <h5 className="text-white font-bold text-sm uppercase">Legal</h5>
-            <ul className="space-y-2 text-sm text-xs opacity-60">
-                <li>Privacy Policy</li>
-                <li>Termini di Servizio</li>
+            <h5 className="text-white font-bold text-sm uppercase tracking-widest">Legal</h5>
+            <ul className="space-y-2 text-sm">
+                <li className="hover:text-wine-400 cursor-pointer">Privacy Policy</li>
+                <li className="hover:text-wine-400 cursor-pointer">Termini di Servizio</li>
+                <li className="hover:text-wine-400 cursor-pointer">Cookie Policy</li>
             </ul>
           </div>
+        </div>
+        <div className="max-w-7xl mx-auto pt-8 border-t border-white/5 text-center text-xs tracking-widest uppercase">
+          © {new Date().getFullYear()} AIKNOW.WINE &bull; Powered by AIKNOW.IO
         </div>
       </footer>
     </div>
@@ -254,7 +275,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
 };
 
 const FeatureCard = ({ icon, title, desc, color }: { icon: React.ReactNode, title: string, desc: string, color: string }) => (
-  <div className="bg-stone-50 p-10 rounded-[2.5rem] border border-stone-100 hover:shadow-xl transition-all group duration-500">
+  <div className="bg-stone-50 p-10 rounded-[2.5rem] border border-stone-100 hover:shadow-xl transition-all group hover:-translate-y-2 duration-500">
     <div className={`w-16 h-16 ${color} rounded-[1.5rem] flex items-center justify-center mb-8 shadow-lg group-hover:scale-110 transition-transform duration-500`}>
       {icon}
     </div>

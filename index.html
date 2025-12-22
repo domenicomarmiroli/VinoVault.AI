@@ -5,30 +5,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     
-    <!-- SEO Meta Tags Ottimizzati -->
-    <title>Aiknow.wine - Sommelier IA e Gestione Cantina Intelligente</title>
-    <meta name="description" content="Scopri il vino perfetto con l'intelligenza artificiale. Aiknow analizza i tuoi gusti, digitalizza la tua cantina e ti consiglia abbinamenti cibo-vino professionali. Provalo gratis." />
+    <!-- SEO Meta Tags -->
+    <title>AIKNOW.WINE - Il tuo Sommelier Personale e Gestione Cantina IA</title>
+    <meta name="description" content="Scopri il vino perfetto con l'intelligenza artificiale. AIKNOW analizza i tuoi gusti, gestisce la tua cantina digitale e ti consiglia gli abbinamenti ideali. Provalo gratis." />
     <meta name="keywords" content="Sommelier virtuale, AI Sommelier, App consigli vini, Riconoscimento etichette vino, Gestione cantina digitale, Abbinamento cibo vino AI" />
-    <meta name="author" content="AIKNOW.IO" />
-    <link rel="canonical" href="https://www.aiknow.wine/" />
-
+    
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.aiknow.wine/" />
-    <meta property="og:title" content="Aiknow.wine - Il tuo Sommelier Personale guidato dall'IA" />
+    <meta property="og:title" content="AIKNOW.WINE - Il tuo Sommelier Personale guidato dall'IA" />
     <meta property="og:description" content="Digitalizza la tua cantina e ricevi consigli professionali basati sul tuo profilo palato." />
     <meta property="og:image" content="https://www.aiknow.wine/og-image.jpg" />
-
-    <!-- Polyfill for process to prevent Uncaught ReferenceError - MUST BE BEFORE IMPORTMAP -->
-    <script>
-      window.process = { 
-        env: { 
-          NODE_ENV: 'production',
-          API_KEY: '' // Sarà iniettata dal server/Vite
-        },
-        cwd: () => '/'
-      };
-    </script>
 
     <!-- SVG Favicon -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='100' x2='100' y2='0'%3E%3Cstop stop-color='%235d173a'/%3E%3Cstop offset='1' stop-color='%2322d3ee'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Cpath d='M50 20C30 20 20 40 20 60C20 80 35 90 50 90C65 90 80 80 80 60C80 40 70 20 50 20ZM50 30C60 30 65 40 65 55C65 70 60 80 50 80C40 80 35 70 35 55C35 40 40 30 50 30Z' fill='white'/%3E%3Ccircle cx='70' cy='30' r='5' fill='white'/%3E%3C/svg%3E" type="image/svg+xml" />
@@ -56,29 +43,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;600;800&family=Montserrat:wght@800&display=swap" rel="stylesheet">
 
     <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
-    "@google/genai": "https://esm.sh/@google/genai@1.32.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "vite": "https://esm.sh/vite@^7.3.0",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "express": "https://esm.sh/express@^5.2.1",
-    "path": "https://esm.sh/path@^0.12.7",
-    "cors": "https://esm.sh/cors@^2.8.5",
-    "url": "https://esm.sh/url@^0.11.4",
-    "dotenv": "https://esm.sh/dotenv@^17.2.3",
-    "bcryptjs": "https://esm.sh/bcryptjs@^3.0.3",
-    "jsonwebtoken": "https://esm.sh/jsonwebtoken@^9.0.3",
-    "pg": "https://esm.sh/pg@^8.16.3",
-    "google-auth-library": "https://esm.sh/google-auth-library@^10.5.0"
-  }
-}
-</script>
+    {
+      "imports": {
+        "react": "https://aistudiocdn.com/react@^19.2.1",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+        "react/": "https://aistudiocdn.com/react@^19.2.1/",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.32.0",
+        "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.2",
+        "vite": "https://aistudiocdn.com/vite@^7.2.7",
+        "path": "https://aistudiocdn.com/path@^0.12.7",
+        "dotenv": "https://aistudiocdn.com/dotenv@^17.2.3",
+        "cors": "https://aistudiocdn.com/cors@^2.8.5",
+        "express": "https://aistudiocdn.com/express@^5.2.1",
+        "pg": "https://aistudiocdn.com/pg@^8.16.3",
+        "url": "https://aistudiocdn.com/url@^0.11.4",
+        "bcryptjs": "https://aistudiocdn.com/bcryptjs@^3.0.3",
+        "jsonwebtoken": "https://aistudiocdn.com/jsonwebtoken@^9.0.3",
+        "react-dom": "https://aistudiocdn.com/react-dom@^19.2.1",
+        "google-auth-library": "https://aistudiocdn.com/google-auth-library@^9.0.0",
+        "fs": "https://esm.sh/fs@^0.0.1-security"
+      }
+    }
+    </script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body class="bg-gray-50 text-gray-900 h-[100dvh] overflow-hidden">
