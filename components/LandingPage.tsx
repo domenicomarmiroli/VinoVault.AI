@@ -5,12 +5,13 @@ import { WineIcon, ChefIcon, ShopIcon, ChartBarIcon, RestaurantIcon } from './Ic
 
 interface LandingPageProps {
   onStart: () => void;
+  onOpenGuide?: (slug: string) => void; // New Prop
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide }) => {
   return (
     <div className="h-full overflow-y-auto bg-stone-50 flex flex-col font-sans scroll-smooth">
-      {/* Navbar - Sticky for better accessibility */}
+      {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-stone-50/80 backdrop-blur-md border-b border-transparent transition-all duration-300">
         <div className="flex justify-between items-center p-6 max-w-7xl mx-auto w-full">
             <div className="transform scale-90 origin-left cursor-pointer" onClick={() => document.querySelector('.h-full')?.scrollTo({ top: 0, behavior: 'smooth' })}>
@@ -54,7 +55,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             </div>
           </div>
           
-          {/* Hero Visual Abstract */}
           <div className="relative h-[400px] bg-gradient-to-br from-gray-900 to-wine-900 rounded-3xl overflow-hidden shadow-2xl animate-in fade-in duration-1000 hidden md:flex items-center justify-center">
              <div className="absolute inset-0 opacity-20">
                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -105,7 +105,64 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           </div>
         </div>
 
-        {/* User Call To Action (No Dead End) */}
+        {/* --- NEW: Guide SEO Section --- */}
+        <div className="bg-stone-50 py-20 border-b border-gray-200">
+           <div className="max-w-7xl mx-auto px-6">
+              <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+                 <div>
+                    <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-2">Guide per il Wine Lover</h2>
+                    <p className="text-gray-500">Approfondimenti e tutorial su come migliorare la gestione del tuo vino.</p>
+                 </div>
+                 <button 
+                    onClick={() => onOpenGuide?.('cantina-digitale')}
+                    className="text-wine-700 font-bold hover:underline flex items-center gap-2"
+                  >
+                    Vedi tutte le guide
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
+                 </button>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-8">
+                 {/* Card Guida 1 */}
+                 <div 
+                    onClick={() => onOpenGuide?.('cantina-digitale')}
+                    className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer group flex flex-col h-full"
+                 >
+                    <div className="h-48 bg-wine-800 flex items-center justify-center relative overflow-hidden shrink-0">
+                        <WineIcon className="w-20 h-20 text-white/20 absolute -right-4 -bottom-4 transform rotate-12" filled />
+                        <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20">
+                            <WineIcon className="w-12 h-12 text-white" filled />
+                        </div>
+                    </div>
+                    <div className="p-8 flex-1 flex flex-col">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-wine-600 mb-3 block">Digitalizzazione</span>
+                        <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4 group-hover:text-wine-700 transition-colors">La Cantina Digitale: Organizza le tue bottiglie</h3>
+                        <p className="text-gray-500 text-sm leading-relaxed mb-6">
+                           Scopri come trasformare la tua collezione fisica in un inventario digitale accessibile ovunque, con valutazioni in tempo reale.
+                        </p>
+                        <div className="mt-auto pt-6 border-t border-gray-50 flex items-center text-wine-700 font-bold text-sm">
+                            Leggi la guida <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
+                        </div>
+                    </div>
+                 </div>
+
+                 {/* Placeholders for future guides */}
+                 <div className="bg-stone-100 rounded-3xl p-8 border border-dashed border-stone-200 flex flex-col justify-center items-center text-center opacity-60">
+                    <ChefIcon className="w-10 h-10 text-stone-400 mb-4" />
+                    <h3 className="font-bold text-stone-500 mb-2">Abbinamenti Perfetti</h3>
+                    <p className="text-xs text-stone-400">In arrivo: La scienza dietro l'abbinamento cibo-vino con l'IA.</p>
+                 </div>
+
+                 <div className="bg-stone-100 rounded-3xl p-8 border border-dashed border-stone-200 flex flex-col justify-center items-center text-center opacity-60">
+                    <ChartBarIcon className="w-10 h-10 text-stone-400 mb-4" />
+                    <h3 className="font-bold text-stone-500 mb-2">Investire nel Vino</h3>
+                    <p className="text-xs text-stone-400">In arrivo: Come monitorare le annate che aumentano di valore.</p>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* User Call To Action */}
         <div className="bg-wine-50 py-20 px-6">
             <div className="max-w-4xl mx-auto text-center space-y-6">
                 <h2 className="text-3xl md:text-4xl font-serif font-bold text-wine-900">
@@ -123,9 +180,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             </div>
         </div>
 
-        {/* B2B / Restaurateur Section */}
+        {/* B2B Section */}
         <div className="bg-gray-900 py-20 px-6 text-white relative overflow-hidden">
-             {/* Background Pattern */}
              <div className="absolute top-0 right-0 -mr-20 -mt-20 opacity-5">
                  <RestaurantIcon className="w-96 h-96" filled />
              </div>

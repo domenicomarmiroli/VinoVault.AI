@@ -8,6 +8,7 @@ import ShopView from './views/ShopView';
 import AnalyticsView from './views/AnalyticsView';
 import RestaurantView from './views/RestaurantView';
 import AdminView from './views/AdminView';
+import DigitalCellarGuide from './views/DigitalCellarGuide'; // NEW
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
@@ -24,6 +25,8 @@ const AppContent: React.FC = () => {
   const { t, setLanguage } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'inventory' | 'sommelier' | 'shop' | 'history' | 'analytics' | 'restaurant' | 'admin'>('inventory');
+  const [currentPage, setCurrentPage] = useState<'main' | 'guide-cellar'>('main'); // NEW
+  
   const [wines, setWines] = useState<Wine[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -51,6 +54,7 @@ const AppContent: React.FC = () => {
       localStorage.setItem('vinovault_token', newToken);
       setToken(newToken);
       setShowAuth(false);
+      setCurrentPage('main'); // Reset to main app view
       
       try {
         const payload = JSON.parse(atob(newToken.split('.')[1]));
@@ -84,6 +88,11 @@ const AppContent: React.FC = () => {
       const params = new URLSearchParams(window.location.search);
       const ref = params.get('ref');
       const shareId = params.get('s');
+      const pageParam = params.get('p'); // NEW
+
+      if (pageParam === 'cantina-digitale') {
+          setCurrentPage('guide-cellar');
+      }
 
       // Se c'è un ID breve per il pairing, caricalo dal server
       if (shareId) {
@@ -257,6 +266,19 @@ const AppContent: React.FC = () => {
       if(!isOfflineMode) { try { await authFetch(`/api/locations/${id}`, { method: 'DELETE' }); } catch(e) {} }
   };
   
+  // --- RENDERING LOGIC ---
+
+  // 1. Show SEO Guides
+  if (currentPage === 'guide-cellar') {
+      return (
+        <DigitalCellarGuide 
+            onBack={() => { setCurrentPage('main'); window.history.replaceState({}, '', '/'); }} 
+            onStart={() => { setShowAuth(true); setCurrentPage('main'); }} 
+        />
+      );
+  }
+
+  // 2. Show Auth or Landing
   if (!token) {
       if (showAuth) {
           return (
@@ -276,7 +298,12 @@ const AppContent: React.FC = () => {
       } else {
           return (
             <>
-                <LandingPage onStart={() => setShowAuth(true)} />
+                <LandingPage 
+                    onStart={() => setShowAuth(true)} 
+                    onOpenGuide={(slug) => {
+                        if (slug === 'cantina-digitale') setCurrentPage('guide-cellar');
+                    }}
+                />
                 {sharedPairingData && (
                     <SharedPairingModal 
                         data={sharedPairingData} 
