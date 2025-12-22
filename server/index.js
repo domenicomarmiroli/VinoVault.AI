@@ -116,10 +116,49 @@ app.post('/api/auth/register', async (req, res) => {
             [userId, email, hashedPassword, language || 'it', ref || null]
         );
         const token = jwt.sign({ userId, email, role: 'user', isPremium: false, language: language || 'it' }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, user: { id: userId, email: role: 'user', is_premium: false, language: language || 'it' } });
+        res.json({ token, user: { id: userId, email, role: 'user', is_premium: false, language: language || 'it' } });
     } catch (err) {
         if (err.code === '23505') return res.status(400).json({ error: 'Email already exists' });
         res.status(500).json({ error: 'Registration failed' });
+    }
+});
+
+// Price Search - DEFINITA PRIMA DI *
+app.get('/api/search-prices', authenticateToken, async (req, res) => {
+    const { query } = req.query;
+    if (!query) return res.status(400).json({ error: 'Query is required' });
+
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: `Trova i prezzi online attuali per il seguente vino: ${query}. 
+            Restituisci un array JSON di oggetti con questa struttura: 
+            { "source": "Nome Sito", "price": 12.34, "currency": "EUR", "link": "URL" }. 
+            Includi solo i risultati più rilevanti e affidabili.`,
+            config: {
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            source: { type: Type.STRING },
+                            price: { type: Type.NUMBER },
+                            currency: { type: Type.STRING },
+                            link: { type: Type.STRING }
+                        },
+                        required: ["source", "price", "currency", "link"]
+                    }
+                }
+            }
+        });
+
+        res.json(JSON.parse(response.text || "[]"));
+    } catch (err) {
+        console.error("Search prices error:", err);
+        res.status(500).json({ error: 'Search failed' });
     }
 });
 
@@ -221,45 +260,6 @@ app.delete('/api/locations/:id', authenticateToken, async (req, res) => {
         await pool.query('DELETE FROM locations WHERE id = $1 AND user_id = $2', [req.params.id, req.user.userId]);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
-});
-
-// Price Search
-app.get('/api/search-prices', authenticateToken, async (req, res) => {
-    const { query } = req.query;
-    if (!query) return res.status(400).json({ error: 'Query is required' });
-
-    try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: `Trova i prezzi online attuali per il seguente vino: ${query}. 
-            Restituisci un array JSON di oggetti con questa struttura: 
-            { "source": "Nome Sito", "price": 12.34, "currency": "EUR", "link": "URL" }. 
-            Includi solo i risultati più rilevanti e affidabili.`,
-            config: {
-                tools: [{ googleSearch: {} }],
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            source: { type: Type.STRING },
-                            price: { type: Type.NUMBER },
-                            currency: { type: Type.STRING },
-                            link: { type: Type.STRING }
-                        },
-                        required: ["source", "price", "currency", "link"]
-                    }
-                }
-            }
-        });
-
-        res.json(JSON.parse(response.text || "[]"));
-    } catch (err) {
-        console.error("Search prices error:", err);
-        res.status(500).json({ error: 'Search failed' });
-    }
 });
 
 // Users & Profile

@@ -527,7 +527,7 @@ export const translations: Record<Language, Record<string, string>> = {
     add_title: "Añadir Vino",
     manual_insert: "Entrada Manual",
     scan_label: "Escanear Etiqueta",
-    upload_desc: "La IA extraerá los datos",
+    upload_desc: "La IA extraerá i dati",
     loading: "Cargando...",
     error: "Error",
     save: "Guardar",
