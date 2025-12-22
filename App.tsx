@@ -11,7 +11,9 @@ import AdminView from './views/AdminView';
 import DigitalCellarGuide from './views/DigitalCellarGuide';
 import SommelierHomeGuide from './views/SommelierHomeGuide';
 import RestaurantGuide from './views/RestaurantGuide';
-import ShopGuide from './views/ShopGuide'; // NEW
+import ShopGuide from './views/ShopGuide';
+import AnalyticsGuide from './views/AnalyticsGuide';
+import SommelierAnalysisGuide from './views/SommelierAnalysisGuide'; // NEW
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
@@ -244,6 +246,14 @@ const AppContent: React.FC = () => {
 
   if (currentPath === '/guida/acquisti-intelligenti') {
     return <ShopGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
+  }
+
+  if (currentPath === '/guida/analisi-e-roi') {
+    return <AnalyticsGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
+  }
+
+  if (currentPath === '/guida/analisi-sommelier') {
+    return <SommelierAnalysisGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
   }
 
   if (!token && showAuth) {
