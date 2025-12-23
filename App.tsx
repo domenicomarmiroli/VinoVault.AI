@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Wine, HistoryEntry, Location, Restaurant, Language } from './types';
 import InventoryView from './views/InventoryView';
 import HistoryView from './views/HistoryView';
@@ -28,7 +28,10 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
 const AppContent: React.FC = () => {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('vinovault_token'));
+  // Usiamo un ref per il token per garantire che le chiamate API abbiano sempre il valore più recente
+  const tokenRef = useRef<string | null>(localStorage.getItem('vinovault_token'));
+  const [token, setToken] = useState<string | null>(tokenRef.current);
+  
   const [userRole, setUserRole] = useState<'user' | 'admin'>('user'); 
   const [userPremium, setUserPremium] = useState(false);
   const { t, setLanguage, language } = useLanguage();
@@ -40,22 +43,27 @@ const AppContent: React.FC = () => {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  
+  // Stati critici per il coordinamento del login
+  const [isInitializing, setIsInitializing] = useState(true);
   const [isAuthProcessing, setIsAuthProcessing] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true); 
+  const [authStatus, setAuthStatus] = useState<string>('Avvio...');
+  
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
   const [restaurantData, setRestaurantData] = useState<Restaurant | null>(null);
   const [sharedPairingData, setSharedPairingData] = useState<any | null>(null);
-  
   const [showAuth, setShowAuth] = useState(false);
 
   const API_BASE = '';
 
   const authFetch = async (url: string, options: RequestInit = {}) => {
+      // Usa il token dal ref o dal localStorage (più affidabile dello state React durante i redirect)
+      const currentToken = tokenRef.current || localStorage.getItem('vinovault_token');
       const headers = {
           'Content-Type': 'application/json',
           ...(options.headers || {}),
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${currentToken}`
       };
       const fullUrl = url.startsWith('/api') ? `${API_BASE}${url}` : url;
       return fetch(fullUrl, { ...options, headers });
@@ -68,12 +76,11 @@ const AppContent: React.FC = () => {
   };
 
   const handleLogin = (newToken: string, userEmail: string) => {
-      console.log("App: Login successful for", userEmail);
+      console.log("App: Salvataggio sessione per", userEmail);
       localStorage.setItem('vinovault_token', newToken);
+      tokenRef.current = newToken;
       setToken(newToken);
       setShowAuth(false);
-      setIsAuthProcessing(false);
-      setIsInitializing(false);
       
       try {
         const parts = newToken.split('.');
@@ -90,15 +97,17 @@ const AppContent: React.FC = () => {
       setLocations([]);
       setIsLoaded(false);
       
-      if (restaurantData) {
-          setActiveTab('restaurant');
-      } else {
-          setActiveTab('inventory');
-      }
+      if (restaurantData) setActiveTab('restaurant');
+      else setActiveTab('inventory');
+      
+      // Fermiamo l'animazione di caricamento solo DOPO che lo stato è pronto
+      setIsAuthProcessing(false);
+      setIsInitializing(false);
   };
 
   const handleLogout = () => {
       localStorage.removeItem('vinovault_token');
+      tokenRef.current = null;
       setToken(null);
       setUserRole('user');
       setUserPremium(false);
@@ -106,24 +115,12 @@ const AppContent: React.FC = () => {
       navigateTo('/');
   };
 
-  /**
-   * EQUIVALENTE DI getRedirectResult
-   * Analizza l'URL al caricamento per intercettare il ritorno da Google
-   */
+  // 1. Auth Resolver: Intercetta il ritorno da Google
   useEffect(() => {
-    const handleRedirectResult = async () => {
-        console.log("AuthCheck: Initializing...");
-        const fullUrl = window.location.href;
+    const resolveGoogleRedirect = async () => {
         const hash = window.location.hash;
         const search = window.location.search;
         
-        console.log("AuthCheck: URL Detected ->", { 
-            hash: hash ? "Found" : "Empty", 
-            search: search ? "Found" : "Empty",
-            origin: window.location.origin 
-        });
-
-        // Cerchiamo l'id_token sia nell'hash che nella query (per compatibilità WebView)
         const paramsFromHash = new URLSearchParams(hash.substring(1));
         const paramsFromSearch = new URLSearchParams(search);
         
@@ -131,9 +128,9 @@ const AppContent: React.FC = () => {
         const stateStr = paramsFromHash.get('state') || paramsFromSearch.get('state');
 
         if (idToken) {
-            console.log("AuthCheck: Google ID Token detected! Processing...");
+            setAuthStatus('Ricezione credenziali Google...');
             setIsAuthProcessing(true);
-            setIsInitializing(true); // Teniamo la schermata di caricamento
+            setIsInitializing(true);
 
             try {
                 let refFromState = null;
@@ -142,11 +139,10 @@ const AppContent: React.FC = () => {
                         const state = JSON.parse(decodeURIComponent(stateStr));
                         if (state.ref) refFromState = state.ref;
                         if (state.language) setLanguage(state.language);
-                    } catch (e) {
-                        console.warn("AuthCheck: Could not parse state JSON", e);
-                    }
+                    } catch (e) {}
                 }
 
+                setAuthStatus('Sincronizzazione server...');
                 const res = await fetch('/api/auth/google', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -160,87 +156,79 @@ const AppContent: React.FC = () => {
                 const data = await res.json();
                 
                 if (res.ok) {
-                    console.log("AuthCheck: Server validated token successfully.");
-                    // Puliamo l'URL dai parametri sensibili
+                    setAuthStatus('Utente riconosciuto correttamente!');
+                    // Puliamo l'URL PRIMA di chiamare handleLogin per evitare loop
                     window.history.replaceState({}, document.title, window.location.pathname);
                     handleLogin(data.token, data.user.email);
                 } else {
-                    console.error("AuthCheck: Server rejected token", data.error);
-                    throw new Error(data.error || "Google login failed");
+                    setAuthStatus('Errore: ' + (data.error || 'Accesso negato'));
+                    setTimeout(() => setIsInitializing(false), 3000);
                 }
             } catch (err) {
-                console.error("AuthCheck: Critical Error", err);
-                setIsAuthProcessing(false);
-                setIsInitializing(false);
-                alert("Errore durante l'accesso. Riprova o controlla la connessione.");
+                setAuthStatus('Connessione al server fallita.');
+                setTimeout(() => setIsInitializing(false), 3000);
             }
         } else {
-            console.log("AuthCheck: No redirect token found in URL.");
+            // Se non c'è un id_token, controlliamo se siamo già loggati normalmente
+            const savedToken = localStorage.getItem('vinovault_token');
+            if (savedToken) {
+                tokenRef.current = savedToken;
+                setToken(savedToken);
+                // La decodifica del ruolo avverrà al primo fetch o possiamo farla qui
+            }
             setIsInitializing(false);
         }
     };
 
-    handleRedirectResult();
+    resolveGoogleRedirect();
   }, []);
 
+  // 2. Data Fetcher: Carica i dati solo se abbiamo un token e NON stiamo elaborando il login
   useEffect(() => {
-    const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
-    };
-
-    window.addEventListener('popstate', handlePopState);
-
-    const params = new URLSearchParams(window.location.search);
-    const ref = params.get('ref');
-    const shareId = params.get('s');
-
-    if (shareId) {
-        fetch(`/api/shares/${shareId}`)
-          .then(res => res.json())
-          .then(data => {
-              if (data && !data.error) setSharedPairingData(data);
-          })
-          .catch(e => console.error("Failed to load share", e));
-    }
-
-    if (ref) {
-        fetch(`/api/restaurants/${ref}`)
-          .then(res => res.json())
-          .then(data => {
-              if (data) {
-                setRestaurantData(data);
-                if (!localStorage.getItem('vinovault_token')) setShowAuth(true);
-                else setActiveTab('restaurant');
-              }
-          })
-          .catch(e => console.error(e));
-    }
-
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  useEffect(() => {
-    if (!token) return;
+    if (!token || isInitializing || isAuthProcessing) return;
+    
     const fetchData = async () => {
       try {
+        setAuthStatus('Scaricamento cantina...');
         const [winesRes, historyRes, locationsRes] = await Promise.all([
           authFetch('/api/wines'),
           authFetch('/api/history'),
           authFetch('/api/locations')
         ]);
-        if (winesRes.status === 401 || winesRes.status === 403) { handleLogout(); return; }
+        
+        if (winesRes.status === 401 || winesRes.status === 403) { 
+            console.warn("Sessione scaduta o non valida.");
+            handleLogout(); 
+            return; 
+        }
+
         setWines(await winesRes.json());
         setHistory(await historyRes.json());
         setLocations(await locationsRes.json());
         setIsOfflineMode(false);
+        setIsLoaded(true);
       } catch (e) {
         setIsOfflineMode(true);
-      } finally {
         setIsLoaded(true);
       }
     };
     fetchData();
-  }, [token]);
+  }, [token, isInitializing, isAuthProcessing]);
+
+  useEffect(() => {
+    const handlePopState = () => setCurrentPath(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    const shareId = params.get('s');
+    if (shareId) {
+        fetch(`/api/shares/${shareId}`).then(res => res.json()).then(data => { if (data && !data.error) setSharedPairingData(data); });
+    }
+    if (ref) {
+        fetch(`/api/restaurants/${ref}`).then(res => res.json()).then(data => { if (data) { setRestaurantData(data); if (!localStorage.getItem('vinovault_token')) setShowAuth(true); else setActiveTab('restaurant'); } });
+    }
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const handleAddWine = async (newWine: Wine) => {
      const wineToAdd = { ...newWine, id: newWine.id || generateId() };
@@ -265,48 +253,37 @@ const AppContent: React.FC = () => {
       type: wine.type, price: wine.price, imageUrl: wine.imageUrl, consumedDate: new Date().toISOString(), 
       rating: 0, notes: '', location: 'Cantina' 
     };
-    
     setWines(prev => prev.map(w => w.id === wine.id ? { ...w, quantity: Math.max(0, w.quantity - 1) } : w));
     setHistory(prev => [historyEntry, ...prev]);
-    
     try {
         const res = await authFetch('/api/history', { method: 'POST', body: JSON.stringify(historyEntry) });
-        if (!res.ok) throw new Error("Errore creazione storico");
+        if (!res.ok) throw new Error();
         await authFetch(`/api/wines/${wine.id}`, { method: 'PUT', body: JSON.stringify({ quantity: Math.max(0, wine.quantity - 1) }) });
         setRatingModalEntry(historyEntry);
-    } catch (e) {
-        alert("Impossibile stappare: errore di connessione col server.");
-    }
+    } catch (e) { alert("Errore connessione."); }
   };
 
   const handleAddToHistory = async (entryData: Partial<HistoryEntry>) => {
       const historyEntry: HistoryEntry = {
-          id: generateId(), wineId: 'external_' + generateId(), name: entryData.name || '?',
+          id: generateId(), wineId: 'ext_' + generateId(), name: entryData.name || '?',
           producer: entryData.producer || '?', year: entryData.year || 'N/A', type: entryData.type || 'Altro',
           price: entryData.price || 0, consumedDate: entryData.consumedDate || new Date().toISOString(),
           rating: 0, notes: restaurantData ? `Bevuto presso ${restaurantData.name}` : '',
           location: restaurantData ? restaurantData.name : (entryData.location || '')
       };
-      
       setHistory(prev => [historyEntry, ...prev]);
-      
       try {
           const res = await authFetch('/api/history', { method: 'POST', body: JSON.stringify(historyEntry) });
           if (!res.ok) throw new Error();
           setRatingModalEntry(historyEntry);
-      } catch (e) {
-          alert("Errore nel registrare la bevuta al ristorante.");
-      }
+      } catch (e) { alert("Errore registrazione bevuta."); }
   };
 
   const handleUpdateHistoryEntry = async (id: string, rating: number, notes: string, location?: string) => {
     setHistory(prev => prev.map(h => h.id === id ? { ...h, rating, notes, location: location !== undefined ? location : h.location } : h));
     try {
-        const res = await authFetch(`/api/history/${id}`, { method: 'PUT', body: JSON.stringify({ rating, notes, location }) });
-        if (!res.ok) throw new Error("Errore persistenza recensione");
-    } catch (e) {
-        alert("Attenzione: la recensione non è stata salvata sul server. Controlla la connessione.");
-    }
+        await authFetch(`/api/history/${id}`, { method: 'PUT', body: JSON.stringify({ rating, notes, location }) });
+    } catch (e) { alert("Errore salvataggio recensione."); }
   };
 
   const handleDeleteHistoryEntry = (id: string) => {
@@ -334,75 +311,28 @@ const AppContent: React.FC = () => {
   
   if (isInitializing || isAuthProcessing) {
       return (
-        <div className="h-screen w-screen flex flex-col items-center justify-center bg-white">
-            <LoadingScreen message="Verifica Identità" subMessage="Stiamo completando l'accesso con Google. Attendi un istante..." />
-            {/* Debug label opzionale solo se il caricamento dura troppo */}
-            <div className="mt-40 text-[10px] text-gray-300 font-mono">Auth Resolver v1.2</div>
+        <div className="h-screen w-screen bg-white flex flex-col items-center justify-center p-6 text-center">
+            <LoadingScreen message="Verifica Accesso" subMessage={authStatus} />
+            <div className="mt-20 text-[10px] text-gray-300 font-mono animate-pulse uppercase tracking-[0.2em]">
+                {window.location.hash ? 'Hash Link detected' : 'Standard session'}
+            </div>
         </div>
       );
   }
 
-  if (currentPath === '/ristoranti') {
-    return <RestaurantBusinessView onBack={() => navigateTo('/')} onContact={() => {}} />;
+  if (currentPath === '/ristoranti') return <RestaurantBusinessView onBack={() => navigateTo('/')} onContact={() => {}} />;
+  if (currentPath.startsWith('/guida/')) {
+    const Guide = { 'cantina-digitale': DigitalCellarGuide, 'sommelier-a-casa': SommelierHomeGuide, 'al-ristorante': RestaurantGuide, 'acquisti-intelligenti': ShopGuide, 'analisi-e-roi': AnalyticsGuide, 'analisi-sommelier': SommelierAnalysisGuide, 'storico-degustazioni': HistoryGuide }[currentPath.split('/')[2]];
+    return Guide ? <Guide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} /> : <LandingPage onStart={() => setShowAuth(true)} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} />;
   }
-
-  if (currentPath === '/guida/cantina-digitale') {
-    return <DigitalCellarGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
-  }
-  
-  if (currentPath === '/guida/sommelier-a-casa') {
-    return <SommelierHomeGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
-  }
-
-  if (currentPath === '/guida/al-ristorante') {
-    return <RestaurantGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
-  }
-
-  if (currentPath === '/guida/acquisti-intelligenti') {
-    return <ShopGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
-  }
-
-  if (currentPath === '/guida/analisi-e-roi') {
-    return <AnalyticsGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
-  }
-
-  if (currentPath === '/guida/analisi-sommelier') {
-    return <SommelierAnalysisGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
-  }
-
-  if (currentPath === '/guida/storico-degustazioni') {
-    return <HistoryGuide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} />;
-  }
-
-  if (currentPath === '/guide') {
-    return <AllGuidesView onBack={() => navigateTo('/')} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} />;
-  }
-
-  if (!token && showAuth) {
-    return (
-       <AuthForm 
-          onLogin={handleLogin} 
-          onBack={() => { setShowAuth(false); navigateTo('/'); }} 
-          referralRef={restaurantData?.slug} 
-      />
-    );
-  }
+  if (currentPath === '/guide') return <AllGuidesView onBack={() => navigateTo('/')} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} />;
 
   if (!token) {
+    if (showAuth) return <AuthForm onLogin={handleLogin} onBack={() => { setShowAuth(false); navigateTo('/'); }} referralRef={restaurantData?.slug} />;
     return (
       <>
-          <LandingPage 
-              onStart={() => setShowAuth(true)} 
-              onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)}
-              onViewAllGuides={() => navigateTo('/guide')}
-              onOpenBusiness={() => navigateTo('/ristoranti')}
-          />
-          {sharedPairingData && (
-              <SharedPairingModal 
-                  data={sharedPairingData} 
-                  onClose={() => { setSharedPairingData(null); window.history.replaceState({}, '', '/'); }} 
-              />
-          )}
+          <LandingPage onStart={() => setShowAuth(true)} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} onViewAllGuides={() => navigateTo('/guide')} onOpenBusiness={() => navigateTo('/ristoranti')} />
+          {sharedPairingData && <SharedPairingModal data={sharedPairingData} onClose={() => { setSharedPairingData(null); window.history.replaceState({}, '', '/'); }} />}
       </>
     );
   }
@@ -436,11 +366,7 @@ const AppContent: React.FC = () => {
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'analytics' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
              <AnalyticsView inventory={wines} history={history} onLogout={handleLogout} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} />
         </div>
-        {userRole === 'admin' && activeTab === 'admin' && (
-            <div className="absolute inset-0 z-20">
-                 <AdminView onLogout={handleLogout} token={token || ''} />
-            </div>
-        )}
+        {userRole === 'admin' && activeTab === 'admin' && <div className="absolute inset-0 z-20"><AdminView onLogout={handleLogout} token={token || ''} /></div>}
       </main>
       <nav className="bg-white border-t border-gray-200 flex justify-between px-2 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] overflow-x-auto no-scrollbar">
         {[
@@ -464,12 +390,6 @@ const AppContent: React.FC = () => {
         )}
       </nav>
       <RateWineModal entry={ratingModalEntry} onClose={() => setRatingModalEntry(null)} onSave={handleUpdateHistoryEntry} onDelete={handleDeleteHistoryEntry} isPremium={userPremium} />
-      {sharedPairingData && (
-          <SharedPairingModal 
-              data={sharedPairingData} 
-              onClose={() => { setSharedPairingData(null); window.history.replaceState({}, '', '/'); }} 
-          />
-      )}
     </div>
   );
 };
