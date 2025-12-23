@@ -83,10 +83,9 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
                 <p className="text-sm text-gray-500 mt-1">{t('history_diary_subtitle')}</p>
             </div>
              <div className="flex gap-2">
-                <button onClick={() => setViewMode('analysis')} className="bg-purple-50 text-purple-700 p-2 rounded-full border border-purple-100 hover:bg-purple-100 transition-colors" title="Analisi IA">
-                    <UserIcon className="w-6 h-6" filled />
+                <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2" title={t('logout')}>
+                    <LogoutIcon className="w-6 h-6" />
                 </button>
-                <button onClick={onLogout} className="text-gray-400 hover:text-wine-700" title={t('logout')}><LogoutIcon className="w-6 h-6" /></button>
              </div>
         </div>
 
