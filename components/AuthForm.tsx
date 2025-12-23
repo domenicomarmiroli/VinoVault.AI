@@ -40,8 +40,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
       
       const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
       
-      // IMPORTANTE: window.location.origin restituisce l'URL esatto (con o senza www)
-      // Assicurati che ENTRAMBE le versioni siano in Google Console -> Redirect URIs
+      // Standardizziamo l'origine senza slash finale per evitare URI Mismatch
       const redirectUri = window.location.origin;
       
       const options = {

@@ -41,6 +41,7 @@ const AppContent: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isAuthProcessing, setIsAuthProcessing] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true); // Stato per il caricamento iniziale
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
   const [restaurantData, setRestaurantData] = useState<Restaurant | null>(null);
@@ -71,6 +72,7 @@ const AppContent: React.FC = () => {
       setToken(newToken);
       setShowAuth(false);
       setIsAuthProcessing(false);
+      setIsInitializing(false);
       
       try {
         const parts = newToken.split('.');
@@ -87,7 +89,6 @@ const AppContent: React.FC = () => {
       setLocations([]);
       setIsLoaded(false);
       
-      // Se c'è un referral o un ristorante attivo, vai lì, altrimenti in cantina
       if (restaurantData) {
           setActiveTab('restaurant');
       } else {
@@ -104,9 +105,9 @@ const AppContent: React.FC = () => {
       navigateTo('/');
   };
 
-  // Google Login Interceptor (Hash detection)
+  // Google Login Interceptor - Gestisce il ritorno dal redirect
   useEffect(() => {
-    const handleGoogleHash = async () => {
+    const initAuth = async () => {
         const hash = window.location.hash;
         if (hash && hash.includes('id_token=')) {
             setIsAuthProcessing(true);
@@ -137,7 +138,6 @@ const AppContent: React.FC = () => {
                     const data = await res.json();
                     
                     if (res.ok) {
-                        // Rimuovi hash dall'URL per pulizia
                         window.history.replaceState({}, document.title, window.location.pathname);
                         handleLogin(data.token, data.user.email);
                     } else {
@@ -146,12 +146,16 @@ const AppContent: React.FC = () => {
                 } catch (err) {
                     console.error("Google handle error", err);
                     setIsAuthProcessing(false);
-                    alert("Errore durante l'accesso con Google. Riprova.");
+                    setIsInitializing(false);
                 }
+            } else {
+                setIsInitializing(false);
             }
+        } else {
+            setIsInitializing(false);
         }
     };
-    handleGoogleHash();
+    initAuth();
   }, []);
 
   useEffect(() => {
@@ -303,8 +307,8 @@ const AppContent: React.FC = () => {
       authFetch(`/api/locations/${id}`, { method: 'DELETE' });
   };
   
-  if (isAuthProcessing) {
-      return <LoadingScreen message="Accesso in corso..." subMessage="Stiamo verificando le tue credenziali con Google." />;
+  if (isInitializing || isAuthProcessing) {
+      return <LoadingScreen message="Accesso in corso..." subMessage="Stiamo verificando le tue credenziali." />;
   }
 
   if (currentPath === '/ristoranti') {
