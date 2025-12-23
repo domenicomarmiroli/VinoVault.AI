@@ -34,10 +34,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
       };
       fetchConfig();
 
-      // Check for Google Redirect Result in URL Hash
+      // Gestione del ritorno dal redirect di Google
       const handleRedirectResult = async () => {
           const hash = window.location.hash;
-          if (hash && hash.includes('id_token=')) {
+          if (hash && (hash.includes('id_token=') || hash.includes('access_token='))) {
               setLoading(true);
               const params = new URLSearchParams(hash.substring(1));
               const idToken = params.get('id_token');
@@ -66,7 +66,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                       const data = await res.json();
                       if (!res.ok) throw new Error(data.error || 'Google login failed');
                       
-                      // Clear hash and login
+                      // Pulizia URL e Login
                       window.history.replaceState({}, document.title, window.location.pathname);
                       onLogin(data.token, data.user.email);
                   } catch (err: any) {
@@ -84,9 +84,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
       if (!googleClientId) return;
       
       const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+      
+      // Usiamo l'origine esatta senza slash aggiuntivi per evitare mismatch
+      const redirectUri = window.location.origin;
+      
       const options = {
           client_id: googleClientId,
-          redirect_uri: window.location.origin + '/', // Deve essere autorizzato nella console
+          redirect_uri: redirectUri,
           response_type: 'id_token',
           scope: 'openid email profile',
           nonce: Math.random().toString(36).substring(2),
@@ -95,7 +99,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
       };
 
       const qs = new URLSearchParams(options).toString();
-      // EFFETTUA IL REDIRECT DELLA PAGINA INTERA - NIENTE POPUP
+      // Redirect completo della pagina - NO POPUP
       window.location.href = `${rootUrl}?${qs}`;
   };
 
