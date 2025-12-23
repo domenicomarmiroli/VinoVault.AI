@@ -18,7 +18,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   const [error, setError] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
   
-  // Fixed: Added setLanguage to the destructuring of useLanguage to resolve 'Cannot find name setLanguage' error.
   const { t, language, setLanguage } = useLanguage();
 
   useEffect(() => {
@@ -41,8 +40,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
       
       const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
       
-      // IMPORTANTE: Deve corrispondere a quanto configurato nella console
-      const redirectUri = window.location.origin + '/';
+      // IMPORTANTE: window.location.origin restituisce l'URL esatto (con o senza www)
+      // Assicurati che ENTRAMBE le versioni siano in Google Console -> Redirect URIs
+      const redirectUri = window.location.origin;
       
       const options = {
           client_id: googleClientId,
