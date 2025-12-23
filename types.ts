@@ -44,12 +44,13 @@ export interface HistoryEntry {
   name: string;
   producer: string;
   year: string;
-  type?: string; // Added for filtering
+  type?: string; 
   consumedDate: string;
   price: number;
   imageUrl?: string;
   rating?: number;
   notes?: string;
+  location?: string; // NEW: Where it was drunk
 }
 
 export interface Location {
@@ -68,8 +69,8 @@ export interface PairingOption {
   wineName: string; // Fallback or display name
   reasoning: string;
   type: 'owned' | 'purchase';
-  servingTemp?: string;   // NEW
-  servingAdvice?: string; // NEW (Opening time)
+  servingTemp?: string;   
+  servingAdvice?: string; 
 }
 
 export interface PairingSuggestion {
@@ -97,9 +98,9 @@ export interface RestaurantSuggestion {
     year: string;
     price: number;
     type: string;
-    reasoning: string; // Perché sta bene col piatto
-    matchScore: number; // 1-100
-    priceCategory?: 'Fascia Economica' | 'Fascia Media' | 'Fascia Alta'; // NEW
+    reasoning: string; 
+    matchScore: number; 
+    priceCategory?: 'Fascia Economica' | 'Fascia Media' | 'Fascia Alta'; 
 }
 
 export interface User {
@@ -107,10 +108,10 @@ export interface User {
   email: string;
   role: 'user' | 'admin';
   is_premium?: boolean; 
-  language?: Language; // New Language Preference
+  language?: Language; 
   created_at?: string;
   last_login?: string;
-  ref_restaurant_slug?: string; // NEW: Origin of registration
+  ref_restaurant_slug?: string; 
   // Stats
   wine_count?: number;     
   ai_usage_count?: number; 
@@ -123,8 +124,6 @@ export interface OnlinePrice {
     link: string;
     thumbnail?: string;
 }
-
-// --- NEW TYPES FOR CELLAR REPORT ---
 
 export interface CellarRecommendation {
     wineName: string;
@@ -140,14 +139,12 @@ export interface CellarReport {
     drinkNowStrategy: string;
 }
 
-// --- NEW TYPES FOR RESTAURANT B2B ---
 export interface Restaurant {
     id: string;
     name: string;
-    slug: string; // Used in URL ?ref=slug
-    menu_context: string; // OCR text of the wine list
+    slug: string; 
+    menu_context: string; 
     created_at?: string;
-    // Admin Stats
     user_count?: number;
     total_ai_usage?: number;
 }

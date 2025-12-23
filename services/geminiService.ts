@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, RestaurantSuggestion, HistoryEntry, CellarReport, Language } from "../types";
 
 // Helper to remove base64 prefix
@@ -13,8 +13,8 @@ const cleanJson = (text: string) => {
     return text.replace(/```json/g, '').replace(/```/g, '').trim();
 };
 
-const apiKey = process.env.API_KEY;
-const ai = new GoogleGenAI({ apiKey: apiKey || "dummy_key" });
+// Always use process.env.API_KEY directly as per guidelines
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const getLanguageName = (code: Language) => {
     switch(code) {
@@ -30,8 +30,6 @@ const getLanguageName = (code: Language) => {
  * Analyzes a wine label image using Gemini 3 Flash.
  */
 export const analyzeWineLabel = async (base64Image: string, lang: Language = 'it'): Promise<Partial<Wine>> => {
-  if (!apiKey) throw new Error("Chiave API mancante.");
-
   const model = "gemini-3-flash-preview"; 
   const langName = getLanguageName(lang);
   
@@ -58,24 +56,25 @@ export const analyzeWineLabel = async (base64Image: string, lang: Language = 'it
           systemInstruction,
           temperature: 0.5,
           responseMimeType: "application/json",
+          // Use Type enum for responseSchema as per guidelines
           responseSchema: {
-            type: "OBJECT",
+            type: Type.OBJECT,
             properties: {
-              name: { type: "STRING" },
-              producer: { type: "STRING" },
-              year: { type: "STRING" },
-              type: { type: "STRING", enum: Object.values(WineType) },
-              region: { type: "STRING" },
-              grape: { type: "STRING" },
-              alcohol: { type: "STRING" },
-              storageTemp: { type: "STRING" },
-              storageAdvice: { type: "STRING" },
-              servingTemp: { type: "STRING" },
-              servingAdvice: { type: "STRING" },
-              foodPairings: { type: "ARRAY", items: { type: "STRING" } },
-              price: { type: "NUMBER" },
-              drinkWindow: { type: "STRING" },
-              marketPrice: { type: "NUMBER" }
+              name: { type: Type.STRING },
+              producer: { type: Type.STRING },
+              year: { type: Type.STRING },
+              type: { type: Type.STRING, enum: Object.values(WineType) },
+              region: { type: Type.STRING },
+              grape: { type: Type.STRING },
+              alcohol: { type: Type.STRING },
+              storageTemp: { type: Type.STRING },
+              storageAdvice: { type: Type.STRING },
+              servingTemp: { type: Type.STRING },
+              servingAdvice: { type: Type.STRING },
+              foodPairings: { type: Type.ARRAY, items: { type: Type.STRING } },
+              price: { type: Type.NUMBER },
+              drinkWindow: { type: Type.STRING },
+              marketPrice: { type: Type.NUMBER }
             },
             required: ["name", "producer", "type", "storageTemp", "servingAdvice", "storageAdvice", "grape", "drinkWindow", "marketPrice"]
           },
@@ -101,8 +100,6 @@ export const suggestPairing = async (
   style: 'single' | 'multiple',
   lang: Language = 'it'
 ): Promise<PairingSuggestion[]> => {
-  if (!apiKey) throw new Error("Chiave API mancante.");
-
   const model = "gemini-3-flash-preview";
   const langName = getLanguageName(lang);
 
@@ -114,7 +111,7 @@ export const suggestPairing = async (
     ? `L'utente desidera un abbinamento "TUTTO PASTO". 
        Analizza l'intero menu come un unico blocco: "${menu}".
        Trova ESATTAMENTE 2 vini versatili (opzioni) che possano accompagnare degnamente TUTTE le portate dall'inizio alla fine.
-       Restituisci un ARRAY con UN SOLO oggetto PairingSuggestion dove courseName è "Menu Completo" e dishName è "Tutto Pasto".`
+       Restituisci un ARRAY con UN SOLO oggetto PairingSuggestion opera courseName è "Menu Completo" e dishName è "Tutto Pasto".`
     : `L'utente desidera un abbinamento "PER PORTATA".
        Dividi il menu "${menu}" nelle sue portate logiche (Antipasti, Primi, Secondi, ecc.).
        Per ogni portata, suggerisci ESATTAMENTE 2 vini ideali.`;
@@ -141,24 +138,25 @@ export const suggestPairing = async (
           systemInstruction: `Sei un sommelier esperto. Analizzi i menu e la cantina dell'utente. Sii tecnico e preciso. Rispondi in ${langName} con JSON puro.`,
           temperature: 0.5,
           responseMimeType: "application/json",
+          // Use Type enum for responseSchema
           responseSchema: {
-            type: "ARRAY",
+            type: Type.ARRAY,
             items: {
-              type: "OBJECT",
+              type: Type.OBJECT,
               properties: {
-                courseName: { type: "STRING" },
-                dishName: { type: "STRING" },
+                courseName: { type: Type.STRING },
+                dishName: { type: Type.STRING },
                 options: {
-                  type: "ARRAY",
+                  type: Type.ARRAY,
                   items: {
-                    type: "OBJECT",
+                    type: Type.OBJECT,
                     properties: {
-                      wineId: { type: "STRING", nullable: true },
-                      wineName: { type: "STRING" },
-                      reasoning: { type: "STRING" },
-                      type: { type: "STRING", enum: ['owned', 'purchase'] },
-                      servingTemp: { type: "STRING" },
-                      servingAdvice: { type: "STRING" }
+                      wineId: { type: Type.STRING, nullable: true },
+                      wineName: { type: Type.STRING },
+                      reasoning: { type: Type.STRING },
+                      type: { type: Type.STRING, enum: ['owned', 'purchase'] },
+                      servingTemp: { type: Type.STRING },
+                      servingAdvice: { type: Type.STRING }
                     },
                     required: ["wineName", "reasoning", "type", "servingTemp", "servingAdvice"]
                   }
@@ -185,8 +183,6 @@ export const analyzePurchase = async (
     inventory: Wine[],
     lang: Language = 'it'
 ): Promise<PurchaseAnalysis> => {
-    if (!apiKey) throw new Error("Chiave API mancante.");
-
     const model = "gemini-3-flash-preview";
     const langName = getLanguageName(lang);
     
@@ -328,8 +324,6 @@ export const suggestRestaurantPairing = async (
     dish: string,
     lang: Language = 'it'
 ): Promise<RestaurantSuggestion[]> => {
-    if (!apiKey) throw new Error("Chiave API mancante.");
-
     const model = "gemini-3-flash-preview";
     const langName = getLanguageName(lang);
     let parts: any[] = [];
@@ -403,7 +397,6 @@ export const suggestRestaurantPairing = async (
 };
 
 export const extractTextFromMedia = async (base64Data: string, mimeType: string): Promise<string> => {
-    if (!apiKey) throw new Error("Chiave API mancante.");
     const model = "gemini-3-flash-preview";
     try {
         const response = await ai.models.generateContent({
@@ -443,7 +436,6 @@ export const generateCellarReport = async (
     history: HistoryEntry[],
     lang: Language = 'it'
 ): Promise<CellarReport> => {
-    if (!apiKey) throw new Error("Chiave API mancante.");
     const model = "gemini-3-flash-preview";
     const langName = getLanguageName(lang);
 
@@ -466,25 +458,26 @@ export const generateCellarReport = async (
                 systemInstruction: `Sei un Sommelier Senior. Rispondi in ${langName}.`,
                 temperature: 0.5,
                 responseMimeType: "application/json",
+                // Use Type enum for responseSchema
                 responseSchema: {
-                    type: "OBJECT",
+                    type: Type.OBJECT,
                     properties: {
-                        overallAssessment: { type: "STRING" },
-                        palateProfile: { type: "STRING" },
-                        gapAnalysis: { type: "STRING" },
+                        overallAssessment: { type: Type.STRING },
+                        palateProfile: { type: Type.STRING },
+                        gapAnalysis: { type: Type.STRING },
                         buyRecommendations: {
-                            type: "ARRAY",
+                            type: Type.ARRAY,
                             items: {
-                                type: "OBJECT",
+                                type: Type.OBJECT,
                                 properties: {
-                                    wineName: { type: "STRING" },
-                                    reason: { type: "STRING" },
-                                    type: { type: "STRING" }
+                                    wineName: { type: Type.STRING },
+                                    reason: { type: Type.STRING },
+                                    type: { type: Type.STRING }
                                 },
                                 required: ["wineName", "reason", "type"]
                             }
                         },
-                        drinkNowStrategy: { type: "STRING" }
+                        drinkNowStrategy: { type: Type.STRING }
                     },
                     required: ["overallAssessment", "palateProfile", "gapAnalysis", "buyRecommendations", "drinkNowStrategy"]
                 }

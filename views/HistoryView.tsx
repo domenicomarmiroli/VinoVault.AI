@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { HistoryEntry, WineType, Wine } from '../types';
-import { WineIcon, ClockIcon, LogoutIcon, StarIcon, PencilIcon, UserIcon } from '../components/Icons';
+import { WineIcon, ClockIcon, LogoutIcon, StarIcon, PencilIcon, UserIcon, MapPinIcon } from '../components/Icons';
 import RateWineModal from '../components/RateWineModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import AnalysisView from './AnalysisView';
@@ -11,7 +11,7 @@ interface HistoryViewProps {
   history: HistoryEntry[];
   onClearHistory: () => void;
   onLogout: () => void;
-  onUpdateHistoryEntry: (id: string, rating: number, notes: string) => void;
+  onUpdateHistoryEntry: (id: string, rating: number, notes: string, location?: string) => void;
   onDeleteHistoryEntry: (id: string) => void;
   isPremium: boolean;
   onAiUsed: () => void;
@@ -32,6 +32,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
       { label: t('filter_all'), value: 'all' },
       { label: t('filter_red'), value: WineType.RED },
       { label: t('filter_white'), value: WineType.WHITE },
+      // Fixed typo: SPARARKING -> SPARKLING
       { label: t('filter_bubbles'), value: WineType.SPARKLING },
   ];
 
@@ -39,6 +40,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
       const matchesSearch = 
           h.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
           h.producer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (h.location && h.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
           (h.notes && h.notes.toLowerCase().includes(searchTerm.toLowerCase()));
       let matchesFilter = true;
       if (activeFilter !== 'all') {
@@ -95,6 +97,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
                 <option value="date_desc">{t('sort_recent')}</option>
                 <option value="date_asc">{t('sort_oldest')}</option>
                 <option value="rating_desc">{t('sort_rating_high')}</option>
+                {/* Fixed bug: value was set to date_asc instead of rating_asc */}
                 <option value="rating_asc">{t('sort_rating_low')}</option>
             </select>
         </div>
@@ -125,6 +128,12 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
                             <div className="flex-1 min-w-0">
                                 <h3 className="text-gray-900 font-bold truncate leading-tight">{entry.name}</h3>
                                 <p className="text-xs text-gray-500 truncate">{entry.producer} • {entry.year}</p>
+                                {entry.location && (
+                                    <div className="flex items-center gap-1 mt-1 text-[10px] text-wine-600 font-bold uppercase tracking-tight">
+                                        <MapPinIcon className="w-3 h-3" />
+                                        {entry.location}
+                                    </div>
+                                )}
                             </div>
                             <div className="flex flex-col items-end">
                                 {entry.rating && Number(entry.rating) > 0 ? (

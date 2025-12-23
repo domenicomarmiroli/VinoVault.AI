@@ -2,14 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { HistoryEntry } from '../types';
-import { StarIcon, TrashIcon } from './Icons';
+import { StarIcon, TrashIcon, MapPinIcon } from './Icons';
 import PriceComparison from './PriceComparison';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface RateWineModalProps {
   entry: HistoryEntry | null;
   onClose: () => void;
-  onSave: (id: string, rating: number, notes: string) => void;
+  onSave: (id: string, rating: number, notes: string, location?: string) => void;
   onDelete?: (id: string) => void;
   isPremium: boolean;
 }
@@ -17,12 +17,14 @@ interface RateWineModalProps {
 const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, onDelete, isPremium }) => {
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState('');
+  const [location, setLocation] = useState('');
   const { t } = useLanguage();
 
   useEffect(() => {
     if (entry) {
         setRating(entry.rating || 0);
         setNotes(entry.notes || '');
+        setLocation(entry.location || '');
     }
   }, [entry]);
 
@@ -30,7 +32,7 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
 
   const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
-      onSave(entry.id, rating, notes);
+      onSave(entry.id, rating, notes, location);
       onClose();
   };
 
@@ -53,7 +55,7 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
         </div>
 
         <div className="overflow-y-auto p-6 space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form id="rate-form" onSubmit={handleSubmit} className="space-y-6">
                 <div className="flex flex-col items-center justify-center space-y-2">
                     <label className="text-xs font-bold uppercase text-gray-500 tracking-wider">Punteggio</label>
                     <div className="flex gap-2">
@@ -70,6 +72,19 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
                             </button>
                         ))}
                     </div>
+                </div>
+
+                <div>
+                    <label className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-2 flex items-center gap-2">
+                        <MapPinIcon className="w-3 h-3" /> Luogo della bevuta
+                    </label>
+                    <input 
+                        type="text"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="Es. Cantina, Nome Ristorante..."
+                        className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-wine-500 outline-none bg-gray-50"
+                    />
                 </div>
 
                 <div>
@@ -90,27 +105,28 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
                         isPremium={isPremium}
                      />
                 </div>
-
-                <div className="space-y-3 pt-2">
-                    <button 
-                        type="submit" 
-                        className="w-full py-3 bg-wine-600 text-white font-bold rounded-xl hover:bg-wine-700 transition-colors shadow-lg shadow-wine-100"
-                    >
-                        Salva Recensione
-                    </button>
-                    
-                    {onDelete && (
-                        <button 
-                            type="button"
-                            onClick={handleDelete}
-                            className="w-full py-2.5 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center gap-2 text-sm border border-red-100"
-                        >
-                            <TrashIcon className="w-4 h-4" />
-                            Elimina Degustazione
-                        </button>
-                    )}
-                </div>
             </form>
+        </div>
+        
+        <div className="shrink-0 p-4 border-t border-gray-100 bg-white space-y-3">
+            <button 
+                type="submit" 
+                form="rate-form"
+                className="w-full py-3 bg-wine-600 text-white font-bold rounded-xl hover:bg-wine-700 transition-colors shadow-lg shadow-wine-100"
+            >
+                Salva Recensione
+            </button>
+            
+            {onDelete && (
+                <button 
+                    type="button"
+                    onClick={handleDelete}
+                    className="w-full py-2.5 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center gap-2 text-sm border border-red-100"
+                >
+                    <TrashIcon className="w-4 h-4" />
+                    Elimina Degustazione
+                </button>
+            )}
         </div>
       </div>
     </div>

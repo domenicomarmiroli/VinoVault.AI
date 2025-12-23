@@ -123,7 +123,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-// Price Search - DEFINITA PRIMA DI *
+// Price Search
 app.get('/api/search-prices', authenticateToken, async (req, res) => {
     const { query } = req.query;
     if (!query) return res.status(400).json({ error: 'Query is required' });
@@ -208,7 +208,14 @@ app.delete('/api/wines/:id', authenticateToken, async (req, res) => {
 app.get('/api/history', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM history WHERE user_id = $1 ORDER BY consumed_date DESC', [req.user.userId]);
-        res.json(result.rows.map(h => ({ ...h, price: parseFloat(h.price), consumedDate: h.consumed_date, wineId: h.wine_id, imageUrl: h.image_url })));
+        res.json(result.rows.map(h => ({ 
+            ...h, 
+            price: parseFloat(h.price), 
+            consumedDate: h.consumed_date, 
+            wineId: h.wine_id, 
+            imageUrl: h.image_url,
+            location: h.location
+        })));
     } catch (err) { res.status(500).json({ error: 'Failed to fetch history' }); }
 });
 
@@ -216,18 +223,18 @@ app.post('/api/history', authenticateToken, async (req, res) => {
     const h = req.body;
     try {
         await pool.query(
-            `INSERT INTO history (id, user_id, wine_id, name, producer, year, type, price, image_url, consumed_date, rating, notes)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-            [h.id, req.user.userId, h.wineId, h.name, h.producer, h.year, h.type, h.price, h.imageUrl, h.consumedDate, h.rating || 0, h.notes || '']
+            `INSERT INTO history (id, user_id, wine_id, name, producer, year, type, price, image_url, consumed_date, rating, notes, location)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+            [h.id, req.user.userId, h.wineId, h.name, h.producer, h.year, h.type, h.price, h.imageUrl, h.consumedDate, h.rating || 0, h.notes || '', h.location || 'Cantina']
         );
         res.status(201).json(h);
     } catch (err) { res.status(500).json({ error: 'Failed to save history' }); }
 });
 
 app.put('/api/history/:id', authenticateToken, async (req, res) => {
-    const { rating, notes } = req.body;
+    const { rating, notes, location } = req.body;
     try {
-        await pool.query('UPDATE history SET rating = $1, notes = $2 WHERE id = $3 AND user_id = $4', [rating, notes, req.params.id, req.user.userId]);
+        await pool.query('UPDATE history SET rating = $1, notes = $2, location = $3 WHERE id = $4 AND user_id = $5', [rating, notes, location, req.params.id, req.user.userId]);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: 'Update failed' }); }
 });
@@ -239,7 +246,7 @@ app.delete('/api/history/:id', authenticateToken, async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
 });
 
-// Locations
+// Locations (Inventory Storage Locations)
 app.get('/api/locations', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM locations WHERE user_id = $1', [req.user.userId]);
@@ -301,7 +308,6 @@ app.get('/api/users', authenticateAdmin, async (req, res) => {
 // Delete user
 app.delete('/api/users/:id', authenticateAdmin, async (req, res) => {
     try {
-        // First check if it's an admin - optional but safe
         const check = await pool.query('SELECT role FROM users WHERE id = $1', [req.params.id]);
         if (check.rows[0]?.role === 'admin') return res.status(403).json({ error: 'Cannot delete admin' });
 
@@ -393,7 +399,7 @@ const initDb = async () => {
         await client.query(`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, password TEXT, role TEXT DEFAULT 'user', is_premium BOOLEAN DEFAULT FALSE, language TEXT DEFAULT 'it', ai_usage_count INTEGER DEFAULT 0, google_id TEXT, ref_restaurant_slug TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         await client.query(`ALTER TABLE users ALTER COLUMN password DROP NOT NULL;`);
         await client.query(`CREATE TABLE IF NOT EXISTS wines (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, producer TEXT, year TEXT, type TEXT, region TEXT, grape TEXT, alcohol TEXT, purchase_date TEXT, price DECIMAL, quantity INTEGER DEFAULT 1, location TEXT, storage_temp TEXT, storage_advice TEXT, serving_temp TEXT, serving_advice TEXT, food_pairings TEXT[], image_url TEXT, drink_window TEXT, market_price DECIMAL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
-        await client.query(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, wine_id TEXT, name TEXT, producer TEXT, year TEXT, type TEXT, price DECIMAL, image_url TEXT, consumed_date TEXT, rating INTEGER DEFAULT 0, notes TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
+        await client.query(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, wine_id TEXT, name TEXT, producer TEXT, year TEXT, type TEXT, price DECIMAL, image_url TEXT, consumed_date TEXT, rating INTEGER DEFAULT 0, notes TEXT, location TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         await client.query(`CREATE TABLE IF NOT EXISTS locations (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL);`);
         await client.query(`CREATE TABLE IF NOT EXISTS restaurants (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, menu_context TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         await client.query(`CREATE TABLE IF NOT EXISTS shares (id TEXT PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);

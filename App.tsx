@@ -182,7 +182,7 @@ const AppContent: React.FC = () => {
     const historyEntry: HistoryEntry = {
       id: generateId(), wineId: wine.id, name: wine.name, producer: wine.producer, year: wine.year, 
       type: wine.type, price: wine.price, imageUrl: wine.imageUrl, consumedDate: new Date().toISOString(), 
-      rating: 0, notes: ''
+      rating: 0, notes: '', location: 'Cantina' // Default for cellar consumption
     };
     setHistory(prev => [historyEntry, ...prev]);
     setWines(prev => prev.map(w => w.id === wine.id ? { ...w, quantity: Math.max(0, w.quantity - 1) } : w));
@@ -200,16 +200,17 @@ const AppContent: React.FC = () => {
           id: generateId(), wineId: 'external_' + generateId(), name: entryData.name || '?',
           producer: entryData.producer || '?', year: entryData.year || 'N/A', type: entryData.type || 'Altro',
           price: entryData.price || 0, consumedDate: entryData.consumedDate || new Date().toISOString(),
-          rating: 0, notes: restaurantData ? `Bevuto presso ${restaurantData.name}` : ''
+          rating: 0, notes: restaurantData ? `Bevuto presso ${restaurantData.name}` : '',
+          location: restaurantData ? restaurantData.name : (entryData.location || '')
       };
       setHistory(prev => [historyEntry, ...prev]);
       setRatingModalEntry(historyEntry);
       authFetch('/api/history', { method: 'POST', body: JSON.stringify(historyEntry) });
   };
 
-  const handleUpdateHistoryEntry = (id: string, rating: number, notes: string) => {
-    setHistory(prev => prev.map(h => h.id === id ? { ...h, rating, notes } : h));
-    authFetch(`/api/history/${id}`, { method: 'PUT', body: JSON.stringify({ rating, notes }) });
+  const handleUpdateHistoryEntry = (id: string, rating: number, notes: string, location?: string) => {
+    setHistory(prev => prev.map(h => h.id === id ? { ...h, rating, notes, location: location !== undefined ? location : h.location } : h));
+    authFetch(`/api/history/${id}`, { method: 'PUT', body: JSON.stringify({ rating, notes, location }) });
   };
 
   const handleDeleteHistoryEntry = (id: string) => {
@@ -360,7 +361,7 @@ const AppContent: React.FC = () => {
       </nav>
       <RateWineModal entry={ratingModalEntry} onClose={() => setRatingModalEntry(null)} onSave={handleUpdateHistoryEntry} onDelete={handleDeleteHistoryEntry} isPremium={userPremium} />
       
-      {/* Shared Modal visibile a tutti (ospiti e utenti loggati) se presente dati di condivisione */}
+      {/* Shared Modal visibile a tutti se presente dati di condivisione */}
       {sharedPairingData && (
           <SharedPairingModal 
               data={sharedPairingData} 
