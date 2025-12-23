@@ -18,6 +18,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   const [error, setError] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
   
+  // Fixed: Added setLanguage to the destructuring of useLanguage to resolve 'Cannot find name setLanguage' error.
   const { t, language, setLanguage } = useLanguage();
 
   useEffect(() => {
@@ -33,51 +34,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
           }
       };
       fetchConfig();
-
-      // Gestione del ritorno dal redirect di Google
-      const handleRedirectResult = async () => {
-          const hash = window.location.hash;
-          if (hash && (hash.includes('id_token=') || hash.includes('access_token='))) {
-              setLoading(true);
-              const params = new URLSearchParams(hash.substring(1));
-              const idToken = params.get('id_token');
-              const stateStr = params.get('state');
-
-              if (idToken) {
-                  try {
-                      let ref = referralRef;
-                      if (stateStr) {
-                          try {
-                              const state = JSON.parse(decodeURIComponent(stateStr));
-                              if (state.ref) ref = state.ref;
-                              if (state.language) setLanguage(state.language);
-                          } catch (e) {}
-                      }
-
-                      const res = await fetch('/api/auth/google', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ 
-                              token: idToken,
-                              language,
-                              ref
-                          })
-                      });
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || 'Google login failed');
-                      
-                      // Pulizia URL e Login
-                      window.history.replaceState({}, document.title, window.location.pathname);
-                      onLogin(data.token, data.user.email);
-                  } catch (err: any) {
-                      setError("Errore login Google: " + err.message);
-                  } finally {
-                      setLoading(false);
-                  }
-              }
-          }
-      };
-      handleRedirectResult();
   }, []);
 
   const handleGoogleRedirectLogin = () => {
@@ -85,21 +41,20 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
       
       const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
       
-      // Usiamo l'origine esatta senza slash aggiuntivi per evitare mismatch
-      const redirectUri = window.location.origin;
+      // IMPORTANTE: Deve corrispondere a quanto configurato nella console
+      const redirectUri = window.location.origin + '/';
       
       const options = {
           client_id: googleClientId,
           redirect_uri: redirectUri,
           response_type: 'id_token',
           scope: 'openid email profile',
-          nonce: Math.random().toString(36).substring(2),
+          nonce: Math.random().toString(36).substring(2) + Date.now().toString(),
           state: JSON.stringify({ language, ref: referralRef }),
           prompt: 'select_account'
       };
 
       const qs = new URLSearchParams(options).toString();
-      // Redirect completo della pagina - NO POPUP
       window.location.href = `${rootUrl}?${qs}`;
   };
 

@@ -21,6 +21,7 @@ import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
 import SharedPairingModal from './components/SharedPairingModal';
+import LoadingScreen from './components/LoadingScreen';
 import { WineIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon, ChefIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
@@ -30,7 +31,7 @@ const AppContent: React.FC = () => {
   const [token, setToken] = useState<string | null>(localStorage.getItem('vinovault_token'));
   const [userRole, setUserRole] = useState<'user' | 'admin'>('user'); 
   const [userPremium, setUserPremium] = useState(false);
-  const { t, setLanguage } = useLanguage();
+  const { t, setLanguage, language } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'inventory' | 'shop' | 'sommelier' | 'restaurant' | 'analytics' | 'history' | 'admin'>('inventory');
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
@@ -39,6 +40,7 @@ const AppContent: React.FC = () => {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isAuthProcessing, setIsAuthProcessing] = useState(false);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
   const [restaurantData, setRestaurantData] = useState<Restaurant | null>(null);
@@ -64,11 +66,11 @@ const AppContent: React.FC = () => {
     window.scrollTo(0, 0);
   };
 
-  const handleLogin = (newToken: string, email: string) => {
+  const handleLogin = (newToken: string, userEmail: string) => {
       localStorage.setItem('vinovault_token', newToken);
       setToken(newToken);
       setShowAuth(false);
-      navigateTo('/'); 
+      setIsAuthProcessing(false);
       
       try {
         const parts = newToken.split('.');
@@ -84,9 +86,9 @@ const AppContent: React.FC = () => {
       setHistory([]);
       setLocations([]);
       setIsLoaded(false);
-
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('ref') || restaurantData) {
+      
+      // Se c'è un referral o un ristorante attivo, vai lì, altrimenti in cantina
+      if (restaurantData) {
           setActiveTab('restaurant');
       } else {
           setActiveTab('inventory');
@@ -101,6 +103,56 @@ const AppContent: React.FC = () => {
       setShowAuth(false);
       navigateTo('/');
   };
+
+  // Google Login Interceptor (Hash detection)
+  useEffect(() => {
+    const handleGoogleHash = async () => {
+        const hash = window.location.hash;
+        if (hash && hash.includes('id_token=')) {
+            setIsAuthProcessing(true);
+            const params = new URLSearchParams(hash.substring(1));
+            const idToken = params.get('id_token');
+            const stateStr = params.get('state');
+
+            if (idToken) {
+                try {
+                    let refFromState = null;
+                    if (stateStr) {
+                        try {
+                            const state = JSON.parse(decodeURIComponent(stateStr));
+                            if (state.ref) refFromState = state.ref;
+                            if (state.language) setLanguage(state.language);
+                        } catch (e) {}
+                    }
+
+                    const res = await fetch('/api/auth/google', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            token: idToken,
+                            language: language,
+                            ref: refFromState
+                        })
+                    });
+                    const data = await res.json();
+                    
+                    if (res.ok) {
+                        // Rimuovi hash dall'URL per pulizia
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        handleLogin(data.token, data.user.email);
+                    } else {
+                        throw new Error(data.error || "Google login failed");
+                    }
+                } catch (err) {
+                    console.error("Google handle error", err);
+                    setIsAuthProcessing(false);
+                    alert("Errore durante l'accesso con Google. Riprova.");
+                }
+            }
+        }
+    };
+    handleGoogleHash();
+  }, []);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -185,18 +237,13 @@ const AppContent: React.FC = () => {
       rating: 0, notes: '', location: 'Cantina' 
     };
     
-    // Aggiorniamo UI e cantina
     setWines(prev => prev.map(w => w.id === wine.id ? { ...w, quantity: Math.max(0, w.quantity - 1) } : w));
     setHistory(prev => [historyEntry, ...prev]);
     
     try {
-        // Attendiamo che il record sia creato sul server prima di aprire il modale di recensione
         const res = await authFetch('/api/history', { method: 'POST', body: JSON.stringify(historyEntry) });
         if (!res.ok) throw new Error("Errore creazione storico");
-        
         await authFetch(`/api/wines/${wine.id}`, { method: 'PUT', body: JSON.stringify({ quantity: Math.max(0, wine.quantity - 1) }) });
-        
-        // Solo ora apriamo il modale (così la PUT successiva troverà il record)
         setRatingModalEntry(historyEntry);
     } catch (e) {
         alert("Impossibile stappare: errore di connessione col server.");
@@ -224,9 +271,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleUpdateHistoryEntry = async (id: string, rating: number, notes: string, location?: string) => {
-    // Ottimistic Update
     setHistory(prev => prev.map(h => h.id === id ? { ...h, rating, notes, location: location !== undefined ? location : h.location } : h));
-    
     try {
         const res = await authFetch(`/api/history/${id}`, { method: 'PUT', body: JSON.stringify({ rating, notes, location }) });
         if (!res.ok) throw new Error("Errore persistenza recensione");
@@ -258,7 +303,9 @@ const AppContent: React.FC = () => {
       authFetch(`/api/locations/${id}`, { method: 'DELETE' });
   };
   
-  // --- ROUTER LOGIC ---
+  if (isAuthProcessing) {
+      return <LoadingScreen message="Accesso in corso..." subMessage="Stiamo verificando le tue credenziali con Google." />;
+  }
 
   if (currentPath === '/ristoranti') {
     return <RestaurantBusinessView onBack={() => navigateTo('/')} onContact={() => {}} />;
@@ -382,8 +429,6 @@ const AppContent: React.FC = () => {
         )}
       </nav>
       <RateWineModal entry={ratingModalEntry} onClose={() => setRatingModalEntry(null)} onSave={handleUpdateHistoryEntry} onDelete={handleDeleteHistoryEntry} isPremium={userPremium} />
-      
-      {/* Shared Modal visibile a tutti se presente dati di condivisione */}
       {sharedPairingData && (
           <SharedPairingModal 
               data={sharedPairingData} 
