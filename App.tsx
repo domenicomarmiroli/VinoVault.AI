@@ -41,7 +41,7 @@ const AppContent: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isAuthProcessing, setIsAuthProcessing] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true); // Stato per il caricamento iniziale
+  const [isInitializing, setIsInitializing] = useState(true); 
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
   const [restaurantData, setRestaurantData] = useState<Restaurant | null>(null);
@@ -68,6 +68,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleLogin = (newToken: string, userEmail: string) => {
+      console.log("App: Login successful for", userEmail);
       localStorage.setItem('vinovault_token', newToken);
       setToken(newToken);
       setShowAuth(false);
@@ -105,57 +106,81 @@ const AppContent: React.FC = () => {
       navigateTo('/');
   };
 
-  // Google Login Interceptor - Gestisce il ritorno dal redirect
+  /**
+   * EQUIVALENTE DI getRedirectResult
+   * Analizza l'URL al caricamento per intercettare il ritorno da Google
+   */
   useEffect(() => {
-    const initAuth = async () => {
+    const handleRedirectResult = async () => {
+        console.log("AuthCheck: Initializing...");
+        const fullUrl = window.location.href;
         const hash = window.location.hash;
-        if (hash && hash.includes('id_token=')) {
+        const search = window.location.search;
+        
+        console.log("AuthCheck: URL Detected ->", { 
+            hash: hash ? "Found" : "Empty", 
+            search: search ? "Found" : "Empty",
+            origin: window.location.origin 
+        });
+
+        // Cerchiamo l'id_token sia nell'hash che nella query (per compatibilità WebView)
+        const paramsFromHash = new URLSearchParams(hash.substring(1));
+        const paramsFromSearch = new URLSearchParams(search);
+        
+        const idToken = paramsFromHash.get('id_token') || paramsFromSearch.get('id_token');
+        const stateStr = paramsFromHash.get('state') || paramsFromSearch.get('state');
+
+        if (idToken) {
+            console.log("AuthCheck: Google ID Token detected! Processing...");
             setIsAuthProcessing(true);
-            const params = new URLSearchParams(hash.substring(1));
-            const idToken = params.get('id_token');
-            const stateStr = params.get('state');
+            setIsInitializing(true); // Teniamo la schermata di caricamento
 
-            if (idToken) {
-                try {
-                    let refFromState = null;
-                    if (stateStr) {
-                        try {
-                            const state = JSON.parse(decodeURIComponent(stateStr));
-                            if (state.ref) refFromState = state.ref;
-                            if (state.language) setLanguage(state.language);
-                        } catch (e) {}
+            try {
+                let refFromState = null;
+                if (stateStr) {
+                    try {
+                        const state = JSON.parse(decodeURIComponent(stateStr));
+                        if (state.ref) refFromState = state.ref;
+                        if (state.language) setLanguage(state.language);
+                    } catch (e) {
+                        console.warn("AuthCheck: Could not parse state JSON", e);
                     }
-
-                    const res = await fetch('/api/auth/google', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            token: idToken,
-                            language: language,
-                            ref: refFromState
-                        })
-                    });
-                    const data = await res.json();
-                    
-                    if (res.ok) {
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        handleLogin(data.token, data.user.email);
-                    } else {
-                        throw new Error(data.error || "Google login failed");
-                    }
-                } catch (err) {
-                    console.error("Google handle error", err);
-                    setIsAuthProcessing(false);
-                    setIsInitializing(false);
                 }
-            } else {
+
+                const res = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        token: idToken,
+                        language: language,
+                        ref: refFromState
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    console.log("AuthCheck: Server validated token successfully.");
+                    // Puliamo l'URL dai parametri sensibili
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    handleLogin(data.token, data.user.email);
+                } else {
+                    console.error("AuthCheck: Server rejected token", data.error);
+                    throw new Error(data.error || "Google login failed");
+                }
+            } catch (err) {
+                console.error("AuthCheck: Critical Error", err);
+                setIsAuthProcessing(false);
                 setIsInitializing(false);
+                alert("Errore durante l'accesso. Riprova o controlla la connessione.");
             }
         } else {
+            console.log("AuthCheck: No redirect token found in URL.");
             setIsInitializing(false);
         }
     };
-    initAuth();
+
+    handleRedirectResult();
   }, []);
 
   useEffect(() => {
@@ -308,7 +333,13 @@ const AppContent: React.FC = () => {
   };
   
   if (isInitializing || isAuthProcessing) {
-      return <LoadingScreen message="Accesso in corso..." subMessage="Stiamo verificando le tue credenziali." />;
+      return (
+        <div className="h-screen w-screen flex flex-col items-center justify-center bg-white">
+            <LoadingScreen message="Verifica Identità" subMessage="Stiamo completando l'accesso con Google. Attendi un istante..." />
+            {/* Debug label opzionale solo se il caricamento dura troppo */}
+            <div className="mt-40 text-[10px] text-gray-300 font-mono">Auth Resolver v1.2</div>
+        </div>
+      );
   }
 
   if (currentPath === '/ristoranti') {
