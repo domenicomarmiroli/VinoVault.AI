@@ -63,13 +63,11 @@ app.get('/api/config', (req, res) => {
 
 // Auth
 app.post('/api/auth/google', async (req, res) => {
-    // Google Redirect mode sends 'credential' and 'state' in body (url-encoded)
-    // Client-side fetch sends 'token', 'language', 'ref' in body (json)
+    // In redirect mode, Google sends 'credential' in a Form Post (body)
     const token = req.body.token || req.body.credential;
     let language = req.body.language;
     let ref = req.body.ref;
 
-    // Handle 'state' from Google Redirect
     if (req.body.state) {
         try {
             const state = JSON.parse(req.body.state);
@@ -113,12 +111,19 @@ app.post('/api/auth/google', async (req, res) => {
             language: user.language || 'it' 
         }, JWT_SECRET, { expiresIn: '30d' });
 
-        // If it's a browser redirect (Form POST), we return a script to save token and redirect
-        if (req.headers['content-type'] === 'application/x-www-form-urlencoded') {
+        // IMPORTANT: Check if this is a standard Form Submission (Redirect flow)
+        if (req.headers['content-type'] && req.headers['content-type'].includes('application/x-www-form-urlencoded')) {
             res.send(`
                 <html>
-                <head><title>Autenticazione in corso...</title></head>
+                <head>
+                    <title>AIKNOW Auth</title>
+                    <style>body { background: #fbf5f8; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; color: #701a45; }</style>
+                </head>
                 <body>
+                <div style="text-align: center;">
+                    <h2>Autenticazione riuscita!</h2>
+                    <p>Ti stiamo riportando all'applicazione...</p>
+                </div>
                 <script>
                     localStorage.setItem('vinovault_token', '${jwtToken}');
                     window.location.href = '/';
@@ -127,7 +132,6 @@ app.post('/api/auth/google', async (req, res) => {
                 </html>
             `);
         } else {
-            // Normal JSON response for fetch
             res.json({ token: jwtToken, user: { id: user.id, email: user.email, role: user.role, is_premium: user.is_premium, language: user.language || 'it' } });
         }
     } catch (err) {

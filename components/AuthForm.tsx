@@ -42,51 +42,32 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   }, []);
 
   useEffect(() => {
+    // In 'redirect' mode, we MUST NOT provide a 'callback' property in initialize.
+    // Google will instead POST the credential to 'login_uri'.
     if (window.google && googleClientId) {
         try {
             window.google.accounts.id.initialize({
                 client_id: googleClientId,
-                callback: handleGoogleCallback,
-                ux_mode: 'redirect', // Changed from popup to redirect
-                login_uri: window.location.origin + '/api/auth/google', // The server will receive the POST
-                state: JSON.stringify({ language, ref: referralRef }) // Preserve data during redirect
+                ux_mode: 'redirect', 
+                login_uri: window.location.origin + '/api/auth/google',
+                state: JSON.stringify({ language, ref: referralRef }),
+                auto_select: false
             });
+            
             window.google.accounts.id.renderButton(
                 document.getElementById("googleSignInBtn"),
-                { theme: "outline", size: "large", width: "100%", text: isLogin ? "signin_with" : "signup_with" }
+                { 
+                    theme: "outline", 
+                    size: "large", 
+                    width: "100%", 
+                    text: isLogin ? "signin_with" : "signup_with" 
+                }
             );
         } catch (e) {
             console.error("Google Init Error", e);
         }
     }
   }, [googleClientId, isLogin, language, referralRef]);
-
-  const handleGoogleCallback = async (response: any) => {
-      // Note: In 'redirect' mode, this callback is NOT called on current page.
-      // The results are POSTed to 'login_uri'.
-      // This remains for manual trigger or fallback if mode is toggled back.
-      setLoading(true);
-      setError('');
-      try {
-          const res = await fetch('/api/auth/google', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                  token: response.credential,
-                  clientId: googleClientId,
-                  language,
-                  ref: referralRef
-              })
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Google login failed');
-          onLogin(data.token, data.user.email);
-      } catch (err: any) {
-          setError("Errore login Google: " + err.message);
-      } finally {
-          setLoading(false);
-      }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,5 +193,5 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
     </div>
   );
 };
-  
+
 export default AuthForm;
