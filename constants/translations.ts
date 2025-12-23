@@ -41,8 +41,15 @@ export const translations: Record<Language, Record<string, string>> = {
     lp_final_cta: "Dai valore a ogni sorso. Inizia oggi la tua collezione.", lp_enter_app: "Entra in AIKNOW.WINE",
     lp_footer_desc: "La prima piattaforma integrata che unisce la passione enologica alla potenza dell'IA.",
 
-    // Academy Guides General
+    // Academy Guides General & Carousel
     guide_tag_manage: "Gestione", guide_tag_dinner: "Cena", guide_tag_gourmet: "Gourmet", guide_tag_shop: "Shopping", guide_tag_finance: "Finanza", guide_tag_strat: "Strategia", guide_tag_mem: "Memoria",
+    guide_title_cellar: "La Cantina Digitale", guide_desc_cellar: "Digitalizza le tue bottiglie.",
+    guide_title_home: "Il Sommelier a Casa", guide_desc_home: "Abbinamenti perfetti per le cene.",
+    guide_title_rest: "Al Ristorante", guide_desc_rest: "Scegli il vino come un professionista.",
+    guide_title_shop: "Acquisti Intelligenti", guide_desc_shop: "Analisi prezzi e coerenza acquisto.",
+    guide_title_roi: "Analisi & ROI", guide_desc_roi: "Il valore del tuo patrimonio.",
+    guide_title_somm: "Analisi Sommelier IA", guide_desc_somm: "Il tuo profilo palato e gap analysis.",
+    guide_title_hist: "Storico & Memorie", guide_desc_hist: "Il diario delle tue bevute.",
     guide_back: "Indietro", guide_start_now: "Inizia Ora", guide_read_more: "Leggi la guida",
 
     // B2B Section
@@ -55,20 +62,21 @@ export const translations: Record<Language, Record<string, string>> = {
     b2b_free_title: "Completamente GRATIS.", b2b_free_desc: "Siamo in fase di lancio e offriamo il setup completo a costo zero.",
     b2b_check1: "Zero canone mensile", b2b_check2: "Setup iniziale incluso", b2b_check3: "QR Code per i tavoli", b2b_check4: "Supporto tecnico IA",
 
-    // Guides Specific (Digital Cellar gc_, Sommelier Home gh_, Restaurant gr_, etc)
+    // Guides Details (gc_, gh_, gr_)
     gc_title: "La Tua Cantina Digitale", gc_subtitle: "Da Scaffale a Smartphone.", gc_intro: "Hai mai dimenticato una bottiglia preziosa in fondo al frigo?", gc_feature_1_t: "Scanner Intelligente", gc_feature_1_d: "Con AIKNOW.WINE ti basta una foto. L'IA estrae i dati tecnici istantaneamente.", gc_feature_2_t: "Gestione Location", gc_feature_2_d: "Mappa ogni scaffale e trova la bottiglia in 2 secondi.", gc_feature_3_t: "Valore di Mercato", gc_feature_3_d: "Monitoriamo il valore e ti diciamo quando è il picco di bevibilità.", gc_cta: "Inizia a digitalizzare oggi", gc_cta_sub: "Crea la tua Cantina Gratis",
     gh_title: "Che vino apro questa sera?", gh_subtitle: "Il Sommelier IA risponde.", gh_intro: "Trasforma ogni cena in un evento professionale. L'IA abbina i vini ai tuoi piatti.", gh_feature_1_t: "Tu cucini, l'IA abbina.", gh_feature_1_d: "Analizziamo struttura e grasso dei piatti per trovare il match perfetto in cantina.", gh_cta: "Diventa il Sommelier della serata",
     gr_title: "Addio stress da Carta dei Vini.", gr_subtitle: "Al Ristorante.", gr_intro: "Un sommelier professionista seduto al tuo tavolo, pronto ad analizzare la carta per te.", gr_step_1_t: "1. Scansiona la Lista", gr_step_1_d: "Scatta una foto, l'IA legge nomi e prezzi istantaneamente.", gr_step_2_t: "2. Dimmi cosa mangi", gr_step_2_d: "L'IA incrocia i sapori con le bottiglie disponibili.", gr_step_3_t: "3. Scegli tra i Top 3", gr_step_3_d: "Riceverai i 3 migliori abbinamenti per fascia di prezzo.", gr_cta: "Non ordinare mai più il vino sbagliato",
     
-    // Inventory, Sommelier, Shop UI
+    // Inventory, Shop & Auth
     bottles: "Bottiglie", labels: "Etichette", value: "Valore", search_placeholder: "Cerca in cantina...", add_wine: "Aggiungi Vino", no_wines: "Nessun vino trovato.", filter_all: "Tutti", filter_red: "Rossi", filter_white: "Bianchi", filter_bubbles: "Bollicine",
     sommelier_title: "Sommelier Virtuale", sommelier_desc: "L'IA trova il vino perfetto dalla tua cantina.", menu_placeholder: "Es. Lasagne al ragù...", service_type: "Servizio", per_course: "Per Portata", single_wine: "Tutto Pasto", ask_sommelier: "Chiedi al Sommelier", share_pairing: "Condividi", shared_menu_title: "Menu della Serata", shared_pairings_title: "Abbinamenti Suggeriti", owned_badge: "In Cantina", to_buy_badge: "Da Comprare",
     shop_title: "Shop Advisor", shop_desc: "Analisi prezzo e cantina prima dell'acquisto.", photo_mode: "Foto", link_mode: "Link", analyze_btn: "Analizza Acquisto", offer_price: "Prezzo Offerta", market_estimate: "Stima Mercato", buy_add: "Compra e Aggiungi", new_analysis: "Nuova Analisi", deal_bad: "Pessimo", deal_fair: "Discreto", deal_good: "Buono", deal_excellent: "Ottimo", cellar_fit: "Integrazione Cantina",
     restaurant_title: "Al Ristorante", restaurant_desc_scan: "Scansiona la carta, dimmi cosa mangi.", menu_card_loaded: "Carta Caricata", photo_btn: "Foto", find_pairing_btn: "Trova Abbinamento", best_pairings_title: "Migliori Abbinamenti", exit_restaurant: "Esci",
-    history_desc: "Diario delle bottiglie consumate.", search_history: "Cerca...", drunk_on: "Bevuto il",
     analytics_desc: "Valore e abitudini di consumo.", cellar_equity: "Patrimonio", estimated_value: "Valore Stimato", roi: "ROI", avg_price: "Prezzo Medio", ai_analysis: "Analisi IA",
     name: "Nome", producer: "Produttore", year: "Annata", type: "Tipologia", region: "Regione", grape: "Vitigno", alcohol: "Alcol", price: "Prezzo", quantity: "Quantità", purchase_date: "Data Acquisto", location: "Posizione", drink_window: "Consumo", storage_temp: "Temp. Conservazione", serving_temp: "Temp. Servizio", pairings: "Abbinamenti", advice: "Consiglio",
-    edit: "Modifica", save_changes: "Salva Modifiche", cork_vote: "Stappa e Vota", add_title: "Aggiungi Vino", manual_insert: "Manuale", scan_label: "Scansiona", upload_desc: "L'IA estrarrà i dati", language: "Lingua", ai_analyzing: "Analisi IA..."
+    edit: "Modifica", save_changes: "Salva Modifiche", cork_vote: "Stappa e Vota", add_title: "Aggiungi Vino", manual_insert: "Manuale", scan_label: "Scansiona", upload_desc: "L'IA estrarrà i dati", language: "Lingua", ai_analyzing: "Analisi IA...",
+    or_email: "Oppure con email", login_title: "Accedi", register_title: "Registrati", login_btn: "Hai già un account? Accedi", register_btn: "Nuovo utente? Registrati",
+    signin_with: "Accedi con Google", signup_with: "Registrati con Google"
   },
   en: {
     nav_cellar: "Cellar", nav_shop: "Shop", nav_restaurant: "Restaurant", nav_sommelier: "Sommelier", nav_data: "Data", nav_history: "History", nav_admin: "Admin",
@@ -103,8 +111,17 @@ export const translations: Record<Language, Record<string, string>> = {
     lp_faq_q1: "Is the app for beginners?", lp_faq_a1: "Absolutely. The app explains every technical term.",
     lp_final_cta: "Give value to every sip. Start your collection today.", lp_enter_app: "Enter AIKNOW.WINE",
     lp_footer_desc: "The first integrated platform combining wine passion with the power of AI.",
+
     guide_tag_manage: "Management", guide_tag_dinner: "Dinner", guide_tag_gourmet: "Gourmet", guide_tag_shop: "Shopping", guide_tag_finance: "Finance", guide_tag_strat: "Strategy", guide_tag_mem: "Memory",
+    guide_title_cellar: "The Digital Cellar", guide_desc_cellar: "Digitalize your bottles.",
+    guide_title_home: "The Sommelier at Home", guide_desc_home: "Perfect pairings for dinners.",
+    guide_title_rest: "At the Restaurant", guide_desc_rest: "Choose wine like a professional.",
+    guide_title_shop: "Smart Shopping", guide_desc_shop: "Price analysis and purchase consistency.",
+    guide_title_roi: "Analysis & ROI", guide_desc_roi: "The value of your assets.",
+    guide_title_somm: "AI Sommelier Analysis", guide_desc_somm: "Your palate profile and gap analysis.",
+    guide_title_hist: "History & Memories", guide_desc_hist: "The diary of your tastings.",
     guide_back: "Back", guide_start_now: "Start Now", guide_read_more: "Read guide",
+
     b2b_title: "Stop using paper Wine Lists.",
     b2b_desc: "Offer an unprecedented tech experience. Turn your menu into a smart Virtual Sommelier.",
     b2b_cta_setup: "Request Free Setup", b2b_contact_free: "Contact Us Free",
@@ -113,9 +130,11 @@ export const translations: Record<Language, Record<string, string>> = {
     b2b_benefit3_t: "5-Star Service", b2b_benefit3_d: "Give customers autonomy. Staff can answer precisely about every wine.",
     b2b_free_title: "Completely FREE.", b2b_free_desc: "Launch phase offer: full setup at zero cost.",
     b2b_check1: "Zero monthly fee", b2b_check2: "Initial setup included", b2b_check3: "QR Code for tables", b2b_check4: "AI technical support",
+
     gc_title: "The Digital Cellar", gc_subtitle: "From Shelf to Smartphone.", gc_intro: "Ever forgotten a precious bottle in the fridge?", gc_feature_1_t: "Smart Scanner", gc_feature_1_d: "Scan the label, AI extracts technical data instantly.", gc_feature_2_t: "Location management", gc_feature_2_d: "Map your racks and find bottles in seconds.", gc_feature_3_t: "Market Value", gc_feature_3_d: "We track values and suggest the best drink window.", gc_cta: "Start digitalizing today", gc_cta_sub: "Create your Cellar for Free",
     gh_title: "Which wine tonight?", gh_subtitle: "AI Sommelier answers.", gh_intro: "Turn every dinner into a professional event. AI pairs wines with your food.", gh_feature_1_t: "You cook, AI pairs.", gh_feature_1_d: "We analyze dish structure to find the perfect match in your cellar.", gh_cta: "Become the Sommelier of the night",
     gr_title: "Goodbye Wine List stress.", gr_subtitle: "At the Restaurant.", gr_intro: "A professional sommelier at your table, ready to analyze the card for you.", gr_step_1_t: "1. Scan the List", gr_step_1_d: "Snap a photo, AI reads names and prices instantly.", gr_step_2_t: "2. Tell me what you eat", gr_step_2_d: "AI matches flavors with available bottles.", gr_step_3_t: "3. Top 3 Choices", gr_step_3_d: "Receive the 3 best pairings by price range.", gr_cta: "Never order the wrong wine again",
+
     bottles: "Bottles", labels: "Labels", value: "Value", search_placeholder: "Search cellar...", add_wine: "Add Wine", no_wines: "No wines found.", filter_all: "All", filter_red: "Red", filter_white: "White", filter_bubbles: "Bubbles",
     sommelier_title: "Virtual Sommelier", sommelier_desc: "AI finds the perfect wine from your cellar.", menu_placeholder: "E.g. Lasagna...", service_type: "Service", per_course: "Per Course", single_wine: "Whole Meal", ask_sommelier: "Ask Sommelier", share_pairing: "Share", shared_menu_title: "Tonight's Menu", shared_pairings_title: "Suggested Pairings", owned_badge: "In Cellar", to_buy_badge: "To Buy",
     shop_title: "Shop Advisor", shop_desc: "Price and cellar analysis before buying.", photo_mode: "Photo", link_mode: "Link", analyze_btn: "Analyze", offer_price: "Offer Price", market_estimate: "Market Est.", buy_add: "Buy & Add", new_analysis: "New Analysis", deal_bad: "Bad", deal_fair: "Fair", deal_good: "Good", deal_excellent: "Excellent", cellar_fit: "Cellar Fit",
@@ -123,7 +142,9 @@ export const translations: Record<Language, Record<string, string>> = {
     history_desc: "Log of consumed bottles.", search_history: "Search...", drunk_on: "Drunk on",
     analytics_desc: "Value and consumption habits.", cellar_equity: "Equity", estimated_value: "Estimated Value", roi: "ROI", avg_price: "Avg Price", ai_analysis: "AI Analysis",
     name: "Name", producer: "Producer", year: "Vintage", type: "Type", region: "Region", grape: "Grape", alcohol: "Alcohol", price: "Price", quantity: "Quantity", purchase_date: "Purchase Date", location: "Location", drink_window: "Drink Window", storage_temp: "Storage Temp", serving_temp: "Serving Temp", pairings: "Pairings", advice: "Advice",
-    edit: "Edit", save_changes: "Save Changes", cork_vote: "Open & Rate", add_title: "Add Wine", manual_insert: "Manual", scan_label: "Scan", upload_desc: "AI will extract data", language: "Language", ai_analyzing: "AI analyzing..."
+    edit: "Edit", save_changes: "Save Changes", cork_vote: "Open & Rate", add_title: "Add Wine", manual_insert: "Manual", scan_label: "Scan", upload_desc: "AI will extract data", language: "Language", ai_analyzing: "AI analyzing...",
+    or_email: "Or with email", login_title: "Login", register_title: "Register", login_btn: "Already have an account? Login", register_btn: "New user? Register",
+    signin_with: "Sign in with Google", signup_with: "Sign up with Google"
   },
   fr: {
     nav_cellar: "Cave", nav_shop: "Boutique", nav_restaurant: "Restaurant", nav_sommelier: "Sommelier", nav_data: "Données", nav_history: "Historique", nav_admin: "Admin",
@@ -158,19 +179,30 @@ export const translations: Record<Language, Record<string, string>> = {
     lp_faq_q1: "L'app convient-elle aux débutants ?", lp_faq_a1: "Absolument. L'app explique chaque terme technique.",
     lp_final_cta: "Donnez de la valeur à chaque gorgée.", lp_enter_app: "Entrer dans AIKNOW.WINE",
     lp_footer_desc: "La plateforme unissant passion et puissance de l'IA.",
+
     guide_tag_manage: "Gestion", guide_tag_dinner: "Dîner", guide_tag_gourmet: "Gourmet", guide_tag_shop: "Boutique", guide_tag_finance: "Finance", guide_tag_strat: "Stratégie", guide_tag_mem: "Mémoire",
+    guide_title_cellar: "La Cave Digitale", guide_desc_cellar: "Digitalisez vos bouteilles.",
+    guide_title_home: "Le Sommelier à la Maison", guide_desc_home: "Accords parfaits pour les dîners.",
+    guide_title_rest: "Au Restaurant", guide_desc_rest: "Choisissez le vin comme un pro.",
+    guide_title_shop: "Achats Intelligents", guide_desc_shop: "Analyse des prix et cohérence.",
+    guide_title_roi: "Analyse & ROI", guide_desc_roi: "La valeur de votre patrimoine.",
+    guide_title_somm: "Analyse Sommelier IA", guide_desc_somm: "Profil et analyse des lacunes.",
+    guide_title_hist: "Historique & Souvenirs", guide_desc_hist: "Le journal de vos dégustations.",
     guide_back: "Retour", guide_start_now: "Commencer", guide_read_more: "Lire le guide",
+
     b2b_title: "Arrêtez d'utiliser des Cartes des Vins papier.",
     b2b_desc: "Offrez une expérience technologique. Transformez votre menu en Sommelier Virtuel.",
     b2b_cta_setup: "Demander Configuration", b2b_contact_free: "Contact Gratuit",
-    b2b_benefit1_t: "Menu toujours à jour", b2b_benefit1_d: "Plus de réimpressions. Gérez la disponibilité en temps réel.",
+    b2b_benefit1_t: "Menu toujours à jour", b2b_benefit1_d: "Plus de réimpressions. Gérez la disponiblité en temps réel.",
     b2b_benefit2_t: "Accords Scientifiques", b2b_benefit2_d: "L'IA analyse les plats et suggère le meilleur vin, augmentant les ventes.",
     b2b_benefit3_t: "Service 5 Étoiles", b2b_benefit3_d: "Donnez de l'autonomie aux clients. Votre personnel répondra avec précision.",
     b2b_free_title: "Totalement GRATUIT.", b2b_free_desc: "Offre de lancement : configuration complète offerte.",
     b2b_check1: "Zéro frais mensuel", b2b_check2: "Configuration incluse", b2b_check3: "QR Codes pour tables", b2b_check4: "Support technique IA",
+
     gc_title: "La Cave Digitale", gc_subtitle: "De l'étagère au Smartphone.", gc_intro: "Avez-vous déjà oublié une bouteille précieuse ?", gc_feature_1_t: "Scanner Intelligent", gc_feature_1_d: "Une seule photo suffit, l'IA extrait les données techniques.", gc_feature_2_t: "Gestion d'emplacement", gc_feature_2_d: "Cartographiez vos casiers et trouvez vos bouteilles.", gc_feature_3_t: "Valeur de Marché", gc_feature_3_d: "Nous suivons les prix et suggérons l'apogée.", gc_cta: "Commencez à numériser aujourd'hui", gc_cta_sub: "Créez votre Cave Gratuite",
     gh_title: "Quel vin ce soir ?", gh_subtitle: "Le Sommelier IA répond.", gh_intro: "Transformez vos dîners. L'IA accorde les vins à vos plats.", gh_feature_1_t: "Vous cuisinez, l'IA accorde.", gh_feature_1_d: "Analyse de la structure pour trouver le match parfait en cave.", gh_cta: "Devenez le Sommelier de la soirée",
     gr_title: "Adieu le stress de la Carte des Vins.", gr_subtitle: "Au Restaurant.", gr_intro: "Un sommelier professionnel à votre table, prêt à analyser la carte.", gr_step_1_t: "1. Scannez la Carte", gr_step_1_d: "Photo de la carte, lecture instantanée des prix.", gr_step_2_t: "2. Dites ce que vous mangez", gr_step_2_d: "L'IA accorde les saveurs aux bouteilles.", gr_step_3_t: "3. Top 3 Choix", gr_step_3_d: "Recevez les 3 meilleurs accords par prix.", gr_cta: "Ne commandez plus jamais le mauvais vin",
+
     bottles: "Bouteilles", labels: "Étiquettes", value: "Valeur", search_placeholder: "Rechercher...", add_wine: "Ajouter Vin", no_wines: "Aucun vin trouvé.", filter_all: "Tous", filter_red: "Rouges", filter_white: "Blancs", filter_bubbles: "Bulles",
     sommelier_title: "Sommelier Virtuel", sommelier_desc: "L'IA trouve le vin idéal de votre cave.", menu_placeholder: "Ex. Lasagnes...", service_type: "Service", per_course: "Par Plat", single_wine: "Tout le Repas", ask_sommelier: "Demander au Sommelier", share_pairing: "Partager", shared_menu_title: "Menu du Soir", shared_pairings_title: "Accords Suggérés", owned_badge: "En Cave", to_buy_badge: "À Acheter",
     shop_title: "Conseiller Achat", shop_desc: "Analyse prix et cave avant l'achat.", photo_mode: "Photo", link_mode: "Lien", analyze_btn: "Analyser", offer_price: "Prix Offre", market_estimate: "Est. Marché", buy_add: "Acheter & Ajouter", new_analysis: "Nouvelle Analyse", deal_bad: "Mauvais", deal_fair: "Moyen", deal_good: "Bon", deal_excellent: "Excellent", cellar_fit: "Intégration Cave",
@@ -178,7 +210,9 @@ export const translations: Record<Language, Record<string, string>> = {
     history_desc: "Journal des bouteilles consommées.", search_history: "Rechercher...", drunk_on: "Bu le",
     analytics_desc: "Valeur et habitudes de consommation.", cellar_equity: "Patrimoine", estimated_value: "Valeur Estimée", roi: "ROI", avg_price: "Prix Moyen", ai_analysis: "Analyse IA",
     name: "Nom", producer: "Producteur", year: "Millésime", type: "Type", region: "Région", grape: "Cépage", alcohol: "Alcool", price: "Prix", quantity: "Quantité", purchase_date: "Date Achat", location: "Emplacement", drink_window: "Apogée", storage_temp: "Temp. Stockage", serving_temp: "Temp. Service", pairings: "Accords", advice: "Conseil",
-    edit: "Modifier", save_changes: "Sauvegarder", cork_vote: "Ouvrir & Noter", add_title: "Ajouter Vin", manual_insert: "Manuel", scan_label: "Scanner", upload_desc: "L'IA extraira les données", language: "Langue", ai_analyzing: "L'IA analyse..."
+    edit: "Modifier", save_changes: "Sauvegarder", cork_vote: "Ouvrir & Noter", add_title: "Ajouter Vin", manual_insert: "Manuel", scan_label: "Scanner", upload_desc: "L'IA extraira les données", language: "Langue", ai_analyzing: "L'IA analyse...",
+    or_email: "Ou avec email", login_title: "Connexion", register_title: "S'inscrire", login_btn: "Déjà un compte? Connexion", register_btn: "Nouvel utilisateur? S'inscrire",
+    signin_with: "Connexion avec Google", signup_with: "S'inscrire con Google"
   },
   es: {
     nav_cellar: "Bodega", nav_shop: "Tienda", nav_restaurant: "Restaurante", nav_sommelier: "Sommelier", nav_data: "Datos", nav_history: "Historial", nav_admin: "Admin",
@@ -213,8 +247,17 @@ export const translations: Record<Language, Record<string, string>> = {
     lp_faq_q1: "¿Es apta para principiantes?", lp_faq_a1: "Sí. La app explica cada término técnico.",
     lp_final_cta: "Da valor a cada sorbo.", lp_enter_app: "Entrar en AIKNOW.WINE",
     lp_footer_desc: "La plataforma que une pasión y potencia de la IA.",
+
     guide_tag_manage: "Gestión", guide_tag_dinner: "Cena", guide_tag_gourmet: "Gourmet", guide_tag_shop: "Compras", guide_tag_finance: "Finanzas", guide_tag_strat: "Estrategia", guide_tag_mem: "Memoria",
+    guide_title_cellar: "La Bodega Digital", guide_desc_cellar: "Digitaliza tus botellas.",
+    guide_title_home: "El Sommelier en Casa", guide_desc_home: "Maridajes perfectos para cenas.",
+    guide_title_rest: "En el Restaurante", guide_desc_rest: "Elige vino como un profesional.",
+    guide_title_shop: "Compras Inteligentes", guide_desc_shop: "Análisis de precios y coherencia.",
+    guide_title_roi: "Análisis & ROI", guide_desc_roi: "El valor de tu patrimonio.",
+    guide_title_somm: "Análisis Sommelier IA", guide_desc_somm: "Perfil y análisis de brechas.",
+    guide_title_hist: "Historial & Recuerdos", guide_desc_hist: "El diario de tus catas.",
     guide_back: "Atrás", guide_start_now: "Empezar", guide_read_more: "Leer guía",
+
     b2b_title: "Deja de usar Cartas de Vinos de papel.",
     b2b_desc: "Ofrece una tecnología sin precedentes. Convierte tu menú en un Sommelier Virtual.",
     b2b_cta_setup: "Pedir Configuración", b2b_contact_free: "Contacto Gratis",
@@ -223,17 +266,21 @@ export const translations: Record<Language, Record<string, string>> = {
     b2b_benefit3_t: "Servicio 5 Estrellas", b2b_benefit3_d: "Da autonomía a los clientes. El personal responderá con precisión.",
     b2b_free_title: "Totalmente GRATIS.", b2b_free_desc: "Fase de lanzamiento: configuración completa sin coste.",
     b2b_check1: "Cero cuota mensual", b2b_check2: "Configuración incluida", b2b_check3: "QR para mesas", b2b_check4: "Soporte técnico IA",
+
     gc_title: "La Bodega Digital", gc_subtitle: "Del Estante al Smartphone.", gc_intro: "¿Olvidaste una botella preciosa en la nevera?", gc_feature_1_t: "Escáner Inteligente", gc_feature_1_d: "Haz una foto, la IA extrae los datos técnicos.", gc_feature_2_t: "Gestión de ubicación", gc_feature_2_d: "Mapea tus estantes y encuentra botellas al instante.", gc_feature_3_t: "Valor de Mercado", gc_feature_3_d: "Seguimos precios y sugerimos el consumo óptimo.", gc_cta: "Empieza a digitalizar hoy", gc_cta_sub: "Crea tu Bodega Gratis",
     gh_title: "¿Qué vino esta noche?", gh_subtitle: "El Sommelier IA responde.", gh_intro: "Transforma tus cenas. El Sommelier IA marida vinos con tu comida.", gh_feature_1_t: "Tú cocinas, la IA marida.", gh_feature_1_d: "Análisis de platos para encontrar el match en tu bodega.", gh_cta: "Conviértete en el Sommelier de la noche",
     gr_title: "Adiós al estrés de la Carta de Vinos.", gr_subtitle: "En el Restaurante.", gr_intro: "Un sommelier profesional a tu mesa, listo para analizar la carta.", gr_step_1_t: "1. Escanea la Carta", gr_step_1_d: "Foto de la carta, lectura de precios instantánea.", gr_step_2_t: "2. Dime qué comes", gr_step_2_d: "La IA marida sabores con las botellas.", gr_step_3_t: "3. Top 3 Opciones", gr_step_3_d: "Recibe los 3 mejores maridajes por precio.", gr_cta: "No vuelvas a pedir el vino equivocado",
+
     bottles: "Botellas", labels: "Etiquetas", value: "Valor", search_placeholder: "Buscar...", add_wine: "Añadir Vino", no_wines: "Sin vinos.", filter_all: "Todos", filter_red: "Tintos", filter_white: "Blancos", filter_bubbles: "Espumosos",
-    sommelier_title: "Sommelier Virtual", sommelier_desc: "La IA encuentra el vino ideal de tu bodega.", menu_placeholder: "Ej. Lasaña...", service_type: "Servicio", per_course: "Por Plato", single_wine: "Toda la Comida", ask_sommelier: "Preguntar", share_pairing: "Compartir", shared_menu_title: "Menú de la Noche", shared_pairings_title: "Maridajes Sugeridos", owned_badge: "En Bodega", to_buy_badge: "Para Comprar",
+    sommelier_title: "Sommelier Virtual", sommelier_desc: "La IA encuentra el vino ideal de tu bodega.", menu_placeholder: "Ej. Lasaña...", service_type: "Service", per_course: "Por Plato", single_wine: "Toda la Comida", ask_sommelier: "Preguntar", share_pairing: "Compartir", shared_menu_title: "Menú de la Noche", shared_pairings_title: "Maridajes Sugeridos", owned_badge: "En Bodega", to_buy_badge: "Para Comprar",
     shop_title: "Asesor Tienda", shop_desc: "Análisis precio y bodega antes de comprar.", photo_mode: "Foto", link_mode: "Enlace", analyze_btn: "Analizar", offer_price: "Precio Oferta", market_estimate: "Est. Mercado", buy_add: "Comprar y Añadir", new_analysis: "Nuevo Análisis", deal_bad: "Malo", deal_fair: "Regular", deal_good: "Bueno", deal_excellent: "Excelente", cellar_fit: "Ajuste Bodega",
     restaurant_title: "Restaurante", restaurant_desc_scan: "Escanea el menú, dime qué comes.", menu_card_loaded: "Carta Cargada", photo_btn: "Foto", find_pairing_btn: "Buscar Maridaje", best_pairings_title: "Mejores Maridajes", exit_restaurant: "Salir",
     history_desc: "Diario de botellas consumidas.", search_history: "Buscar...", drunk_on: "Bebido el",
     analytics_desc: "Valor y hábitos de consumo.", cellar_equity: "Patrimonio", estimated_value: "Valor Estimado", roi: "ROI", avg_price: "Precio Medio", ai_analysis: "Análisis IA",
-    name: "Nombre", producer: "Productor", year: "Añada", type: "Tipo", region: "Región", grape: "Uva", alcohol: "Alcohol", price: "Precio", quantity: "Cantidad", purchase_date: "Fecha Compra", location: "Ubicación", drink_window: "Consumo", storage_temp: "Temp. Guarda", serving_temp: "Temp. Servicio", pairings: "Maridajes", advice: "Consejo",
-    edit: "Editar", save_changes: "Guardar", cork_vote: "Abrir y Puntuar", add_title: "Añadir Vino", manual_insert: "Manual", scan_label: "Escanear", upload_desc: "IA extraerá los datos", language: "Idioma", ai_analyzing: "Analizando..."
+    name: "Nome", producer: "Productor", year: "Añada", type: "Tipo", region: "Región", grape: "Uva", alcohol: "Alcohol", price: "Precio", quantity: "Cantidad", purchase_date: "Fecha Compra", location: "Ubicación", drink_window: "Consumo", storage_temp: "Temp. Guarda", serving_temp: "Temp. Servicio", pairings: "Maridajes", advice: "Consejo",
+    edit: "Editar", save_changes: "Guardar", cork_vote: "Abrir y Puntuar", add_title: "Añadir Vino", manual_insert: "Manual", scan_label: "Escanear", upload_desc: "IA extraerá los datos", language: "Idioma", ai_analyzing: "Analizando...",
+    or_email: "O con email", login_title: "Entrar", register_title: "Registrarse", login_btn: "¿Ya tienes cuenta? Entrar", register_btn: "¿Nuevo usuario? Registrarse",
+    signin_with: "Entrar con Google", signup_with: "Registrarse con Google"
   },
   de: {
     nav_cellar: "Keller", nav_shop: "Shop", nav_restaurant: "Restaurant", nav_sommelier: "Sommelier", nav_data: "Daten", nav_history: "Verlauf", nav_admin: "Admin",
@@ -268,8 +315,17 @@ export const translations: Record<Language, Record<string, string>> = {
     lp_faq_q1: "Ist die App für Anfänger geeignet?", lp_faq_a1: "Ja. Die App erklärt jeden Fachbegriff.",
     lp_final_cta: "Geben Sie jedem Schluck Wert.", lp_enter_app: "Anmelden",
     lp_footer_desc: "Die Plattform, die Leidenschaft und KI-Power vereint.",
+
     guide_tag_manage: "Verwaltung", guide_tag_dinner: "Essen", guide_tag_gourmet: "Gourmet", guide_tag_shop: "Shopping", guide_tag_finance: "Finanzen", guide_tag_strat: "Strategie", guide_tag_mem: "Gedächtnis",
+    guide_title_cellar: "Der digitale Keller", guide_desc_cellar: "Digitalisieren Sie Ihre Flaschen.",
+    guide_title_home: "Sommelier zu Hause", guide_desc_home: "Perfekte Paarungen für Abendessen.",
+    guide_title_rest: "Im Restaurant", guide_desc_rest: "Wein wählen wie ein Profi.",
+    guide_title_shop: "Intelligentes Einkaufen", guide_desc_shop: "Preisanalyse und Kaufkonsistenz.",
+    guide_title_roi: "Analyse & ROI", guide_desc_roi: "Der Wert Ihres Vermögens.",
+    guide_title_somm: "KI-Sommelier-Analyse", guide_desc_somm: "Profil und Lückenanalyse.",
+    guide_title_hist: "Verlauf & Erinnerungen", guide_desc_hist: "Das Tagebuch Ihrer Verkostungen.",
     guide_back: "Zurück", guide_start_now: "Starten", guide_read_more: "Leitfaden lesen",
+
     b2b_title: "Hören Sie auf, Weinkarten aus Papier zu verwenden.",
     b2b_desc: "Bieten Sie eine technologische Erfahrung. Verwandeln Sie Ihr Menü in einen Sommelier.",
     b2b_cta_setup: "Setup anfordern", b2b_contact_free: "Gratis kontaktieren",
@@ -278,9 +334,11 @@ export const translations: Record<Language, Record<string, string>> = {
     b2b_benefit3_t: "5-Sterne-Service", b2b_benefit3_d: "Geben Sie Kunden Autonomie. Personal kann präzise antworten.",
     b2b_free_title: "Völlig GRATIS.", b2b_free_desc: "Startphase: komplettes Setup kostenlos.",
     b2b_check1: "Keine monatliche Gebühr", b2b_check2: "Setup inklusive", b2b_check3: "QR für Tische", b2b_check4: "KI-Support",
+
     gc_title: "Der digitale Keller", gc_subtitle: "Vom Regal zum Smartphone.", gc_intro: "Haben Sie eine wertvolle Flasche vergessen?", gc_feature_1_t: "Smarter Scanner", gc_feature_1_d: "Foto machen, KI extrahiert Daten sofort.", gc_feature_2_t: "Standortverwaltung", gc_feature_2_d: "Keller mappen und Flaschen in Sekunden finden.", gc_feature_3_t: "Marktwert", gc_feature_3_d: "Preise tracken und Trinkfenster kennen.", gc_cta: "Heute digitalisieren", gc_cta_sub: "Gratis Keller erstellen",
     gh_title: "Welcher Wein heute?", gh_subtitle: "KI Sommelier antwortet.", gh_intro: "KI paart Weine zu Ihrem Essen.", gh_feature_1_t: "Sie kochen, KI paart.", gh_feature_1_d: "Analyse der Struktur für den perfekten Match im Keller.", gh_cta: "Werden Sie zum Sommelier des Abends",
     gr_title: "Schluss mit Weinkarten-Stress.", gr_subtitle: "Im Restaurant.", gr_intro: "Ein Sommelier an Ihrem Tisch, bereit die Karte zu analysieren.", gr_step_1_t: "1. Karte scannen", gr_step_1_d: "Foto der Karte, sofortige Preislesung.", gr_step_2_t: "2. Sagen Sie was Sie essen", gr_step_2_d: "KI paart Aromen mit Flaschen.", gr_step_3_t: "3. Top 3 Auswahl", gr_step_3_d: "Die 3 besten Paarungen nach Preis.", gr_cta: "Nie wieder den falschen Wein bestellen",
+
     bottles: "Flaschen", labels: "Etiketten", value: "Wert", search_placeholder: "Suchen...", add_wine: "Wein hinzufügen", no_wines: "Keine Weine.", filter_all: "Alle", filter_red: "Rot", filter_white: "Weiß", filter_bubbles: "Schaumwein",
     sommelier_title: "Sommelier", sommelier_desc: "KI findet den Wein aus Ihrem Keller.", menu_placeholder: "Z.B. Lasagne...", service_type: "Service", per_course: "Pro Gang", single_wine: "Ganzes Essen", ask_sommelier: "Fragen", share_pairing: "Teilen", shared_menu_title: "Menü des Abends", shared_pairings_title: "Empfohlene Weine", owned_badge: "Im Keller", to_buy_badge: "Kaufen",
     shop_title: "Einkaufsberater", shop_desc: "Preis- und Kelleranalyse vor dem Kauf.", photo_mode: "Foto", link_mode: "Link", analyze_btn: "Analysieren", offer_price: "Angebotspreis", market_estimate: "Marktwert", buy_add: "Kaufen & Hinzufügen", new_analysis: "Neue Analyse", deal_bad: "Schlecht", deal_fair: "Mittel", deal_good: "Gut", deal_excellent: "Exzellent", cellar_fit: "Keller-Passung",
@@ -288,6 +346,8 @@ export const translations: Record<Language, Record<string, string>> = {
     history_desc: "Protokoll der konsumierten Flaschen.", search_history: "Suchen...", drunk_on: "Getrunken am",
     analytics_desc: "Kellerwert und Gewohnheiten.", cellar_equity: "Kellerwert", estimated_value: "Wert", roi: "ROI", avg_price: "Ø Preis", ai_analysis: "KI Analyse",
     name: "Name", producer: "Produzent", year: "Jahrgang", type: "Typ", region: "Region", grape: "Rebsorte", alcohol: "Alkohol", price: "Preis", quantity: "Menge", purchase_date: "Kaufdatum", location: "Lagerort", drink_window: "Trinkfenster", storage_temp: "Lagertemp.", serving_temp: "Serviertemp.", pairings: "Paarungen", advice: "Rat",
-    edit: "Bearbeiten", save_changes: "Speichern", cork_vote: "Bewerten", add_title: "Wein hinzufügen", manual_insert: "Manuell", scan_label: "Scannen", upload_desc: "KI extrahiert Daten", language: "Sprache", ai_analyzing: "Analysiert..."
+    edit: "Bearbeiten", save_changes: "Speichern", cork_vote: "Bewerten", add_title: "Wein hinzufügen", manual_insert: "Manuell", scan_label: "Scannen", upload_desc: "KI extrahiert Daten", language: "Sprache", ai_analyzing: "Analysiert...",
+    or_email: "Oder mit E-Mail", login_title: "Anmelden", register_title: "Registrieren", login_btn: "Bereits ein Konto? Anmelden", register_btn: "Neu hier? Registrieren",
+    signin_with: "Mit Google anmelden", signup_with: "Mit Google registrieren"
   }
 };
