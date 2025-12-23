@@ -126,8 +126,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
         <section id="features" className="bg-white py-24">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">Funzionalità all'avanguardia</h2>
-              <p className="text-gray-500 max-w-2xl mx-auto">Tecnologia Gemini 3 Flash al servizio della tua passione enologica.</p>
+              <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">Un Sommelier nel tuo Smartphone</h2>
+              <p className="text-gray-500 max-w-2xl mx-auto">Un modello di intelligenza artificiale specializzato, addestrato su migliaia di vitigni e abbinamenti per offrirti un'esperienza professionale.</p>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -219,7 +219,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
                  </div>
                  <div>
                     <h4 className="font-bold text-lg text-gray-900 mb-2">Come funziona il riconoscimento delle etichette?</h4>
-                    <p className="text-gray-500 leading-relaxed">Utilizziamo la tecnologia di visione artificiale di Google Gemini per analizzare la foto dell'etichetta. L'IA riconosce il produttore, l'annata e recupera automaticamente le note di degustazione e i prezzi medi.</p>
+                    <p className="text-gray-500 leading-relaxed">Utilizziamo la nostra tecnologia di visione artificiale per analizzare la foto dell'etichetta. L'IA riconosce il produttore, l'annata e recupera automaticamente le note di degustazione e i prezzi medi.</p>
                  </div>
                  <div>
                     <h4 className="font-bold text-lg text-gray-900 mb-2">Posso usare l'app al ristorante?</h4>
