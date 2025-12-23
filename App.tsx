@@ -359,6 +359,14 @@ const AppContent: React.FC = () => {
         )}
       </nav>
       <RateWineModal entry={ratingModalEntry} onClose={() => setRatingModalEntry(null)} onSave={handleUpdateHistoryEntry} onDelete={handleDeleteHistoryEntry} isPremium={userPremium} />
+      
+      {/* Shared Modal visibile a tutti se presente dati di condivisione */}
+      {sharedPairingData && (
+          <SharedPairingModal 
+              data={sharedPairingData} 
+              onClose={() => { setSharedPairingData(null); window.history.replaceState({}, '', '/'); }} 
+          />
+      )}
     </div>
   );
 };
