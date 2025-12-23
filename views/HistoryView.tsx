@@ -32,7 +32,6 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
       { label: t('filter_all'), value: 'all' },
       { label: t('filter_red'), value: WineType.RED },
       { label: t('filter_white'), value: WineType.WHITE },
-      // Fixed typo: SPARARKING -> SPARKLING
       { label: t('filter_bubbles'), value: WineType.SPARKLING },
   ];
 
@@ -62,7 +61,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
                   <button onClick={() => setViewMode('diary')} className="text-wine-600 font-bold text-sm flex items-center gap-1">
                       ← {t('nav_history')}
                   </button>
-                  <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">Analisi Sommelier</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">{t('history_analysis_btn')}</h2>
                   <div className="w-10"></div>
               </div>
               <div className="flex-1 overflow-hidden">
@@ -79,9 +78,9 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
             <div>
                 <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
                     <ClockIcon className="w-8 h-8 text-wine-600" />
-                    Il Tuo Diario
+                    {t('history_diary_title')}
                 </h1>
-                <p className="text-sm text-gray-500 mt-1">Ogni calice ha una storia da ricordare.</p>
+                <p className="text-sm text-gray-500 mt-1">{t('history_diary_subtitle')}</p>
             </div>
              <div className="flex gap-2">
                 <button onClick={() => setViewMode('analysis')} className="bg-purple-50 text-purple-700 p-2 rounded-full border border-purple-100 hover:bg-purple-100 transition-colors" title="Analisi IA">
@@ -92,12 +91,11 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
         </div>
 
         <div className="flex gap-2 mb-3">
-             <input type="text" placeholder={t('search_history')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="flex-1 bg-gray-100 border-none rounded-xl py-2 px-4 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none"/>
+             <input type="text" placeholder={t('history_search_placeholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="flex-1 bg-gray-100 border-none rounded-xl py-2 px-4 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none"/>
             <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as SortOption)} className="bg-gray-100 border-none rounded-xl py-2 px-2 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none max-w-[120px]">
                 <option value="date_desc">{t('sort_recent')}</option>
                 <option value="date_asc">{t('sort_oldest')}</option>
                 <option value="rating_desc">{t('sort_rating_high')}</option>
-                {/* Fixed bug: value was set to date_asc instead of rating_asc */}
                 <option value="rating_asc">{t('sort_rating_low')}</option>
             </select>
         </div>
@@ -113,7 +111,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
         {filteredHistory.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
             <WineIcon className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p>Non hai ancora registrato bevute.</p>
+            <p>{t('history_empty')}</p>
           </div>
         ) : (
             <div className="space-y-4">
@@ -141,7 +139,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
                                         {Array.from({ length: Number(entry.rating) }).map((_, i) => (<StarIcon key={i} filled className="w-3 h-3" />))}
                                     </div>
                                 ) : (
-                                    <span className="text-[9px] text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded-full uppercase font-bold">Da votare</span>
+                                    <span className="text-[9px] text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded-full uppercase font-bold">{t('history_to_rate')}</span>
                                 )}
                                 <span className="text-[10px] text-gray-400 mt-1 font-mono uppercase">{new Date(entry.consumedDate).toLocaleDateString()}</span>
                             </div>
