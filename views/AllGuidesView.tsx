@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { Logo } from '../components/Logo';
 import { WineIcon, ChefIcon, RestaurantIcon, ShopIcon, ChartBarIcon, UserIcon, HistoryIcon } from '../components/Icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface AllGuidesViewProps {
   onBack: () => void;
@@ -9,20 +10,21 @@ interface AllGuidesViewProps {
 }
 
 const AllGuidesView: React.FC<AllGuidesViewProps> = ({ onBack, onOpenGuide }) => {
+  const { t } = useLanguage();
   
   useEffect(() => {
-    document.title = "Archivio Guide e Academy - AIKNOW.WINE";
+    document.title = `${t('lp_academy_title')} - AIKNOW.WINE`;
     window.scrollTo(0, 0);
   }, []);
 
   const guides = [
-    { slug: 'cantina-digitale', title: 'La Cantina Digitale', desc: 'Come catalogare le tue bottiglie con l\'IA.', icon: WineIcon, color: 'bg-wine-800' },
-    { slug: 'sommelier-a-casa', title: 'Il Sommelier a Casa', desc: 'Abbinamenti perfetti per le tue cene.', icon: ChefIcon, color: 'bg-amber-600' },
-    { slug: 'al-ristorante', title: 'Al Ristorante', desc: 'Scegli dalla carta dei vini come un pro.', icon: RestaurantIcon, color: 'bg-emerald-600' },
-    { slug: 'acquisti-intelligenti', title: 'Acquisti Intelligenti', desc: 'Analisi prezzi e coerenza di acquisto.', icon: ShopIcon, color: 'bg-indigo-600' },
-    { slug: 'analisi-e-roi', title: 'Analisi & ROI', desc: 'Monitora il valore della tua collezione.', icon: ChartBarIcon, color: 'bg-slate-800' },
-    { slug: 'analisi-sommelier', title: 'Analisi Sommelier IA', desc: 'Il tuo profilo palato e gap analysis.', icon: UserIcon, color: 'bg-purple-700' },
-    { slug: 'storico-degustazioni', title: 'Storico & Memorie', desc: 'Il diario immortale delle tue bevute.', icon: HistoryIcon, color: 'bg-stone-700' },
+    { slug: 'cantina-digitale', title: t('guide_title_cellar'), desc: t('guide_desc_cellar'), icon: WineIcon, color: 'bg-wine-800' },
+    { slug: 'sommelier-a-casa', title: t('guide_title_home'), desc: t('guide_desc_home'), icon: ChefIcon, color: 'bg-amber-600' },
+    { slug: 'al-ristorante', title: t('guide_title_rest'), desc: t('guide_desc_rest'), icon: RestaurantIcon, color: 'bg-emerald-600' },
+    { slug: 'acquisti-intelligenti', title: t('guide_title_shop'), desc: t('guide_desc_shop'), icon: ShopIcon, color: 'bg-indigo-600' },
+    { slug: 'analisi-e-roi', title: t('guide_title_roi'), desc: t('guide_desc_roi'), icon: ChartBarIcon, color: 'bg-slate-800' },
+    { slug: 'analisi-sommelier', title: t('guide_title_somm'), desc: t('guide_desc_somm'), icon: UserIcon, color: 'bg-purple-700' },
+    { slug: 'storico-degustazioni', title: t('guide_title_hist'), desc: t('guide_desc_hist'), icon: HistoryIcon, color: 'bg-stone-700' },
   ];
 
   return (
@@ -38,10 +40,8 @@ const AllGuidesView: React.FC<AllGuidesViewProps> = ({ onBack, onOpenGuide }) =>
 
       <main className="max-w-5xl mx-auto px-6 py-12">
         <header className="mb-12">
-          <h1 className="text-4xl font-serif font-black text-gray-900 mb-4">Wine Academy</h1>
-          <p className="text-gray-500 max-w-2xl">
-            Tutto quello che devi sapere per gestire la tua passione con l'intelligenza artificiale. Dai primi passi alla strategia avanzata.
-          </p>
+          <h1 className="text-4xl font-serif font-black text-gray-900 mb-4">{t('lp_academy_title')}</h1>
+          <p className="text-gray-500 max-w-2xl">{t('lp_academy_desc')}</p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

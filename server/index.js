@@ -246,7 +246,7 @@ app.delete('/api/history/:id', authenticateToken, async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
 });
 
-// Locations (Inventory Storage Locations)
+// Locations
 app.get('/api/locations', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM locations WHERE user_id = $1', [req.user.userId]);
