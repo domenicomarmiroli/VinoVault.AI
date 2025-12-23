@@ -48,7 +48,7 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
       <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
         <div className="bg-gray-50 p-4 border-b border-gray-100 flex justify-between items-center shrink-0">
             <div>
-                <h3 className="font-serif font-bold text-lg text-gray-900">Scheda Degustazione</h3>
+                <h3 className="font-serif font-bold text-lg text-gray-900">{t('tasting_sheet_title')}</h3>
                 <p className="text-xs text-gray-500">{entry.name}</p>
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
@@ -57,7 +57,7 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
         <div className="overflow-y-auto p-6 space-y-6">
             <form id="rate-form" onSubmit={handleSubmit} className="space-y-6">
                 <div className="flex flex-col items-center justify-center space-y-2">
-                    <label className="text-xs font-bold uppercase text-gray-500 tracking-wider">Punteggio</label>
+                    <label className="text-xs font-bold uppercase text-gray-500 tracking-wider">{t('rating_label')}</label>
                     <div className="flex gap-2">
                         {[1, 2, 3, 4, 5].map((star) => (
                             <button
@@ -76,23 +76,23 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
 
                 <div>
                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-2 flex items-center gap-2">
-                        <MapPinIcon className="w-3 h-3" /> Luogo della bevuta
+                        <MapPinIcon className="w-3 h-3" /> {t('drink_location_label')}
                     </label>
                     <input 
                         type="text"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
-                        placeholder="Es. Cantina, Nome Ristorante..."
+                        placeholder={t('location_placeholder')}
                         className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-wine-500 outline-none bg-gray-50"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-2">Note & Commenti</label>
+                    <label className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-2">{t('notes_comments_label')}</label>
                     <textarea 
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Com'era il vino? Aromi, abbinamenti, impressioni..."
+                        placeholder={t('notes_placeholder')}
                         className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-wine-500 outline-none h-32 resize-none bg-gray-50"
                     />
                 </div>
@@ -114,7 +114,7 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
                 form="rate-form"
                 className="w-full py-3 bg-wine-600 text-white font-bold rounded-xl hover:bg-wine-700 transition-colors shadow-lg shadow-wine-100"
             >
-                Salva Recensione
+                {t('save_review')}
             </button>
             
             {onDelete && (
@@ -124,7 +124,7 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
                     className="w-full py-2.5 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center gap-2 text-sm border border-red-100"
                 >
                     <TrashIcon className="w-4 h-4" />
-                    Elimina Degustazione
+                    {t('delete_tasting')}
                 </button>
             )}
         </div>
