@@ -3,6 +3,7 @@ import React from 'react';
 import { Logo } from './Logo';
 import { WineIcon, ChefIcon, ShopIcon, ChartBarIcon, RestaurantIcon, UserIcon, HistoryIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import { Language } from '../types';
 
 interface LandingPageProps {
   onStart: () => void;
@@ -12,7 +13,7 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewAllGuides, onOpenBusiness }) => {
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   
   const guideItems = [
     { slug: 'cantina-digitale', title: t('guide_title_cellar'), desc: t('guide_desc_cellar'), icon: WineIcon, color: 'bg-wine-800', tag: t('guide_tag_manage') },
@@ -41,18 +42,35 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
             <div className="cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                 <Logo className="w-10 h-10" />
             </div>
-            <div className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-500 uppercase tracking-widest">
+            
+            <div className="hidden lg:flex items-center gap-8 text-sm font-bold text-gray-500 uppercase tracking-widest">
                 <button onClick={onOpenBusiness} className="hover:text-emerald-600 transition-colors flex items-center gap-1 font-black">Business</button>
                 <a href="#how-it-works" className="hover:text-wine-700 transition-colors">{t('lp_how_it_works')}</a>
                 <a href="#features" className="hover:text-wine-700 transition-colors">{t('lp_features')}</a>
                 <a href="#academy" className="hover:text-wine-700 transition-colors">{t('lp_academy')}</a>
             </div>
-            <button 
-              onClick={onStart}
-              className="bg-wine-700 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-wine-800 transition-all text-sm shadow-lg shadow-wine-100"
-            >
-              {t('lp_access')}
-            </button>
+
+            <div className="flex items-center gap-3">
+                {/* Language Switcher */}
+                <select 
+                    value={language} 
+                    onChange={(e) => setLanguage(e.target.value as Language)}
+                    className="bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-bold uppercase tracking-tight p-1.5 focus:ring-1 focus:ring-wine-500 outline-none"
+                >
+                    <option value="it">IT</option>
+                    <option value="en">EN</option>
+                    <option value="fr">FR</option>
+                    <option value="es">ES</option>
+                    <option value="de">DE</option>
+                </select>
+
+                <button 
+                  onClick={onStart}
+                  className="bg-wine-700 text-white font-bold px-5 py-2 rounded-xl hover:bg-wine-800 transition-all text-xs shadow-lg shadow-wine-100"
+                >
+                  {t('lp_access')}
+                </button>
+            </div>
         </div>
       </nav>
 

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Logo } from './Logo';
 import { useLanguage } from '../contexts/LanguageContext';
+import { Language } from '../types';
 
 declare global {
     interface Window {
@@ -11,8 +12,8 @@ declare global {
 
 interface AuthFormProps {
   onLogin: (token: string, userEmail: string) => void;
-  onBack?: () => void; // New prop
-  referralRef?: string | null; // NEW: Origin of registration
+  onBack?: () => void;
+  referralRef?: string | null;
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => {
@@ -23,7 +24,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   const [error, setError] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
   
-  const { t, language } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
 
   useEffect(() => {
       const fetchConfig = async () => {
@@ -67,8 +68,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
               body: JSON.stringify({ 
                   token: response.credential,
                   clientId: googleClientId,
-                  language, // Send current detected language
-                  ref: referralRef // Send referral
+                  language,
+                  ref: referralRef
               })
           });
           const data = await res.json();
@@ -89,7 +90,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
     const payload: any = { email, password, language };
     
-    // Add referral only on registration
     if (!isLogin && referralRef) {
         payload.ref = referralRef;
     }
@@ -102,11 +102,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
       });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Autenticazione fallita');
-      }
-
+      if (!res.ok) throw new Error(data.error || 'Autenticazione fallita');
       onLogin(data.token, data.user.email);
     } catch (err: any) {
       setError(err.message);
@@ -182,13 +178,29 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
             </button>
         </form>
 
-        <div className="mt-8 text-center pt-6 border-t border-gray-100">
+        <div className="mt-8 text-center pt-6 border-t border-gray-100 space-y-4">
             <button 
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-wine-700 font-bold hover:underline text-sm"
+                className="text-wine-700 font-bold hover:underline text-sm block mx-auto"
             >
                 {isLogin ? t('register_btn') : t('login_btn')}
             </button>
+
+            {/* Language Picker */}
+            <div className="flex justify-center items-center gap-2 pt-2">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{t('language')}:</span>
+                <div className="flex gap-2">
+                    {(['it', 'en', 'fr', 'es', 'de'] as Language[]).map(l => (
+                        <button 
+                            key={l}
+                            onClick={() => setLanguage(l)}
+                            className={`text-[10px] font-black w-6 h-6 rounded flex items-center justify-center transition-colors ${language === l ? 'bg-wine-600 text-white shadow-sm' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                        >
+                            {l.toUpperCase()}
+                        </button>
+                    ))}
+                </div>
+            </div>
         </div>
       </div>
     </div>

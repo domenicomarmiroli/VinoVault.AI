@@ -13,7 +13,6 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: ReactNode, initialLanguage?: Language }> = ({ children, initialLanguage }) => {
   const getBrowserLanguage = (): Language => {
-    // navigator.languages è più affidabile per rilevare la preferenza dell'utente
     const browserLangs = navigator.languages || [navigator.language];
     for (const lang of browserLangs) {
         const code = lang.split('-')[0].toLowerCase();
@@ -21,7 +20,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode, initialLanguage?:
             return code as Language;
         }
     }
-    return 'it'; // Default
+    return 'it';
   };
 
   const [language, setLanguage] = useState<Language>(initialLanguage || getBrowserLanguage());
@@ -33,7 +32,15 @@ export const LanguageProvider: React.FC<{ children: ReactNode, initialLanguage?:
   }, [initialLanguage]);
 
   const t = (key: string, params?: Record<string, string>) => {
-    let text = translations[language][key] || translations['en'][key] || key;
+    // 1. Prova la lingua corrente
+    // 2. Se manca, prova l'Inglese (fallback universale)
+    // 3. Se manca anche l'Inglese, restituisci la chiave (estrema ratio)
+    let text = translations[language][key];
+    
+    if (text === undefined || text === key) {
+        text = translations['en'][key] || key;
+    }
+
     if (params) {
         Object.entries(params).forEach(([k, v]) => {
             text = text.replace(`{${k}}`, v);
