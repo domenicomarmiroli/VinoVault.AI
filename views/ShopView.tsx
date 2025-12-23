@@ -82,7 +82,6 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           const input = mode === 'camera' ? { type: 'image' as const, data: image! } : { type: 'url' as const, data: linkUrl };
           const result = await analyzePurchase(input, inputPrice, inventory, language);
           
-          // Ensure wineDetails is never null/undefined before setting state
           if (!result.wineDetails) {
               result.wineDetails = { name: 'Unknown', producer: 'Unknown', type: 'Rosso' as any };
           }
@@ -99,7 +98,6 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
   const handleBuy = () => {
       if (!analysis) return;
       const today = new Date().toISOString().split('T')[0];
-      // Defensive coding here as well
       const safeMarketPrice = Number(analysis.marketPriceEstimate) || Number(price) || 0;
       
       const newWine: Wine = {
@@ -151,11 +149,10 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
 
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden relative">
-      {/* Loading Overlay */}
       {loading && (
         <LoadingScreen 
           message={t('ai_analyzing')} 
-          subMessage="Sto verificando il prezzo di mercato e l'integrazione con la tua cantina..." 
+          subMessage={t('loading_shop')} 
         />
       )}
 
@@ -216,12 +213,6 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                         </div>
                     </div>
                     <p className="mt-3 text-sm text-gray-600 italic border-l-2 border-wine-300 pl-3">"{analysis.sommelierNotes}"</p>
-                    {analysis.wineDetails?.foodPairings && analysis.wineDetails.foodPairings.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-1"><ChefIcon className="w-3 h-3" /> {t('pairings')}</h4>
-                            <div className="flex flex-wrap gap-2">{analysis.wineDetails.foodPairings.map((pair, idx) => (<span key={idx} className="text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded-lg border border-orange-100 font-medium">{pair}</span>))}</div>
-                        </div>
-                    )}
                 </div>
 
                 <div className={`p-5 rounded-xl border ${getDealColor(analysis.dealRating)}`}>
@@ -232,7 +223,6 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                         <div><p className="text-xs opacity-70 mb-1">{t('offer_price')}</p><p className="text-2xl font-bold">€{Number(price).toFixed(2)}</p></div>
                         <div className="text-right">
                             <p className="text-xs opacity-70 mb-1">{t('market_estimate')}</p>
-                            {/* CRITICAL FIX: Safe Number cast before toFixed to prevent crash */}
                             <p className="text-xl font-semibold opacity-90">~€{Number(analysis.marketPriceEstimate).toFixed(2)}</p>
                         </div>
                     </div>

@@ -84,7 +84,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
 
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden relative">
-      {loading && <LoadingScreen message={t('ai_analyzing')} subMessage="Il Sommelier sta consultando la tua cantina..." />}
+      {loading && <LoadingScreen message={t('ai_analyzing')} subMessage={t('loading_somm')} />}
 
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
         <div>
@@ -208,7 +208,6 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                                                 "{option.reasoning}"
                                             </p>
 
-                                            {/* Informazioni di Servizio Ottimizzate per Leggibilità */}
                                             <div className="space-y-2 mb-4 p-2.5 bg-stone-50 rounded-lg border border-stone-100">
                                                 <div className="flex items-center gap-2 text-xs text-gray-700">
                                                     <ThermometerIcon className="w-4 h-4 text-wine-600 shrink-0" />
