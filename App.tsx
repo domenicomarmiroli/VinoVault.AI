@@ -182,20 +182,28 @@ const AppContent: React.FC = () => {
     const historyEntry: HistoryEntry = {
       id: generateId(), wineId: wine.id, name: wine.name, producer: wine.producer, year: wine.year, 
       type: wine.type, price: wine.price, imageUrl: wine.imageUrl, consumedDate: new Date().toISOString(), 
-      rating: 0, notes: '', location: 'Cantina' // Default for cellar consumption
+      rating: 0, notes: '', location: 'Cantina' 
     };
-    setHistory(prev => [historyEntry, ...prev]);
+    
+    // Aggiorniamo UI e cantina
     setWines(prev => prev.map(w => w.id === wine.id ? { ...w, quantity: Math.max(0, w.quantity - 1) } : w));
-    setRatingModalEntry(historyEntry);
+    setHistory(prev => [historyEntry, ...prev]);
+    
     try {
-        await Promise.all([
-            authFetch('/api/history', { method: 'POST', body: JSON.stringify(historyEntry) }),
-            authFetch(`/api/wines/${wine.id}`, { method: 'PUT', body: JSON.stringify({ quantity: Math.max(0, wine.quantity - 1) }) })
-        ]);
-    } catch (e) {}
+        // Attendiamo che il record sia creato sul server prima di aprire il modale di recensione
+        const res = await authFetch('/api/history', { method: 'POST', body: JSON.stringify(historyEntry) });
+        if (!res.ok) throw new Error("Errore creazione storico");
+        
+        await authFetch(`/api/wines/${wine.id}`, { method: 'PUT', body: JSON.stringify({ quantity: Math.max(0, wine.quantity - 1) }) });
+        
+        // Solo ora apriamo il modale (così la PUT successiva troverà il record)
+        setRatingModalEntry(historyEntry);
+    } catch (e) {
+        alert("Impossibile stappare: errore di connessione col server.");
+    }
   };
 
-  const handleAddToHistory = (entryData: Partial<HistoryEntry>) => {
+  const handleAddToHistory = async (entryData: Partial<HistoryEntry>) => {
       const historyEntry: HistoryEntry = {
           id: generateId(), wineId: 'external_' + generateId(), name: entryData.name || '?',
           producer: entryData.producer || '?', year: entryData.year || 'N/A', type: entryData.type || 'Altro',
@@ -203,14 +211,28 @@ const AppContent: React.FC = () => {
           rating: 0, notes: restaurantData ? `Bevuto presso ${restaurantData.name}` : '',
           location: restaurantData ? restaurantData.name : (entryData.location || '')
       };
+      
       setHistory(prev => [historyEntry, ...prev]);
-      setRatingModalEntry(historyEntry);
-      authFetch('/api/history', { method: 'POST', body: JSON.stringify(historyEntry) });
+      
+      try {
+          const res = await authFetch('/api/history', { method: 'POST', body: JSON.stringify(historyEntry) });
+          if (!res.ok) throw new Error();
+          setRatingModalEntry(historyEntry);
+      } catch (e) {
+          alert("Errore nel registrare la bevuta al ristorante.");
+      }
   };
 
-  const handleUpdateHistoryEntry = (id: string, rating: number, notes: string, location?: string) => {
+  const handleUpdateHistoryEntry = async (id: string, rating: number, notes: string, location?: string) => {
+    // Ottimistic Update
     setHistory(prev => prev.map(h => h.id === id ? { ...h, rating, notes, location: location !== undefined ? location : h.location } : h));
-    authFetch(`/api/history/${id}`, { method: 'PUT', body: JSON.stringify({ rating, notes, location }) });
+    
+    try {
+        const res = await authFetch(`/api/history/${id}`, { method: 'PUT', body: JSON.stringify({ rating, notes, location }) });
+        if (!res.ok) throw new Error("Errore persistenza recensione");
+    } catch (e) {
+        alert("Attenzione: la recensione non è stata salvata sul server. Controlla la connessione.");
+    }
   };
 
   const handleDeleteHistoryEntry = (id: string) => {

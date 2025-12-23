@@ -9,7 +9,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 interface RateWineModalProps {
   entry: HistoryEntry | null;
   onClose: () => void;
-  onSave: (id: string, rating: number, notes: string, location?: string) => void;
+  onSave: (id: string, rating: number, notes: string, location?: string) => Promise<void> | void;
   onDelete?: (id: string) => void;
   isPremium: boolean;
 }
@@ -18,6 +18,7 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState('');
   const [location, setLocation] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -25,15 +26,21 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
         setRating(entry.rating || 0);
         setNotes(entry.notes || '');
         setLocation(entry.location || '');
+        setIsSaving(false);
     }
   }, [entry]);
 
   if (!entry) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      onSave(entry.id, rating, notes, location);
-      onClose();
+      setIsSaving(true);
+      try {
+          await onSave(entry.id, rating, notes, location);
+          onClose();
+      } catch (err) {
+          setIsSaving(false);
+      }
   };
 
   const handleDelete = () => {
@@ -51,7 +58,7 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
                 <h3 className="font-serif font-bold text-lg text-gray-900">{t('tasting_sheet_title')}</h3>
                 <p className="text-xs text-gray-500">{entry.name}</p>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600" disabled={isSaving}>✕</button>
         </div>
 
         <div className="overflow-y-auto p-6 space-y-6">
@@ -64,6 +71,7 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
                                 key={star}
                                 type="button"
                                 onClick={() => setRating(star)}
+                                disabled={isSaving}
                                 className={`w-8 h-8 transition-transform active:scale-90 ${
                                     star <= rating ? 'text-yellow-400' : 'text-gray-200'
                                 }`}
@@ -83,7 +91,8 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
                         placeholder={t('location_placeholder')}
-                        className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-wine-500 outline-none bg-gray-50"
+                        disabled={isSaving}
+                        className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-wine-500 outline-none bg-gray-50 disabled:opacity-50"
                     />
                 </div>
 
@@ -93,7 +102,8 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder={t('notes_placeholder')}
-                        className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-wine-500 outline-none h-32 resize-none bg-gray-50"
+                        disabled={isSaving}
+                        className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-wine-500 outline-none h-32 resize-none bg-gray-50 disabled:opacity-50"
                     />
                 </div>
                 
@@ -112,16 +122,19 @@ const RateWineModal: React.FC<RateWineModalProps> = ({ entry, onClose, onSave, o
             <button 
                 type="submit" 
                 form="rate-form"
-                className="w-full py-3 bg-wine-600 text-white font-bold rounded-xl hover:bg-wine-700 transition-colors shadow-lg shadow-wine-100"
+                disabled={isSaving}
+                className={`w-full py-3 bg-wine-600 text-white font-bold rounded-xl hover:bg-wine-700 transition-colors shadow-lg shadow-wine-100 flex items-center justify-center gap-2 ${isSaving ? 'opacity-70 cursor-wait' : ''}`}
             >
-                {t('save_review')}
+                {isSaving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : null}
+                {isSaving ? t('loading') : t('save_review')}
             </button>
             
             {onDelete && (
                 <button 
                     type="button"
                     onClick={handleDelete}
-                    className="w-full py-2.5 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center gap-2 text-sm border border-red-100"
+                    disabled={isSaving}
+                    className="w-full py-2.5 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center gap-2 text-sm border border-red-100 disabled:opacity-50"
                 >
                     <TrashIcon className="w-4 h-4" />
                     {t('delete_tasting')}

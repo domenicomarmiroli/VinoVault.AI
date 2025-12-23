@@ -116,7 +116,7 @@ app.post('/api/auth/register', async (req, res) => {
             [userId, email, hashedPassword, language || 'it', ref || null]
         );
         const token = jwt.sign({ userId, email, role: 'user', isPremium: false, language: language || 'it' }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, user: { id: userId, email, role: 'user', is_premium: false, language: language || 'it' } });
+        res.json({ token, user: { id: userId, email: role: 'user', is_premium: false, language: language || 'it' } });
     } catch (err) {
         if (err.code === '23505') return res.status(400).json({ error: 'Email already exists' });
         res.status(500).json({ error: 'Registration failed' });
@@ -234,9 +234,18 @@ app.post('/api/history', authenticateToken, async (req, res) => {
 app.put('/api/history/:id', authenticateToken, async (req, res) => {
     const { rating, notes, location } = req.body;
     try {
-        await pool.query('UPDATE history SET rating = $1, notes = $2, location = $3 WHERE id = $4 AND user_id = $5', [rating, notes, location, req.params.id, req.user.userId]);
+        const result = await pool.query(
+            'UPDATE history SET rating = $1, notes = $2, location = $3 WHERE id = $4 AND user_id = $5 RETURNING *', 
+            [rating || 0, notes || '', location || '', req.params.id, req.user.userId]
+        );
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Recensione non trovata per questo utente.' });
+        }
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Update failed' }); }
+    } catch (err) { 
+        console.error("Update history error:", err);
+        res.status(500).json({ error: 'Update failed' }); 
+    }
 });
 
 app.delete('/api/history/:id', authenticateToken, async (req, res) => {
