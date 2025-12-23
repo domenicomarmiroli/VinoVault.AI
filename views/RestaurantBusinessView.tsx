@@ -68,11 +68,18 @@ const RestaurantBusinessView: React.FC<RestaurantBusinessViewProps> = ({ onBack,
                 <h2 className="text-3xl md:text-5xl font-serif font-bold mb-6">{t('b2b_free_title')}</h2>
                 <p className="text-lg text-gray-600 mb-10 leading-relaxed">{t('b2b_free_desc')}</p>
                 <div className="space-y-4 mb-10">
-                    {[t('b2b_check1'), t('b2b_check2'), t('b2b_check3'), t('b2b_check4')].map(check => (
-                        <div key={check} className="flex items-center justify-center gap-2 text-emerald-600 font-bold">
-                            <ShieldCheckIcon className="w-5 h-5" filled /> {check}
-                        </div>
-                    ))}
+                    <div className="flex items-center justify-center gap-2 text-emerald-600 font-bold">
+                        <ShieldCheckIcon className="w-5 h-5" filled /> {t('b2b_check1')}
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-emerald-600 font-bold">
+                        <ShieldCheckIcon className="w-5 h-5" filled /> {t('b2b_check2')}
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-emerald-600 font-bold">
+                        <ShieldCheckIcon className="w-5 h-5" filled /> {t('b2b_check3')}
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-emerald-600 font-bold">
+                        <ShieldCheckIcon className="w-5 h-5" filled /> {t('b2b_check4')}
+                    </div>
                 </div>
                 <button 
                   onClick={() => window.location.href = 'mailto:business@aiknow.wine'}
