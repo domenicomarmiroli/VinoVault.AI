@@ -116,7 +116,7 @@ app.post('/api/auth/register', async (req, res) => {
             [userId, email, hashedPassword, language || 'it', ref || null]
         );
         const token = jwt.sign({ userId, email, role: 'user', isPremium: false, language: language || 'it' }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, user: { id: userId, email: role: 'user', is_premium: false, language: language || 'it' } });
+        res.json({ token, user: { id: userId, email, role: 'user', is_premium: false, language: language || 'it' } });
     } catch (err) {
         if (err.code === '23505') return res.status(400).json({ error: 'Email already exists' });
         res.status(500).json({ error: 'Registration failed' });
