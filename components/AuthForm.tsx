@@ -46,7 +46,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
         try {
             window.google.accounts.id.initialize({
                 client_id: googleClientId,
-                callback: handleGoogleCallback
+                callback: handleGoogleCallback,
+                ux_mode: 'redirect', // Changed from popup to redirect
+                login_uri: window.location.origin + '/api/auth/google', // The server will receive the POST
+                state: JSON.stringify({ language, ref: referralRef }) // Preserve data during redirect
             });
             window.google.accounts.id.renderButton(
                 document.getElementById("googleSignInBtn"),
@@ -56,9 +59,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
             console.error("Google Init Error", e);
         }
     }
-  }, [googleClientId, isLogin]);
+  }, [googleClientId, isLogin, language, referralRef]);
 
   const handleGoogleCallback = async (response: any) => {
+      // Note: In 'redirect' mode, this callback is NOT called on current page.
+      // The results are POSTed to 'login_uri'.
+      // This remains for manual trigger or fallback if mode is toggled back.
       setLoading(true);
       setError('');
       try {
@@ -206,5 +212,5 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
     </div>
   );
 };
-
+  
 export default AuthForm;

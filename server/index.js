@@ -24,6 +24,7 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 // --- DATABASE ---
 const pool = new Pool({
@@ -62,8 +63,24 @@ app.get('/api/config', (req, res) => {
 
 // Auth
 app.post('/api/auth/google', async (req, res) => {
-    const { token, language, ref } = req.body;
+    // Google Redirect mode sends 'credential' and 'state' in body (url-encoded)
+    // Client-side fetch sends 'token', 'language', 'ref' in body (json)
+    const token = req.body.token || req.body.credential;
+    let language = req.body.language;
+    let ref = req.body.ref;
+
+    // Handle 'state' from Google Redirect
+    if (req.body.state) {
+        try {
+            const state = JSON.parse(req.body.state);
+            language = language || state.language;
+            ref = ref || state.ref;
+        } catch (e) {}
+    }
+
     if (!GOOGLE_CLIENT_ID) return res.status(500).json({ error: 'Google Client ID missing' });
+    if (!token) return res.status(400).json({ error: 'Google token missing' });
+
     try {
         const client = new OAuth2Client(GOOGLE_CLIENT_ID);
         const ticket = await client.verifyIdToken({ idToken: token, audience: GOOGLE_CLIENT_ID });
@@ -88,9 +105,33 @@ app.post('/api/auth/google', async (req, res) => {
             user.google_id = googleId;
         }
 
-        const jwtToken = jwt.sign({ userId: user.id, email: user.email, role: user.role, isPremium: user.is_premium, language: user.language || 'it' }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token: jwtToken, user: { id: user.id, email: user.email, role: user.role, is_premium: user.is_premium, language: user.language || 'it' } });
+        const jwtToken = jwt.sign({ 
+            userId: user.id, 
+            email: user.email, 
+            role: user.role, 
+            isPremium: user.is_premium, 
+            language: user.language || 'it' 
+        }, JWT_SECRET, { expiresIn: '30d' });
+
+        // If it's a browser redirect (Form POST), we return a script to save token and redirect
+        if (req.headers['content-type'] === 'application/x-www-form-urlencoded') {
+            res.send(`
+                <html>
+                <head><title>Autenticazione in corso...</title></head>
+                <body>
+                <script>
+                    localStorage.setItem('vinovault_token', '${jwtToken}');
+                    window.location.href = '/';
+                </script>
+                </body>
+                </html>
+            `);
+        } else {
+            // Normal JSON response for fetch
+            res.json({ token: jwtToken, user: { id: user.id, email: user.email, role: user.role, is_premium: user.is_premium, language: user.language || 'it' } });
+        }
     } catch (err) {
+        console.error("Auth error:", err);
         res.status(500).json({ error: 'Google auth failed' });
     }
 });
@@ -423,5 +464,5 @@ const initDb = async () => {
 
 app.listen(PORT, () => {
     console.log(`Server on port ${PORT}`);
-    initDb();
+    initDb();   
 });
