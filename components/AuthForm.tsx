@@ -17,38 +17,47 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
-  const [isApp, setIsApp] = useState(false);
+  
+  // IsApp ora è inizializzato con un controllo immediato dello UserAgent
+  const [isApp, setIsApp] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const ua = navigator.userAgent.toLowerCase();
+    // WebToNative e altri wrapper iniettano spesso il loro nome o "wv" (WebView)
+    return ua.includes('webtonative') || ua.includes('wv') || (window as any).WTN || (window as any).webtonative;
+  });
   
   const { t, language, setLanguage } = useLanguage();
 
   useEffect(() => {
-      // 1. Carica Client ID per Google (solo per web)
+      // 1. Carica Client ID per Google (necessario solo per web)
       fetch('/api/config')
           .then(res => res.json())
           .then(data => {
               if (data.googleClientId) setGoogleClientId(data.googleClientId);
           }).catch(() => {});
 
-      // 2. Rilevamento ambiente APP
-      // Controlliamo se esiste il bridge WebToNative
-      const checkEnv = () => {
+      // 2. Polling per il bridge (come backup se lo UA fallisce)
+      const checkBridge = () => {
           const w = window as any;
-          const hasBridge = !!(w.WTN || w.webtonative || w.webInterface);
-          if (hasBridge) {
+          const hasBridge = !!(w.WTN || w.webtonative || w.webInterface || w.AndroidInterface);
+          if (hasBridge && !isApp) {
               setIsApp(true);
               return true;
           }
-          return false;
+          return hasBridge;
       };
 
-      // Controllo immediato e polling breve
-      if (!checkEnv()) {
-          const interval = setInterval(() => {
-              if (checkEnv()) clearInterval(interval);
-          }, 500);
-          setTimeout(() => clearInterval(interval), 5000);
-      }
-  }, []);
+      const interval = setInterval(() => {
+          if (checkBridge()) clearInterval(interval);
+      }, 500);
+      
+      const timeout = setTimeout(() => clearInterval(interval), 5000);
+
+      return () => {
+          clearInterval(interval);
+          clearTimeout(timeout);
+      };
+  }, [isApp]);
 
   const handleGoogleLogin = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -104,7 +113,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
         <div className="flex flex-col items-center justify-center mb-8">
             <Logo className="w-20 h-20 mb-2" />
             <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">
-                {isApp ? "Mobile Access" : "Web Portal"}
+                {isApp ? "Mobile Application" : "Web Portal"}
             </p>
         </div>
 
