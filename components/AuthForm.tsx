@@ -17,10 +17,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
+  const [isWtnReady, setIsWtnReady] = useState(false);
   
   const { t, language, setLanguage } = useLanguage();
 
   useEffect(() => {
+      // 1. Carica configurazione (Web Client ID)
       const fetchConfig = async () => {
           try {
               const res = await fetch('/api/config');
@@ -33,55 +35,79 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
           }
       };
       fetchConfig();
+
+      // 2. Verifica presenza WebToNative (con un piccolo delay per sicurezza)
+      const checkWTN = () => {
+          const WTN = (window as any).WTN;
+          if (WTN?.socialLogin?.google) {
+              setIsWtnReady(true);
+          }
+      };
+      
+      const timer = setTimeout(checkWTN, 500);
+      return () => clearTimeout(timer);
   }, []);
 
   // --- LOGICA NATIVA (WebToNative) ---
   const handleNativeGoogleLogin = () => {
       const WTN = (window as any).WTN;
       if (!WTN?.socialLogin?.google) {
-          console.error("WTN SDK not available");
+          alert("Errore: SDK WebToNative non pronto o non configurato correttamente.");
           return;
       }
 
       setLoading(true);
-      WTN.socialLogin.google.login({
-          callback: async (response: any) => {
-              console.log("Native Google Response:", response);
-              if (response.isSuccess && response.idToken) {
-                  // Invia l'idToken al tuo server esattamente come nel flusso web
-                  try {
-                      const res = await fetch('/api/auth/google', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ 
-                              token: response.idToken,
-                              language,
-                              ref: referralRef
-                          })
-                      });
-                      
-                      const data = await res.json();
-                      if (res.ok) {
-                          onLogin(data.token, data.user.email);
-                      } else {
-                          setError(data.error || 'Server Error');
+      setError('');
+      
+      try {
+          WTN.socialLogin.google.login({
+              callback: async (response: any) => {
+                  console.log("Native Google Response:", response);
+                  
+                  if (response.isSuccess && response.idToken) {
+                      try {
+                          const res = await fetch('/api/auth/google', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ 
+                                  token: response.idToken,
+                                  language,
+                                  ref: referralRef
+                              })
+                          });
+                          
+                          const data = await res.json();
+                          if (res.ok) {
+                              onLogin(data.token, data.user.email);
+                          } else {
+                              setError(data.error || 'Server Auth Error');
+                              setLoading(false);
+                          }
+                      } catch (e) {
+                          setError("Impossibile contattare il server.");
                           setLoading(false);
                       }
-                  } catch (e) {
-                      setError("Connection failed");
+                  } else {
+                      // Se l'utente annulla o c'è un errore di configurazione nel dashboard WTN
+                      const errorMsg = response.error || "Login annullato o configurazione errata.";
+                      setError(errorMsg);
+                      alert("Google Login Error: " + errorMsg);
                       setLoading(false);
                   }
-              } else {
-                  setError(response.error || "Login canceled");
-                  setLoading(false);
               }
-          }
-      });
+          });
+      } catch (err) {
+          alert("Eccezione durante chiamata nativa: " + err);
+          setLoading(false);
+      }
   };
 
   // --- LOGICA WEB (Standard Redirect) ---
   const handleGoogleRedirectLogin = () => {
-      if (!googleClientId) return;
+      if (!googleClientId) {
+          alert("Configurazione Google non caricata (Web Client ID mancante).");
+          return;
+      }
       
       const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
       const redirectUri = window.location.origin;
@@ -100,13 +126,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
       window.location.href = `${rootUrl}?${qs}`;
   };
 
-  // Funzione unificata che sceglie il metodo migliore
   const handleGoogleLogin = () => {
-      if ((window as any).WTN?.socialLogin?.google) {
-          console.log("Using Native Login via WebToNative");
+      // Priorità al login nativo se siamo dentro l'app WebToNative
+      if (isWtnReady) {
+          console.log("App: Avvio Google Login Nativo");
           handleNativeGoogleLogin();
       } else {
-          console.log("Using Standard Web Redirect Login");
+          console.log("Web: Avvio Google Login Redirect");
           handleGoogleRedirectLogin();
       }
   };
@@ -118,10 +144,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
     const payload: any = { email, password, language };
-    
-    if (!isLogin && referralRef) {
-        payload.ref = referralRef;
-    }
+    if (!isLogin && referralRef) payload.ref = referralRef;
 
     try {
       const res = await fetch(endpoint, {
@@ -158,10 +181,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
 
         <div className="flex flex-col items-center justify-center mb-8">
             <Logo className="w-20 h-20 mb-4" />
-            {(window as any).WTN && (
-                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest animate-pulse">
-                    App Mode Enabled
-                </span>
+            {isWtnReady && (
+                <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-100 shadow-sm animate-pulse">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                    App Interface Connected
+                </div>
             )}
         </div>
 
@@ -170,7 +194,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                 <button 
                     onClick={handleGoogleLogin}
                     disabled={loading}
-                    className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors shadow-sm active:scale-[0.98] disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -185,40 +209,40 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
 
         <div className="relative flex py-2 items-center mb-6">
             <div className="flex-grow border-t border-gray-100"></div>
-            <span className="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase font-bold">{t('or_email')}</span>
+            <span className="flex-shrink-0 mx-4 text-gray-400 text-[10px] uppercase font-bold tracking-widest">{t('or_email')}</span>
             <div className="flex-grow border-t border-gray-100"></div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Email</label>
                 <input 
                     type="email" 
                     required 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none transition-shadow"
-                    placeholder="email@example.com"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none transition-shadow bg-gray-50/50"
+                    placeholder="email@esempio.com"
                 />
             </div>
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Password</label>
                 <input 
                     type="password" 
                     required 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none transition-shadow"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none transition-shadow bg-gray-50/50"
                     placeholder="••••••••"
                 />
             </div>
 
-            {error && <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">{error}</div>}
+            {error && <div className="text-red-500 text-xs font-bold text-center bg-red-50 p-2.5 rounded-xl border border-red-100">{error}</div>}
 
             <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full py-3 bg-wine-700 text-white font-bold rounded-xl hover:bg-wine-800 transition-all shadow-lg shadow-wine-200 disabled:opacity-50 transform active:scale-[0.98]"
+                className="w-full py-3.5 bg-wine-700 text-white font-bold rounded-xl hover:bg-wine-800 transition-all shadow-lg shadow-wine-200 disabled:opacity-50 transform active:scale-[0.98]"
             >
                 {loading ? t('loading') : (isLogin ? t('login_title') : t('register_title'))}
             </button>
@@ -240,7 +264,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                         <button 
                             key={l}
                             onClick={() => setLanguage(l)}
-                            className={`text-[10px] font-black w-6 h-6 rounded flex items-center justify-center transition-colors ${language === l ? 'bg-wine-600 text-white shadow-sm' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                            className={`text-[10px] font-black w-7 h-7 rounded-lg flex items-center justify-center transition-all ${language === l ? 'bg-wine-600 text-white shadow-md' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
                         >
                             {l.toUpperCase()}
                         </button>
