@@ -18,7 +18,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   const [error, setError] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
   const [isWtnReady, setIsWtnReady] = useState(false);
-  const [debugLog, setDebugLog] = useState<string[]>(["Inizializzazione..."]);
+  const [debugLog, setDebugLog] = useState<string[]>(["Avvio diagnosi..."]);
   
   const { t, language, setLanguage } = useLanguage();
 
@@ -27,45 +27,43 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
     setDebugLog(prev => [msg, ...prev].slice(0, 5));
   };
 
-  useEffect(() => {
-      // 1. Carica configurazione Web Client ID dal server
-      const fetchConfig = async () => {
-          try {
-              const res = await fetch('/api/config');
-              if (res.ok) {
-                  const data = await res.json();
-                  if (data.googleClientId) {
-                      setGoogleClientId(data.googleClientId);
-                      addLog("Web Client ID caricato");
-                  }
-              }
-          } catch (e: any) {
-              addLog("Errore config: " + e.message);
+  const checkBridge = () => {
+      const w = window as any;
+      const bridge = w.WTN || w.webtonative || w.Wtn;
+      
+      if (bridge) {
+          addLog("Bridge rilevato!");
+          if (bridge.socialLogin) {
+              setIsWtnReady(true);
+              addLog("Funzioni Social attive");
+              return true;
+          } else {
+              addLog("Bridge senza Social");
           }
-      };
-      fetchConfig();
+      }
+      return false;
+  };
 
-      // 2. Rilevamento SDK WebToNative (Polling aggressivo)
-      let checkCount = 0;
-      const interval = setInterval(() => {
-          const WTN = (window as any).WTN;
-          checkCount++;
-          
-          if (WTN) {
-              addLog("SDK WTN Trovato");
-              // Alcune versioni hanno socialLogin annidato
-              if (WTN.socialLogin || (window as any).webtonative) {
-                  setIsWtnReady(true);
-                  addLog("Bridge Nativo Pronto");
-                  clearInterval(interval);
+  useEffect(() => {
+      // 1. Carica configurazione
+      fetch('/api/config')
+          .then(res => res.json())
+          .then(data => {
+              if (data.googleClientId) {
+                  setGoogleClientId(data.googleClientId);
+                  addLog("Configurazioni caricate");
               }
-          }
-          
-          if (checkCount > 20) { // Smetti dopo 10 secondi
+          }).catch(() => addLog("Errore caricamento config"));
+
+      // 2. Polling per il bridge (molto frequente all'inizio)
+      const interval = setInterval(() => {
+          if (checkBridge()) {
               clearInterval(interval);
-              if (!WTN) addLog("SDK WTN non rilevato (Modalità Web)");
           }
-      }, 500);
+      }, 300);
+
+      // Dopo 8 secondi smetti di cercare se non trovato
+      setTimeout(() => clearInterval(interval), 8000);
 
       return () => clearInterval(interval);
   }, []);
@@ -76,72 +74,48 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
           e.stopPropagation();
       }
       
-      addLog("Avvio procedura Google...");
-      const WTN = (window as any).WTN;
+      const w = window as any;
+      const bridge = w.WTN || w.webtonative || w.Wtn;
       
-      // PRIORITÀ 1: LOGIN NATIVO (Per APK Android)
-      // Secondo docs WTN: WTN.socialLogin.google.login()
-      if (WTN?.socialLogin?.google) {
-          addLog("Chiamata Login Nativo...");
+      if (bridge?.socialLogin?.google) {
+          addLog("Tentativo Nativo...");
           setLoading(true);
           try {
-              WTN.socialLogin.google.login({
-                  // Web Client ID è necessario per ricevere l'idToken valido per il server
+              bridge.socialLogin.google.login({
                   clientId: googleClientId, 
                   callback: async (response: any) => {
-                      addLog("Risposta Nativa ricevuta");
                       if (response.isSuccess && response.idToken) {
+                          addLog("ID Token ricevuto");
                           try {
-                              addLog("Verifica token con server...");
                               const res = await fetch('/api/auth/google', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ 
-                                      token: response.idToken,
-                                      language,
-                                      ref: referralRef
-                                  })
+                                  body: JSON.stringify({ token: response.idToken, language, ref: referralRef })
                               });
                               const data = await res.json();
-                              if (res.ok) {
-                                  addLog("Login Successo!");
-                                  onLogin(data.token, data.user.email);
-                              } else {
-                                  setError(data.error || 'Server Error');
-                                  setLoading(false);
-                              }
-                          } catch (e) {
-                              addLog("Errore fetch server");
-                              setLoading(false);
-                          }
+                              if (res.ok) onLogin(data.token, data.user.email);
+                              else { setError(data.error); setLoading(false); }
+                          } catch (e) { addLog("Errore server"); setLoading(false); }
                       } else {
                           setLoading(false);
-                          addLog("Nativo fallito: " + (response.error || 'Annullato'));
-                          alert("Login annullato o non riuscito.");
+                          addLog("Login annullato");
                       }
                   }
               });
           } catch (err: any) {
               setLoading(false);
-              addLog("Errore chiamata SDK: " + err.message);
-              // Fallback estremo se il bridge crasha
+              addLog("Errore SDK call");
               performWebRedirect();
           }
-          return;
+      } else {
+          addLog("Modalità Web forzata");
+          performWebRedirect();
       }
-
-      // PRIORITÀ 2: REDIRECT WEB (Per Browser)
-      performWebRedirect();
   };
 
   const performWebRedirect = () => {
-    if (!googleClientId) {
-        addLog("ERRORE: Client ID mancante");
-        alert("Configurazione non pronta. Ricarica la pagina.");
-        return;
-    }
-
-    addLog("Eseguo Redirect Web...");
+    if (!googleClientId) return;
+    addLog("Eseguo Redirect...");
     const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
     const options: any = {
         client_id: googleClientId,
@@ -153,20 +127,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
         prompt: 'select_account'
     };
     const qs = Object.keys(options).map(k => `${k}=${encodeURIComponent(options[k])}`).join('&');
-    
-    // In WebView Android, a volte location.href viene ignorato. 
-    // Proviamo location.replace o window.open se fallisce.
-    try {
-        window.location.assign(`${rootUrl}?${qs}`);
-    } catch (e) {
-        window.location.href = `${rootUrl}?${qs}`;
-    }
+    window.location.href = `${rootUrl}?${qs}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
     try {
         const res = await fetch(endpoint, {
@@ -184,15 +150,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-4">
       
-      {/* Pannello Debug (Aiuta a capire se l'SDK risponde nell'APK) */}
-      <div className="w-full max-w-md mb-2 p-2 bg-black/80 text-[9px] font-mono text-green-400 rounded border border-gray-800">
+      {/* Diagnostica (Sempre visibile per ora per debuggare l'APK) */}
+      <div className="w-full max-w-md mb-2 p-2 bg-slate-900 text-[10px] font-mono text-emerald-400 rounded-lg shadow-inner">
           {debugLog.map((log, i) => (
               <div key={i}>{`> ${log}`}</div>
           ))}
-          <div className="mt-1 text-gray-500 flex justify-between">
-              <span>Bridge Status: {isWtnReady ? "CONNECTED" : "WAITING"}</span>
-              <span>v1.3</span>
-          </div>
+          {!isWtnReady && (
+              <div className="mt-1 flex justify-between items-center border-t border-slate-800 pt-1">
+                  <span className="text-gray-500 italic">SDK non trovato?</span>
+                  <button onClick={performWebRedirect} className="bg-wine-700 text-white px-2 py-0.5 rounded font-bold uppercase hover:bg-wine-600 transition-colors">
+                      Force Web Redirect
+                  </button>
+              </div>
+          )}
       </div>
 
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative overflow-hidden border border-gray-100">
@@ -208,15 +178,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
         <div className="flex flex-col items-center justify-center mb-8">
             <Logo className="w-20 h-20 mb-4" />
             <div className="text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 text-gray-400">
-                <div className={`w-1.5 h-1.5 rounded-full ${isWtnReady ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`}></div>
-                {isWtnReady ? "Native Bridge Active" : "Web Engine Active"}
+                <div className={`w-1.5 h-1.5 rounded-full ${isWtnReady ? 'bg-emerald-500 animate-pulse' : 'bg-orange-400'}`}></div>
+                {isWtnReady ? "Native Bridge Active" : "Web Engine Only"}
             </div>
         </div>
 
         <div className="mb-6">
             <button 
                 onClick={handleGoogleLogin}
-                className="w-full flex items-center justify-center gap-3 py-4 px-4 bg-white border-2 border-gray-100 rounded-2xl hover:bg-gray-50 transition-all active:scale-[0.98] shadow-sm relative z-20"
+                className="w-full flex items-center justify-center gap-3 py-4 px-4 bg-white border-2 border-gray-100 rounded-2xl hover:bg-gray-50 transition-all active:scale-[0.98] shadow-sm"
             >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -237,32 +207,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
         <form onSubmit={handleSubmit} className="space-y-4">
             <div>
                 <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Email</label>
-                <input 
-                    type="email" 
-                    required 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full p-3.5 border-2 border-gray-50 rounded-2xl focus:border-wine-600 outline-none bg-gray-50/50 transition-colors"
-                />
+                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3.5 border-2 border-gray-50 rounded-2xl focus:border-wine-600 outline-none bg-gray-50/50 transition-colors" />
             </div>
             <div>
                 <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Password</label>
-                <input 
-                    type="password" 
-                    required 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full p-3.5 border-2 border-gray-50 rounded-2xl focus:border-wine-600 outline-none bg-gray-50/50 transition-colors"
-                />
+                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3.5 border-2 border-gray-50 rounded-2xl focus:border-wine-600 outline-none bg-gray-50/50 transition-colors" />
             </div>
 
             {error && <div className="text-red-500 text-[10px] font-bold text-center bg-red-50 p-3 rounded-2xl border border-red-100">{error}</div>}
 
-            <button 
-                type="submit" 
-                disabled={loading}
-                className="w-full py-4 bg-wine-700 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-lg disabled:opacity-50 active:scale-[0.98] transition-all"
-            >
+            <button type="submit" disabled={loading} className="w-full py-4 bg-wine-700 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-lg disabled:opacity-50 active:scale-[0.98] transition-all">
                 {loading ? t('loading') : (isLogin ? t('login_title') : t('register_title'))}
             </button>
         </form>
@@ -276,7 +230,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                     <button key={l} onClick={() => setLanguage(l)} className={`text-[9px] font-black w-6 h-6 rounded-lg ${language === l ? 'bg-wine-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
                         {l.toUpperCase()}
                     </button>
-                ))}  
+                ))}
             </div>
         </div>
       </div>
