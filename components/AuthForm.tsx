@@ -276,7 +276,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                     <button key={l} onClick={() => setLanguage(l)} className={`text-[9px] font-black w-6 h-6 rounded-lg ${language === l ? 'bg-wine-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
                         {l.toUpperCase()}
                     </button>
-                ))}
+                ))}  
             </div>
         </div>
       </div>
