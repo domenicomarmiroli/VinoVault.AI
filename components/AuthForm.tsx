@@ -22,13 +22,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   const { t, language, setLanguage } = useLanguage();
 
   useEffect(() => {
-      // 1. Carica configurazione (Web Client ID)
+      // 1. Carica configurazione
       const fetchConfig = async () => {
           try {
               const res = await fetch('/api/config');
               if (res.ok) {
                   const data = await res.json();
-                  if (data.googleClientId) setGoogleClientId(data.googleClientId);
+                  if (data.googleClientId) {
+                      setGoogleClientId(data.googleClientId);
+                      console.log("Google Client ID Loaded:", data.googleClientId);
+                  }
               }
           } catch (e) {
               console.log("Config fetch failed", e);
@@ -36,104 +39,86 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
       };
       fetchConfig();
 
-      // 2. Verifica presenza WebToNative (con un piccolo delay per sicurezza)
-      const checkWTN = () => {
+      // 2. Verifica ricorrente dell'SDK WebToNative
+      const interval = setInterval(() => {
           const WTN = (window as any).WTN;
           if (WTN?.socialLogin?.google) {
               setIsWtnReady(true);
+              clearInterval(interval);
           }
-      };
-      
-      const timer = setTimeout(checkWTN, 500);
-      return () => clearTimeout(timer);
+      }, 500);
+
+      return () => clearInterval(interval);
   }, []);
 
-  // --- LOGICA NATIVA (WebToNative) ---
-  const handleNativeGoogleLogin = () => {
-      const WTN = (window as any).WTN;
-      if (!WTN?.socialLogin?.google) {
-          alert("Errore: SDK WebToNative non pronto o non configurato correttamente.");
-          return;
-      }
-
-      setLoading(true);
-      setError('');
+  const handleGoogleLogin = () => {
+      // DEBUG: Feedback immediato al click
+      console.log("Google Login clicked");
       
-      try {
-          WTN.socialLogin.google.login({
-              callback: async (response: any) => {
-                  console.log("Native Google Response:", response);
-                  
-                  if (response.isSuccess && response.idToken) {
-                      try {
-                          const res = await fetch('/api/auth/google', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ 
-                                  token: response.idToken,
-                                  language,
-                                  ref: referralRef
-                              })
-                          });
-                          
-                          const data = await res.json();
-                          if (res.ok) {
-                              onLogin(data.token, data.user.email);
-                          } else {
-                              setError(data.error || 'Server Auth Error');
+      const WTN = (window as any).WTN;
+      
+      // CASO 1: Siamo dentro l'app WebToNative
+      if (WTN?.socialLogin?.google) {
+          console.log("Initing Native Login...");
+          setLoading(true);
+          try {
+              WTN.socialLogin.google.login({
+                  callback: async (response: any) => {
+                      console.log("WTN Callback Response:", response);
+                      if (response.isSuccess && response.idToken) {
+                          try {
+                              const res = await fetch('/api/auth/google', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ 
+                                      token: response.idToken,
+                                      language,
+                                      ref: referralRef
+                                  })
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                  onLogin(data.token, data.user.email);
+                              } else {
+                                  setError(data.error || 'Server Auth Error');
+                                  setLoading(false);
+                              }
+                          } catch (e) {
+                              setError("Errore connessione server.");
                               setLoading(false);
                           }
-                      } catch (e) {
-                          setError("Impossibile contattare il server.");
+                      } else {
                           setLoading(false);
+                          if (response.error) {
+                              alert("Errore Google Nativo: " + response.error);
+                          }
                       }
-                  } else {
-                      // Se l'utente annulla o c'è un errore di configurazione nel dashboard WTN
-                      const errorMsg = response.error || "Login annullato o configurazione errata.";
-                      setError(errorMsg);
-                      alert("Google Login Error: " + errorMsg);
-                      setLoading(false);
                   }
-              }
-          });
-      } catch (err) {
-          alert("Eccezione durante chiamata nativa: " + err);
-          setLoading(false);
-      }
-  };
-
-  // --- LOGICA WEB (Standard Redirect) ---
-  const handleGoogleRedirectLogin = () => {
-      if (!googleClientId) {
-          alert("Configurazione Google non caricata (Web Client ID mancante).");
+              });
+          } catch (err) {
+              setLoading(false);
+              alert("Errore chiamata WTN: " + err);
+          }
           return;
       }
-      
-      const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
-      const redirectUri = window.location.origin;
-      
-      const options = {
-          client_id: googleClientId,
-          redirect_uri: redirectUri,
-          response_type: 'id_token',
-          scope: 'openid email profile',
-          nonce: Math.random().toString(36).substring(2) + Date.now().toString(),
-          state: JSON.stringify({ language, ref: referralRef }),
-          prompt: 'select_account'
-      };
 
-      const qs = new URLSearchParams(options).toString();
-      window.location.href = `${rootUrl}?${qs}`;
-  };
-
-  const handleGoogleLogin = () => {
-      // Priorità al login nativo se siamo dentro l'app WebToNative
-      if (isWtnReady) {
-          console.log("App: Avvio Google Login Nativo");
-          handleNativeGoogleLogin();
+      // CASO 2: Siamo nel browser web (o WTN non ha ancora iniettato lo script)
+      if (googleClientId) {
+          console.log("Initing Web Redirect Login...");
+          const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+          const options = {
+              client_id: googleClientId,
+              redirect_uri: window.location.origin,
+              response_type: 'id_token',
+              scope: 'openid email profile',
+              nonce: Math.random().toString(36).substring(2) + Date.now().toString(),
+              state: JSON.stringify({ language, ref: referralRef }),
+              prompt: 'select_account'
+          };
+          const qs = new URLSearchParams(options).toString();
+          window.location.href = `${rootUrl}?${qs}`;
       } else {
-          console.log("Web: Avvio Google Login Redirect");
-          handleGoogleRedirectLogin();
+          alert("Configurazione Google non pronta. Riprova tra un istante.");
       }
   };
 
@@ -141,7 +126,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
     e.preventDefault();
     setError('');
     setLoading(true);
-
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
     const payload: any = { email, password, language };
     if (!isLogin && referralRef) payload.ref = referralRef;
@@ -152,7 +136,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload) 
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Autenticazione fallita');
       onLogin(data.token, data.user.email);
@@ -168,11 +151,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 animate-in fade-in zoom-in-95 duration-500 relative">
         
         {onBack && (
-            <button 
-                onClick={onBack}
-                className="absolute top-6 left-6 text-gray-400 hover:text-gray-600 p-1"
-                title="Indietro"
-            >
+            <button onClick={onBack} className="absolute top-6 left-6 text-gray-400 hover:text-gray-600 p-1">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
                 </svg>
@@ -184,28 +163,26 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
             {isWtnReady && (
                 <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-100 shadow-sm animate-pulse">
                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                    App Interface Connected
+                    App System Active
                 </div>
             )}
         </div>
 
-        {googleClientId && (
-            <div className="mb-6">
-                <button 
-                    onClick={handleGoogleLogin}
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50"
-                >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.16H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.84l3.66-2.75z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.16l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z" fill="#EA4335"/>
-                    </svg>
-                    <span className="text-gray-700 font-bold">{t(isLogin ? 'signin_with' : 'signup_with')}</span>
-                </button>
-            </div>
-        )}
+        <div className="mb-6">
+            <button 
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50"
+            >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.16H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.84l3.66-2.75z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.16l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z" fill="#EA4335"/>
+                </svg>
+                <span className="text-gray-700 font-bold">{t(isLogin ? 'signin_with' : 'signup_with')}</span>
+            </button>
+        </div>
 
         <div className="relative flex py-2 items-center mb-6">
             <div className="flex-grow border-t border-gray-100"></div>
@@ -256,7 +233,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                 {isLogin ? t('register_btn') : t('login_btn')}
             </button>
 
-            {/* Language Picker */}
             <div className="flex justify-center items-center gap-2 pt-2">
                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{t('language')}:</span>
                 <div className="flex gap-2">
