@@ -18,63 +18,68 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   const [error, setError] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
   const [isWtnReady, setIsWtnReady] = useState(false);
+  const [debugLog, setDebugLog] = useState<string[]>(["Inizializzazione..."]);
   
   const { t, language, setLanguage } = useLanguage();
+
+  const addLog = (msg: string) => {
+    console.log("AUTH_LOG:", msg);
+    setDebugLog(prev => [msg, ...prev].slice(0, 5));
+  };
 
   useEffect(() => {
       // 1. Carica configurazione
       const fetchConfig = async () => {
           try {
+              addLog("Chiamata /api/config...");
               const res = await fetch('/api/config');
               if (res.ok) {
                   const data = await res.json();
                   if (data.googleClientId) {
                       setGoogleClientId(data.googleClientId);
-                      console.log("Config OK:", data.googleClientId);
+                      addLog("Client ID Ricevuto");
+                  } else {
+                      addLog("ERRORE: Client ID vuoto nella risposta");
                   }
+              } else {
+                  addLog("ERRORE: Status " + res.status);
               }
-          } catch (e) {
-              console.error("Config fail", e);
+          } catch (e: any) {
+              addLog("ECCEZIONE Config: " + e.message);
           }
       };
       fetchConfig();
 
       // 2. Rilevamento SDK WebToNative
-      const checkSDK = () => {
+      const interval = setInterval(() => {
           const WTN = (window as any).WTN;
           if (WTN?.socialLogin?.google) {
               setIsWtnReady(true);
-              return true;
+              addLog("SDK WTN Rilevato");
+              clearInterval(interval);
           }
-          return false;
-      };
-
-      const interval = setInterval(() => {
-          if (checkSDK()) clearInterval(interval);
-      }, 500);
+      }, 1000);
 
       return () => clearInterval(interval);
   }, []);
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = (e?: any) => {
+      if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+      }
+      
+      addLog("Tasto Google premuto");
+      
       const WTN = (window as any).WTN;
       
-      // ALERT DIAGNOSTICO IMMEDIATO
-      const statusInfo = `ID: ${googleClientId ? 'OK' : 'MISSING'} | WTN: ${WTN ? 'FOUND' : 'NOT FOUND'} | WTN_GOOGLE: ${WTN?.socialLogin?.google ? 'READY' : 'NOT READY'}`;
-      console.log("CLICK:", statusInfo);
-
-      // Se non succede nulla, questo alert CI DEVE DIRE PERCHÉ
-      if (!googleClientId && !WTN?.socialLogin?.google) {
-          alert("ERRORE CRITICO:\n" + statusInfo + "\nL'app non è pronta per il login.");
-          return;
-      }
-
-      // CASO NATIVO (App APK)
       if (WTN?.socialLogin?.google) {
+          addLog("Avvio Login Nativo...");
           setLoading(true);
           try {
               WTN.socialLogin.google.login({
                   callback: async (response: any) => {
+                      addLog("Risposta WTN ricevuta");
                       if (response.isSuccess && response.idToken) {
                           try {
                               const res = await fetch('/api/auth/google', {
@@ -93,74 +98,94 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                                   setLoading(false);
                               }
                           } catch (e) {
-                              setError("Server unreachable");
+                              addLog("Errore fetch server");
                               setLoading(false);
                           }
                       } else {
                           setLoading(false);
-                          alert("Google App Error: " + (response.error || "Annullato"));
+                          addLog("Google App Fallito/Annullato");
                       }
                   }
               });
-          } catch (err) {
+          } catch (err: any) {
               setLoading(false);
-              alert("WTN Call Fail: " + err);
+              addLog("Crash chiamata WTN: " + err.message);
           }
           return;
       }
 
-      // CASO WEB (Browser o Fallback)
       if (googleClientId) {
-          try {
-              const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
-              const options: any = {
-                  client_id: googleClientId,
-                  redirect_uri: window.location.origin,
-                  response_type: 'id_token',
-                  scope: 'openid email profile',
-                  nonce: Math.random().toString(36).substring(2),
-                  state: JSON.stringify({ language, ref: referralRef }),
-                  prompt: 'select_account'
-              };
-              const qs = Object.keys(options).map(k => `${k}=${encodeURIComponent(options[k])}`).join('&');
-              const targetUrl = `${rootUrl}?${qs}`;
-              
-              console.log("Redirecting to:", targetUrl);
-              // Forza il redirect
-              window.location.assign(targetUrl);
-          } catch (e) {
-              alert("Redirect Error: " + e);
-          }
+          addLog("Avvio Redirect Web...");
+          const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+          const options: any = {
+              client_id: googleClientId,
+              redirect_uri: window.location.origin,
+              response_type: 'id_token',
+              scope: 'openid email profile',
+              nonce: Math.random().toString(36).substring(2),
+              state: JSON.stringify({ language, ref: referralRef }),
+              prompt: 'select_account'
+          };
+          const qs = Object.keys(options).map(k => `${k}=${encodeURIComponent(options[k])}`).join('&');
+          window.location.href = `${rootUrl}?${qs}`;
+      } else {
+          addLog("ERRORE: No ID, No WTN");
+          alert("Sistema non pronto. Controlla i log di debug in alto.");
       }
   };
 
+  // Fix: Added the handleSubmit function to process the manual email/password authentication form.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
+    setError('');
+    
+    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+    const body = isLogin 
+        ? { email, password } 
+        : { email, password, language, ref: referralRef };
+
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, language, ref: referralRef }) 
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Auth Fail');
-      onLogin(data.token, data.user.email);
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+            onLogin(data.token, data.user.email);
+        } else {
+            setError(data.error || 'Authentication failed');
+        }
     } catch (err: any) {
-      setError(err.message);
+        addLog("ECCEZIONE Submit: " + err.message);
+        setError('Connection error. Please try again.');
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 animate-in fade-in zoom-in-95 duration-500 relative">
+    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-4">
+      
+      {/* DEBUG PANEL - VISIBILE SOLO SE CI SONO ERRORI O IN TEST */}
+      <div className="w-full max-w-md mb-4 p-2 bg-black text-[10px] font-mono text-green-400 rounded border border-gray-800 overflow-hidden shadow-lg">
+          <div className="flex justify-between text-gray-500 mb-1 border-b border-gray-900 pb-1">
+              <span>SYSTEM DEBUG LOG</span>
+              <span>v1.2</span>
+          </div>
+          {debugLog.map((log, i) => (
+              <div key={i} className={log.includes("ERRORE") ? "text-red-500" : ""}>
+                  {`> ${log}`}
+              </div>
+          ))}
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative overflow-hidden">
         
         {onBack && (
-            <button onClick={onBack} className="absolute top-6 left-6 text-gray-400 p-1">
+            <button onClick={onBack} className="absolute top-6 left-6 text-gray-400 p-1 z-50">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
                 </svg>
@@ -169,21 +194,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
 
         <div className="flex flex-col items-center justify-center mb-8">
             <Logo className="w-20 h-20 mb-4" />
-            {isWtnReady ? (
-                <div className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-100 shadow-sm animate-pulse flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                    App System Active
-                </div>
-            ) : (
-                <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Web Interface Mode</div>
-            )}
+            <div className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5">
+                <div className={`w-1.5 h-1.5 rounded-full ${isWtnReady ? 'bg-emerald-500 animate-pulse' : 'bg-orange-400'}`}></div>
+                {isWtnReady ? "Native App Active" : "Web Mode Active"}
+            </div>
         </div>
 
         <div className="mb-6">
             <button 
                 onClick={handleGoogleLogin}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 relative z-20"
+                onTouchStart={handleGoogleLogin}
+                className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm active:scale-[0.98] relative z-[999] pointer-events-auto"
             >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -191,7 +212,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.16H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.84l3.66-2.75z" fill="#FBBC05"/>
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.16l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z" fill="#EA4335"/>
                 </svg>
-                <span className="text-gray-700 font-bold">{t(isLogin ? 'signin_with' : 'signup_with')}</span>
+                <span className="text-gray-700 font-bold">{loading ? t('loading') : t(isLogin ? 'signin_with' : 'signup_with')}</span>
             </button>
         </div>
 
@@ -246,7 +267,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                         <button 
                             key={l}
                             onClick={() => setLanguage(l)}
-                            className={`text-[10px] font-black w-7 h-7 rounded-lg flex items-center justify-center transition-all ${language === l ? 'bg-wine-600 text-white' : 'bg-gray-100 text-gray-400'}`}
+                            className={`text-[10px] font-black w-7 h-7 rounded-lg flex items-center justify-center transition-all ${language === l ? 'bg-wine-600 text-white shadow-sm' : 'bg-gray-100 text-gray-400'}`}
                         >
                             {l.toUpperCase()}
                         </button>
