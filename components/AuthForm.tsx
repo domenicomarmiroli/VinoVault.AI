@@ -35,12 +35,55 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
       fetchConfig();
   }, []);
 
+  // --- LOGICA NATIVA (WebToNative) ---
+  const handleNativeGoogleLogin = () => {
+      const WTN = (window as any).WTN;
+      if (!WTN?.socialLogin?.google) {
+          console.error("WTN SDK not available");
+          return;
+      }
+
+      setLoading(true);
+      WTN.socialLogin.google.login({
+          callback: async (response: any) => {
+              console.log("Native Google Response:", response);
+              if (response.isSuccess && response.idToken) {
+                  // Invia l'idToken al tuo server esattamente come nel flusso web
+                  try {
+                      const res = await fetch('/api/auth/google', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ 
+                              token: response.idToken,
+                              language,
+                              ref: referralRef
+                          })
+                      });
+                      
+                      const data = await res.json();
+                      if (res.ok) {
+                          onLogin(data.token, data.user.email);
+                      } else {
+                          setError(data.error || 'Server Error');
+                          setLoading(false);
+                      }
+                  } catch (e) {
+                      setError("Connection failed");
+                      setLoading(false);
+                  }
+              } else {
+                  setError(response.error || "Login canceled");
+                  setLoading(false);
+              }
+          }
+      });
+  };
+
+  // --- LOGICA WEB (Standard Redirect) ---
   const handleGoogleRedirectLogin = () => {
       if (!googleClientId) return;
       
       const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
-      
-      // Standardizziamo l'origine senza slash finale per evitare URI Mismatch
       const redirectUri = window.location.origin;
       
       const options = {
@@ -55,6 +98,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
 
       const qs = new URLSearchParams(options).toString();
       window.location.href = `${rootUrl}?${qs}`;
+  };
+
+  // Funzione unificata che sceglie il metodo migliore
+  const handleGoogleLogin = () => {
+      if ((window as any).WTN?.socialLogin?.google) {
+          console.log("Using Native Login via WebToNative");
+          handleNativeGoogleLogin();
+      } else {
+          console.log("Using Standard Web Redirect Login");
+          handleGoogleRedirectLogin();
+      }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,12 +158,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
 
         <div className="flex flex-col items-center justify-center mb-8">
             <Logo className="w-20 h-20 mb-4" />
+            {(window as any).WTN && (
+                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest animate-pulse">
+                    App Mode Enabled
+                </span>
+            )}
         </div>
 
         {googleClientId && (
             <div className="mb-6">
                 <button 
-                    onClick={handleGoogleRedirectLogin}
+                    onClick={handleGoogleLogin}
                     disabled={loading}
                     className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors shadow-sm active:scale-[0.98] disabled:opacity-50"
                 >
@@ -191,7 +250,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
         </div>
       </div>
     </div>
-  );
+  );  
 };
 
 export default AuthForm;
