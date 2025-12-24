@@ -28,7 +28,6 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
 const AppContent: React.FC = () => {
-  // Usiamo un ref per il token per garantire che le chiamate API abbiano sempre il valore più recente
   const tokenRef = useRef<string | null>(localStorage.getItem('vinovault_token'));
   const [token, setToken] = useState<string | null>(tokenRef.current);
   
@@ -44,7 +43,6 @@ const AppContent: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   
-  // Stati critici per il coordinamento del login
   const [isInitializing, setIsInitializing] = useState(true);
   const [isAuthProcessing, setIsAuthProcessing] = useState(false);
   const [authStatus, setAuthStatus] = useState<string>('Avvio...');
@@ -58,7 +56,6 @@ const AppContent: React.FC = () => {
   const API_BASE = '';
 
   const authFetch = async (url: string, options: RequestInit = {}) => {
-      // Usa il token dal ref o dal localStorage (più affidabile dello state React durante i redirect)
       const currentToken = tokenRef.current || localStorage.getItem('vinovault_token');
       const headers = {
           'Content-Type': 'application/json',
@@ -76,7 +73,6 @@ const AppContent: React.FC = () => {
   };
 
   const handleLogin = (newToken: string, userEmail: string) => {
-      console.log("App: Salvataggio sessione per", userEmail);
       localStorage.setItem('vinovault_token', newToken);
       tokenRef.current = newToken;
       setToken(newToken);
@@ -100,7 +96,6 @@ const AppContent: React.FC = () => {
       if (restaurantData) setActiveTab('restaurant');
       else setActiveTab('inventory');
       
-      // Fermiamo l'animazione di caricamento solo DOPO che lo stato è pronto
       setIsAuthProcessing(false);
       setIsInitializing(false);
   };
@@ -115,7 +110,6 @@ const AppContent: React.FC = () => {
       navigateTo('/');
   };
 
-  // 1. Auth Resolver: Intercetta il ritorno da Google
   useEffect(() => {
     const resolveGoogleRedirect = async () => {
         const hash = window.location.hash;
@@ -156,8 +150,7 @@ const AppContent: React.FC = () => {
                 const data = await res.json();
                 
                 if (res.ok) {
-                    setAuthStatus('Utente riconosciuto correttamente!');
-                    // Puliamo l'URL PRIMA di chiamare handleLogin per evitare loop
+                    setAuthStatus('Accesso effettuato!');
                     window.history.replaceState({}, document.title, window.location.pathname);
                     handleLogin(data.token, data.user.email);
                 } else {
@@ -165,16 +158,20 @@ const AppContent: React.FC = () => {
                     setTimeout(() => setIsInitializing(false), 3000);
                 }
             } catch (err) {
-                setAuthStatus('Connessione al server fallita.');
+                setAuthStatus('Connessione fallita.');
                 setTimeout(() => setIsInitializing(false), 3000);
             }
         } else {
-            // Se non c'è un id_token, controlliamo se siamo già loggati normalmente
             const savedToken = localStorage.getItem('vinovault_token');
             if (savedToken) {
                 tokenRef.current = savedToken;
                 setToken(savedToken);
-                // La decodifica del ruolo avverrà al primo fetch o possiamo farla qui
+                // Decodifica preliminare per evitare flash di UI bloccata
+                try {
+                    const payload = JSON.parse(atob(savedToken.split('.')[1]));
+                    if (payload.role) setUserRole(payload.role);
+                    if (payload.isPremium !== undefined) setUserPremium(payload.isPremium);
+                } catch(e) {}
             }
             setIsInitializing(false);
         }
@@ -183,23 +180,32 @@ const AppContent: React.FC = () => {
     resolveGoogleRedirect();
   }, []);
 
-  // 2. Data Fetcher: Carica i dati solo se abbiamo un token e NON stiamo elaborando il login
+  // Sync Profile & Load Data: Forza il rinfresco dello stato Premium ogni volta
   useEffect(() => {
     if (!token || isInitializing || isAuthProcessing) return;
     
     const fetchData = async () => {
       try {
-        setAuthStatus('Scaricamento cantina...');
-        const [winesRes, historyRes, locationsRes] = await Promise.all([
+        setAuthStatus('Sincronizzazione account...');
+        // Aggiungiamo la chiamata a /me per verificare lo stato Premium reale sul DB
+        const [winesRes, historyRes, locationsRes, profileRes] = await Promise.all([
           authFetch('/api/wines'),
           authFetch('/api/history'),
-          authFetch('/api/locations')
+          authFetch('/api/locations'),
+          authFetch('/api/users/me')
         ]);
         
         if (winesRes.status === 401 || winesRes.status === 403) { 
-            console.warn("Sessione scaduta o non valida.");
             handleLogout(); 
             return; 
+        }
+
+        // Aggiorna lo stato Premium con quello REALE del database
+        if (profileRes.ok) {
+            const profile = await profileRes.json();
+            setUserPremium(profile.is_premium || false);
+            setUserRole(profile.role || 'user');
+            if (profile.language) setLanguage(profile.language as Language);
         }
 
         setWines(await winesRes.json());
@@ -313,9 +319,6 @@ const AppContent: React.FC = () => {
       return (
         <div className="h-screen w-screen bg-white flex flex-col items-center justify-center p-6 text-center">
             <LoadingScreen message="Verifica Accesso" subMessage={authStatus} />
-            <div className="mt-20 text-[10px] text-gray-300 font-mono animate-pulse uppercase tracking-[0.2em]">
-                {window.location.hash ? 'Hash Link detected' : 'Standard session'}
-            </div>
         </div>
       );
   }

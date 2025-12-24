@@ -18,45 +18,46 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   const [error, setError] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
   
-  // IsApp ora è inizializzato con un controllo immediato dello UserAgent
+  // Rilevamento immediato e aggressivo dell'ambiente APP
   const [isApp, setIsApp] = useState(() => {
     if (typeof window === 'undefined') return false;
     const ua = navigator.userAgent.toLowerCase();
-    // WebToNative e altri wrapper iniettano spesso il loro nome o "wv" (WebView)
-    return ua.includes('webtonative') || ua.includes('wv') || (window as any).WTN || (window as any).webtonative;
+    const w = window as any;
+    
+    // Controlliamo: 
+    // 1. Stringa custom (AIKNOW-APP) impostata nel pannello WebToNative
+    // 2. Presenza dei bridge JavaScript comuni
+    // 3. Flag standard di WebView
+    return (
+        ua.includes('aiknow-app') || 
+        ua.includes('webtonative') || 
+        !!(w.WTN || w.webtonative || w.webInterface || w.AndroidInterface) ||
+        (ua.includes('wv') && ua.includes('android'))
+    );
   });
   
   const { t, language, setLanguage } = useLanguage();
 
   useEffect(() => {
-      // 1. Carica Client ID per Google (necessario solo per web)
+      // Carica Client ID per Google (necessario solo per web)
       fetch('/api/config')
           .then(res => res.json())
           .then(data => {
               if (data.googleClientId) setGoogleClientId(data.googleClientId);
           }).catch(() => {});
 
-      // 2. Polling per il bridge (come backup se lo UA fallisce)
-      const checkBridge = () => {
+      // Polling di sicurezza per il bridge (se lo UserAgent dovesse tardare o fallire)
+      const interval = setInterval(() => {
           const w = window as any;
           const hasBridge = !!(w.WTN || w.webtonative || w.webInterface || w.AndroidInterface);
           if (hasBridge && !isApp) {
               setIsApp(true);
-              return true;
+              clearInterval(interval);
           }
-          return hasBridge;
-      };
-
-      const interval = setInterval(() => {
-          if (checkBridge()) clearInterval(interval);
       }, 500);
       
-      const timeout = setTimeout(() => clearInterval(interval), 5000);
-
-      return () => {
-          clearInterval(interval);
-          clearTimeout(timeout);
-      };
+      const timeout = setTimeout(() => clearInterval(interval), 4000);
+      return () => { clearInterval(interval); clearTimeout(timeout); };
   }, [isApp]);
 
   const handleGoogleLogin = (e: React.MouseEvent) => {
@@ -112,12 +113,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
 
         <div className="flex flex-col items-center justify-center mb-8">
             <Logo className="w-20 h-20 mb-2" />
-            <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">
-                {isApp ? "Mobile Application" : "Web Portal"}
+            <p className="text-gray-400 text-[9px] uppercase font-black tracking-[0.2em]">
+                {isApp ? "Mobile App Interface" : "Web Sommelier Portal"}
             </p>
         </div>
 
-        {/* SOCIAL LOGIN - Nascosto se siamo in APP per evitare blocchi WebView */}
+        {/* SOCIAL LOGIN - Rimosso se ambiente App rilevato */}
         {!isApp && (
             <>
                 <div className="mb-6">
