@@ -18,8 +18,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   const [error, setError] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
   const [isWtnReady, setIsWtnReady] = useState(false);
-  const [debugLog, setDebugLog] = useState<string[]>(["Sincronizzazione..."]);
-  const [lastGeneratedUrl, setLastGeneratedUrl] = useState('');
+  const [debugLog, setDebugLog] = useState<string[]>(["Inizializzazione..."]);
   
   const { t, language, setLanguage } = useLanguage();
 
@@ -29,6 +28,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   };
 
   useEffect(() => {
+      // 1. Carica configurazione Web Client ID dal server
       const fetchConfig = async () => {
           try {
               const res = await fetch('/api/config');
@@ -36,23 +36,37 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                   const data = await res.json();
                   if (data.googleClientId) {
                       setGoogleClientId(data.googleClientId);
-                      addLog("Sistema Pronto");
+                      addLog("Web Client ID caricato");
                   }
               }
           } catch (e: any) {
-              addLog("Errore connessione: " + e.message);
+              addLog("Errore config: " + e.message);
           }
       };
       fetchConfig();
 
+      // 2. Rilevamento SDK WebToNative (Polling aggressivo)
+      let checkCount = 0;
       const interval = setInterval(() => {
           const WTN = (window as any).WTN;
-          if (WTN?.socialLogin?.google) {
-              setIsWtnReady(true);
-              addLog("Sistema Nativo Rilevato");
+          checkCount++;
+          
+          if (WTN) {
+              addLog("SDK WTN Trovato");
+              // Alcune versioni hanno socialLogin annidato
+              if (WTN.socialLogin || (window as any).webtonative) {
+                  setIsWtnReady(true);
+                  addLog("Bridge Nativo Pronto");
+                  clearInterval(interval);
+              }
+          }
+          
+          if (checkCount > 20) { // Smetti dopo 10 secondi
               clearInterval(interval);
+              if (!WTN) addLog("SDK WTN non rilevato (Modalità Web)");
           }
       }, 500);
+
       return () => clearInterval(interval);
   }, []);
 
@@ -62,75 +76,91 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
           e.stopPropagation();
       }
       
-      addLog("Click Google");
+      addLog("Avvio procedura Google...");
       const WTN = (window as any).WTN;
       
+      // PRIORITÀ 1: LOGIN NATIVO (Per APK Android)
+      // Secondo docs WTN: WTN.socialLogin.google.login()
       if (WTN?.socialLogin?.google) {
-          addLog("Avvio Nativo...");
+          addLog("Chiamata Login Nativo...");
           setLoading(true);
           try {
               WTN.socialLogin.google.login({
+                  // Web Client ID è necessario per ricevere l'idToken valido per il server
+                  clientId: googleClientId, 
                   callback: async (response: any) => {
+                      addLog("Risposta Nativa ricevuta");
                       if (response.isSuccess && response.idToken) {
-                          const res = await fetch('/api/auth/google', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ token: response.idToken, language, ref: referralRef })
-                          });
-                          const data = await res.json();
-                          if (res.ok) onLogin(data.token, data.user.email);
-                          else { setError(data.error); setLoading(false); }
-                      } else { setLoading(false); addLog("Fallito Nativo"); }
+                          try {
+                              addLog("Verifica token con server...");
+                              const res = await fetch('/api/auth/google', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ 
+                                      token: response.idToken,
+                                      language,
+                                      ref: referralRef
+                                  })
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                  addLog("Login Successo!");
+                                  onLogin(data.token, data.user.email);
+                              } else {
+                                  setError(data.error || 'Server Error');
+                                  setLoading(false);
+                              }
+                          } catch (e) {
+                              addLog("Errore fetch server");
+                              setLoading(false);
+                          }
+                      } else {
+                          setLoading(false);
+                          addLog("Nativo fallito: " + (response.error || 'Annullato'));
+                          alert("Login annullato o non riuscito.");
+                      }
                   }
               });
-          } catch (err: any) { setLoading(false); addLog("Errore SDK"); }
+          } catch (err: any) {
+              setLoading(false);
+              addLog("Errore chiamata SDK: " + err.message);
+              // Fallback estremo se il bridge crasha
+              performWebRedirect();
+          }
           return;
       }
 
-      if (googleClientId) {
-          addLog("Tentativo Redirect...");
-          const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
-          const options: any = {
-              client_id: googleClientId,
-              redirect_uri: window.location.origin,
-              response_type: 'id_token',
-              scope: 'openid email profile',
-              nonce: Math.random().toString(36).substring(2),
-              state: JSON.stringify({ language, ref: referralRef }),
-              prompt: 'select_account'
-          };
-          const qs = Object.keys(options).map(k => `${k}=${encodeURIComponent(options[k])}`).join('&');
-          const targetUrl = `${rootUrl}?${qs}`;
-          
-          setLastGeneratedUrl(targetUrl);
+      // PRIORITÀ 2: REDIRECT WEB (Per Browser)
+      performWebRedirect();
+  };
 
-          // Approccio "Shotgun" per Android WebView
-          try {
-              // 1. Prova immediata
-              window.location.href = targetUrl;
-              
-              // 2. Prova dopo micro-delay (spesso necessario per lasciar finire l'animazione del click)
-              setTimeout(() => {
-                  window.location.assign(targetUrl);
-              }, 50);
+  const performWebRedirect = () => {
+    if (!googleClientId) {
+        addLog("ERRORE: Client ID mancante");
+        alert("Configurazione non pronta. Ricarica la pagina.");
+        return;
+    }
 
-              // 3. Prova rimpiazzo (bypass cronologia)
-              setTimeout(() => {
-                  window.location.replace(targetUrl);
-              }, 150);
-              
-              // 4. Fallback finale se ancora qui: Apertura nuova finestra (forza browser di sistema)
-              setTimeout(() => {
-                  addLog("Apertura esterna...");
-                  window.open(targetUrl, '_blank');
-              }, 400);
-
-          } catch (err: any) {
-              addLog("Eccezione: " + err.message);
-          }
-      } else {
-          alert("Configurazione non caricata.");
-      }
+    addLog("Eseguo Redirect Web...");
+    const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+    const options: any = {
+        client_id: googleClientId,
+        redirect_uri: window.location.origin,
+        response_type: 'id_token',
+        scope: 'openid email profile',
+        nonce: Math.random().toString(36).substring(2),
+        state: JSON.stringify({ language, ref: referralRef }),
+        prompt: 'select_account'
+    };
+    const qs = Object.keys(options).map(k => `${k}=${encodeURIComponent(options[k])}`).join('&');
+    
+    // In WebView Android, a volte location.href viene ignorato. 
+    // Proviamo location.replace o window.open se fallisce.
+    try {
+        window.location.assign(`${rootUrl}?${qs}`);
+    } catch (e) {
+        window.location.href = `${rootUrl}?${qs}`;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -154,22 +184,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-4">
       
-      {/* Diagnostica Avanzata */}
-      <div className="w-full max-w-md mb-2 p-2 bg-gray-900 text-[10px] font-mono text-emerald-400 rounded-lg shadow-sm">
+      {/* Pannello Debug (Aiuta a capire se l'SDK risponde nell'APK) */}
+      <div className="w-full max-w-md mb-2 p-2 bg-black/80 text-[9px] font-mono text-green-400 rounded border border-gray-800">
           {debugLog.map((log, i) => (
               <div key={i}>{`> ${log}`}</div>
           ))}
-          {lastGeneratedUrl && (
-              <button 
-                onClick={() => {
-                    navigator.clipboard.writeText(lastGeneratedUrl);
-                    alert("URL copiato! Incollalo in Chrome.");
-                }}
-                className="mt-1 text-wine-400 underline font-bold uppercase"
-              >
-                  [Se non succede nulla, clicca qui per copiare link]
-              </button>
-          )}
+          <div className="mt-1 text-gray-500 flex justify-between">
+              <span>Bridge Status: {isWtnReady ? "CONNECTED" : "WAITING"}</span>
+              <span>v1.3</span>
+          </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative overflow-hidden border border-gray-100">
