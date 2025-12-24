@@ -19,6 +19,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   const [googleClientId, setGoogleClientId] = useState('');
   const [isWtnReady, setIsWtnReady] = useState(false);
   const [debugLog, setDebugLog] = useState<string[]>(["Sincronizzazione..."]);
+  const [lastGeneratedUrl, setLastGeneratedUrl] = useState('');
   
   const { t, language, setLanguage } = useLanguage();
 
@@ -35,9 +36,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                   const data = await res.json();
                   if (data.googleClientId) {
                       setGoogleClientId(data.googleClientId);
-                      addLog("Sistema Pronto (Web)");
-                  } else {
-                      addLog("ERRORE: Configurazione mancante");
+                      addLog("Sistema Pronto");
                   }
               }
           } catch (e: any) {
@@ -50,11 +49,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
           const WTN = (window as any).WTN;
           if (WTN?.socialLogin?.google) {
               setIsWtnReady(true);
-              addLog("Sistema Nativo Attivo");
+              addLog("Sistema Nativo Rilevato");
               clearInterval(interval);
           }
       }, 500);
-
       return () => clearInterval(interval);
   }, []);
 
@@ -64,60 +62,33 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
           e.stopPropagation();
       }
       
-      addLog("Tasto Google premuto");
-      
+      addLog("Click Google");
       const WTN = (window as any).WTN;
       
-      // PRIORITÀ: LOGIN NATIVO (Per APK)
       if (WTN?.socialLogin?.google) {
-          addLog("Avvio Login Nativo...");
+          addLog("Avvio Nativo...");
           setLoading(true);
           try {
               WTN.socialLogin.google.login({
                   callback: async (response: any) => {
                       if (response.isSuccess && response.idToken) {
-                          try {
-                              const res = await fetch('/api/auth/google', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ 
-                                      token: response.idToken,
-                                      language,
-                                      ref: referralRef
-                                  })
-                              });
-                              const data = await res.json();
-                              if (res.ok) onLogin(data.token, data.user.email);
-                              else {
-                                  setError(data.error || 'Server Error');
-                                  setLoading(false);
-                              }
-                          } catch (e) {
-                              addLog("Errore sincronizzazione");
-                              setLoading(false);
-                          }
-                      } else {
-                          setLoading(false);
-                          addLog("Google Nativo Annullato");
-                      }
+                          const res = await fetch('/api/auth/google', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ token: response.idToken, language, ref: referralRef })
+                          });
+                          const data = await res.json();
+                          if (res.ok) onLogin(data.token, data.user.email);
+                          else { setError(data.error); setLoading(false); }
+                      } else { setLoading(false); addLog("Fallito Nativo"); }
                   }
               });
-          } catch (err: any) {
-              setLoading(false);
-              addLog("Errore SDK: " + err.message);
-          }
+          } catch (err: any) { setLoading(false); addLog("Errore SDK"); }
           return;
       }
 
-      // FALLBACK: LOGIN WEB
       if (googleClientId) {
-          if (!window.location.protocol.startsWith('http')) {
-              alert("Il login Google non è disponibile via file://. Usa l'App ufficiale o collegati via HTTPS.");
-              return;
-          }
-
-          addLog("Reindirizzamento Google...");
-          
+          addLog("Tentativo Redirect...");
           const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
           const options: any = {
               client_id: googleClientId,
@@ -130,25 +101,35 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
           };
           const qs = Object.keys(options).map(k => `${k}=${encodeURIComponent(options[k])}`).join('&');
           const targetUrl = `${rootUrl}?${qs}`;
+          
+          setLastGeneratedUrl(targetUrl);
 
-          // Metodo 1: window.location.assign
-          // Metodo 2 (Fallback): a.click() - Spesso bypassa restrizioni delle WebView
+          // Approccio "Shotgun" per Android WebView
           try {
-              const link = document.createElement('a');
-              link.href = targetUrl;
-              link.style.display = 'none';
-              document.body.appendChild(link);
-              link.click();
-              // Se dopo 1 secondo siamo ancora qui, proviamo location.href
-              setTimeout(() => {
-                  window.location.href = targetUrl;
-              }, 500);
-          } catch (err) {
+              // 1. Prova immediata
               window.location.href = targetUrl;
+              
+              // 2. Prova dopo micro-delay (spesso necessario per lasciar finire l'animazione del click)
+              setTimeout(() => {
+                  window.location.assign(targetUrl);
+              }, 50);
+
+              // 3. Prova rimpiazzo (bypass cronologia)
+              setTimeout(() => {
+                  window.location.replace(targetUrl);
+              }, 150);
+              
+              // 4. Fallback finale se ancora qui: Apertura nuova finestra (forza browser di sistema)
+              setTimeout(() => {
+                  addLog("Apertura esterna...");
+                  window.open(targetUrl, '_blank');
+              }, 400);
+
+          } catch (err: any) {
+              addLog("Eccezione: " + err.message);
           }
       } else {
-          addLog("ERRORE: Servizio non pronto");
-          alert("Errore: Impossibile avviare il login. Ricarica la pagina.");
+          alert("Configurazione non caricata.");
       }
   };
 
@@ -156,46 +137,45 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
     e.preventDefault();
     setLoading(true);
     setError('');
-    
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-    const body = isLogin 
-        ? { email, password } 
-        : { email, password, language, ref: referralRef };
-
     try {
         const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
+            body: JSON.stringify({ email, password, language, ref: referralRef })
         });
-        
         const data = await res.json();
-        if (res.ok) {
-            onLogin(data.token, data.user.email);
-        } else {
-            setError(data.error || 'Autenticazione fallita');
-        }
-    } catch (err: any) {
-        setError('Errore di connessione.');
-    } finally {
-        setLoading(false);
-    }
+        if (res.ok) onLogin(data.token, data.user.email);
+        else setError(data.error || 'Errore');
+    } catch (err) { setError('Errore connessione'); }
+    finally { setLoading(false); }
   };
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-4">
       
-      {/* Pannello Debug compatto */}
-      <div className="w-full max-w-md mb-2 p-1 bg-gray-900 text-[9px] font-mono text-emerald-400 rounded opacity-80">
+      {/* Diagnostica Avanzata */}
+      <div className="w-full max-w-md mb-2 p-2 bg-gray-900 text-[10px] font-mono text-emerald-400 rounded-lg shadow-sm">
           {debugLog.map((log, i) => (
               <div key={i}>{`> ${log}`}</div>
           ))}
+          {lastGeneratedUrl && (
+              <button 
+                onClick={() => {
+                    navigator.clipboard.writeText(lastGeneratedUrl);
+                    alert("URL copiato! Incollalo in Chrome.");
+                }}
+                className="mt-1 text-wine-400 underline font-bold uppercase"
+              >
+                  [Se non succede nulla, clicca qui per copiare link]
+              </button>
+          )}
       </div>
 
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative overflow-hidden border border-gray-100">
         
         {onBack && (
-            <button onClick={onBack} className="absolute top-6 left-6 text-gray-300 p-1 z-50 hover:text-wine-600 transition-colors">
+            <button onClick={onBack} className="absolute top-6 left-6 text-gray-300 p-1 z-50">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
                 </svg>
@@ -206,14 +186,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
             <Logo className="w-20 h-20 mb-4" />
             <div className="text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 text-gray-400">
                 <div className={`w-1.5 h-1.5 rounded-full ${isWtnReady ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`}></div>
-                {isWtnReady ? "App Native System Active" : "Web Mode Active"}
+                {isWtnReady ? "Native Bridge Active" : "Web Engine Active"}
             </div>
         </div>
 
         <div className="mb-6">
             <button 
                 onClick={handleGoogleLogin}
-                className="w-full flex items-center justify-center gap-3 py-4 px-4 bg-white border-2 border-gray-100 rounded-2xl hover:border-gray-300 hover:bg-gray-50 transition-all active:scale-[0.98] shadow-sm relative z-20"
+                className="w-full flex items-center justify-center gap-3 py-4 px-4 bg-white border-2 border-gray-100 rounded-2xl hover:bg-gray-50 transition-all active:scale-[0.98] shadow-sm relative z-20"
             >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -253,12 +233,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                 />
             </div>
 
-            {error && <div className="text-red-500 text-[10px] font-bold text-center bg-red-50 p-3 rounded-2xl border border-red-100 animate-in fade-in">{error}</div>}
+            {error && <div className="text-red-500 text-[10px] font-bold text-center bg-red-50 p-3 rounded-2xl border border-red-100">{error}</div>}
 
             <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full py-4 bg-wine-700 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-lg shadow-wine-100 disabled:opacity-50 active:scale-[0.98] transition-all"
+                className="w-full py-4 bg-wine-700 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-lg disabled:opacity-50 active:scale-[0.98] transition-all"
             >
                 {loading ? t('loading') : (isLogin ? t('login_title') : t('register_title'))}
             </button>
@@ -268,19 +248,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
             <button onClick={() => setIsLogin(!isLogin)} className="text-wine-700 font-black text-[10px] uppercase tracking-widest hover:underline block mx-auto">
                 {isLogin ? t('register_btn') : t('login_btn')}
             </button>
-
-            <div className="flex justify-center items-center gap-2 pt-2 opacity-50">
-                <div className="flex gap-1.5">
-                    {(['it', 'en', 'fr', 'es', 'de'] as Language[]).map(l => (
-                        <button 
-                            key={l}
-                            onClick={() => setLanguage(l)}
-                            className={`text-[9px] font-black w-6 h-6 rounded-lg flex items-center justify-center transition-all ${language === l ? 'bg-wine-600 text-white' : 'bg-gray-100 text-gray-400'}`}
-                        >
-                            {l.toUpperCase()}
-                        </button>
-                    ))}
-                </div>
+            <div className="flex justify-center items-center gap-1.5 opacity-50">
+                {(['it', 'en', 'fr', 'es', 'de'] as Language[]).map(l => (
+                    <button key={l} onClick={() => setLanguage(l)} className={`text-[9px] font-black w-6 h-6 rounded-lg ${language === l ? 'bg-wine-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                        {l.toUpperCase()}
+                    </button>
+                ))}
             </div>
         </div>
       </div>
