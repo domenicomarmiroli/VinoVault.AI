@@ -21,8 +21,8 @@ const compressImage = (file: File): Promise<string> => {
             img.src = event.target?.result as string;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1000;
-                const MAX_HEIGHT = 1000;
+                const MAX_WIDTH = 1200;
+                const MAX_HEIGHT = 1200;
                 let width = img.width;
                 let height = img.height;
                 if (width > height) {
@@ -35,12 +35,21 @@ const compressImage = (file: File): Promise<string> => {
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                     ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
                 } else reject(new Error("Canvas error"));
             };
             img.onerror = (err) => reject(err);
         };
         reader.onerror = (err) => reject(err);
+    });
+};
+
+const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
     });
 };
 
@@ -72,13 +81,27 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
 
       setIsExtracting(true);
       try {
-          const base64 = await compressImage(file);
-          const extractedText = await extractTextFromMedia(base64, 'image/jpeg');
+          let processedData = "";
+          let mimeType = file.type;
+
+          if (file.type === 'application/pdf') {
+              processedData = await readFileAsBase64(file);
+          } else if (file.type.startsWith('image/')) {
+              processedData = await compressImage(file);
+              mimeType = 'image/jpeg';
+          } else {
+              alert("Formato non supportato. Usa JPG, PNG o PDF.");
+              setIsExtracting(false);
+              return;
+          }
+
+          const extractedText = await extractTextFromMedia(processedData, mimeType);
           setMenuText(prev => (prev ? prev + "\n" : "") + extractedText);
       } catch (err) {
-          alert("Errore durante l'estrazione del testo. Riprova con una foto più nitida.");
+          alert("Errore durante l'estrazione del testo. Riprova con un file più nitido o un PDF leggibile.");
       } finally {
           setIsExtracting(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
       }
   };
 
@@ -92,8 +115,8 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden relative">
       {(isSaving || isExtracting) && (
           <LoadingScreen 
-            message={isSaving ? "Salvataggio..." : "Analisi Carta Vini..."} 
-            subMessage={isSaving ? "Aggiorno il database del tuo locale." : "L'IA sta trascrivendo i vini dalla foto."} 
+            message={isSaving ? "Salvataggio..." : "Analisi Documento..."} 
+            subMessage={isSaving ? "Aggiorno il database del tuo locale." : "L'IA sta leggendo i vini dalla carta (Foto/PDF)."} 
           />
       )}
 
@@ -122,9 +145,8 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
              </div>
         </div>
 
-        {/* Marketing Kit - VERTICAL LAYOUT */}
+        {/* Marketing Kit */}
         <div className="bg-gray-900 rounded-[2.5rem] p-6 text-white shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
-            {/* Background effects */}
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
             <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -134,7 +156,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                     <p className="text-[10px] text-gray-400 uppercase tracking-widest">Promuovi il tuo Sommelier IA</p>
                 </div>
 
-                {/* QR Code - TOP */}
                 <div className="bg-white p-4 rounded-[2rem] shadow-xl w-fit mx-auto border-4 border-emerald-500/20">
                     <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(restaurantUrl)}`} 
@@ -143,7 +164,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                     />
                 </div>
                 
-                {/* Description - MIDDLE */}
                 <div className="space-y-2 max-w-xs mx-auto">
                     <p className="text-sm font-bold text-gray-100">Per Tavoli e Menu</p>
                     <p className="text-xs text-gray-400 leading-relaxed px-2">
@@ -151,7 +171,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                     </p>
                 </div>
 
-                {/* Link and Copy Button - BOTTOM */}
                 <div className="space-y-3 pt-2">
                     <div className="flex flex-col gap-2">
                         <label className="text-[9px] font-black uppercase text-emerald-500 tracking-widest block text-left ml-4">Link Diretto Sommelier</label>
@@ -188,10 +207,10 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                 </div>
                 <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-100 flex items-center gap-1.5 active:scale-95 transition-all"
+                    className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200 flex items-center gap-1.5 active:scale-95 transition-all shadow-sm"
                 >
                     <CameraIcon className="w-4 h-4" />
-                    Foto Menu
+                    Carica Foto / PDF
                 </button>
             </div>
             
@@ -208,7 +227,13 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                 />
             </div>
             
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*,application/pdf" 
+                onChange={handleFileUpload} 
+            />
 
             <button 
                 onClick={handleSave}
@@ -225,7 +250,7 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
              <div>
                  <p className="text-xs text-blue-700 font-bold mb-1 tracking-tight">Consiglio del Sommelier</p>
                  <p className="text-[11px] text-blue-600/80 leading-relaxed">
-                    Un menu testuale ben strutturato permette all'IA di fornire consigli molto più precisi ai tuoi clienti.
+                    Un menu testuale ben strutturato permette all'IA di fornire consigli molto più precisi ai tuoi clienti. Carica una foto nitida della carta fisica o il PDF grafico originale.
                  </p>
              </div>
         </div>
