@@ -59,56 +59,29 @@ export interface Location {
     name: string;
 }
 
-export interface MenuRequest {
-  menuText: string;
-  guests: number;
-  courseCount: 'single' | 'multiple';
-}
-
-export interface PairingOption {
-  wineId?: string; // If owned
-  wineName: string; // Fallback or display name
-  reasoning: string;
-  type: 'owned' | 'purchase';
-  servingTemp?: string;   
-  servingAdvice?: string; 
-}
-
-export interface PairingSuggestion {
-  courseName: string;
-  dishName: string;
-  options: PairingOption[];
-}
-
-export interface PurchaseAnalysis {
-  wineDetails: Partial<Wine>;
-  marketPriceEstimate: number;
-  isGoodDeal: boolean;
-  dealRating: 'Bad' | 'Fair' | 'Good' | 'Excellent';
-  qualityScore: number;
-  sommelierNotes: string;
-  cellarFit: {
-    isRecommended: boolean;
-    reasoning: string;
-  };
-}
-
-export interface RestaurantSuggestion {
-    name: string;
-    producer: string;
-    year: string;
-    price: number;
-    type: string;
-    reasoning: string; 
-    matchScore: number; 
-    priceCategory?: 'Fascia Economica' | 'Fascia Media' | 'Fascia Alta'; 
+export interface RestaurantAnalysis {
+  score: number;
+  summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  courseDetails: {
+    course: string;
+    feedback: string;
+    bestMatches: string[];
+    unsuitableWines: string[];
+    missingStyles: string[];
+  }[];
+  strategicAdvice: string;
+  generatedAt: string;
 }
 
 export interface Restaurant {
     id: string;
     name: string;
     slug: string; 
-    menu_context: string; 
+    menu_context: string; // Wine list
+    food_menu?: string;   // Food menu
+    menu_analysis?: RestaurantAnalysis; // Professional analysis
     manager_id?: string; 
     manager_email?: string; 
     created_at?: string;
@@ -126,7 +99,6 @@ export interface User {
   last_login?: string;
   ref_restaurant_slug?: string; 
   ai_usage_count?: number; 
-  // Fix: Added wine_count to fix TypeScript errors in AdminView. This field is populated by the admin users endpoint.
   wine_count?: number;
   managed_restaurant?: Restaurant; // Dati del ristorante se l'utente è un gestore
 }
@@ -151,4 +123,51 @@ export interface CellarReport {
     gapAnalysis: string;
     buyRecommendations: CellarRecommendation[];
     drinkNowStrategy: string;
+}
+
+// Added missing interfaces for AI services
+export interface PairingSuggestion {
+  courseName: string;
+  dishName: string;
+  options: {
+    wineId?: string | null;
+    wineName: string;
+    reasoning: string;
+    type: 'owned' | 'purchase';
+    servingTemp: string;
+    servingAdvice: string;
+  }[];
+}
+
+export interface PurchaseAnalysis {
+    wineDetails: {
+        name: string;
+        producer: string;
+        year: string;
+        type: WineType;
+        region?: string;
+        grape?: string;
+        alcohol?: string;
+        foodPairings?: string[];
+    };
+    marketPriceEstimate: number;
+    isGoodDeal: boolean;
+    dealRating: 'Excellent' | 'Good' | 'Fair' | 'Bad';
+    qualityScore: number;
+    sommelierNotes: string;
+    cellarFit: {
+        isRecommended: boolean;
+        reasoning: string;
+    };
+}
+
+export interface RestaurantSuggestion {
+    name: string;
+    producer: string;
+    year: string;
+    type: string;
+    price?: number;
+    matchScore: number;
+    reasoning: string;
+    priceCategory?: string;
 }
