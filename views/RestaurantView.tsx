@@ -165,27 +165,36 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
       {/* Loading Overlay */}
       {loading && <LoadingScreen message={t('ai_analyzing')} subMessage="Analisi del menu e ricerca abbinamenti in corso..." />}
 
-      {/* Header */}
+      {/* Header Ridisegnato */}
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
         <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
-                <RestaurantIcon className="w-8 h-8 text-wine-600" filled />
-                {t('restaurant_title')}
-            </h1>
-            <p className="text-sm text-gray-500 mt-1 leading-tight">
-                {hasPreloadedMenu 
-                    ? t('menu_ready').replace('{name}', restaurantData.name)
-                    : t('restaurant_desc_scan')
-                }
-            </p>
-            {hasPreloadedMenu && (
-                <button 
-                  onClick={onClearRestaurant}
-                  className="mt-3 text-[10px] font-bold text-wine-600 uppercase tracking-widest bg-wine-50 px-2.5 py-1.5 rounded-lg border border-wine-100 hover:bg-wine-100 transition-all flex items-center gap-1 shadow-sm"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
-                  {t('exit_restaurant')}
-                </button>
+            {hasPreloadedMenu ? (
+                <>
+                    <p className="text-[10px] font-black text-wine-600 uppercase tracking-[0.2em] mb-1">Sommelier Virtuale</p>
+                    <h1 className="text-3xl font-serif font-black text-gray-900 leading-tight truncate">
+                        {restaurantData.name}
+                    </h1>
+                    <p className="text-sm text-gray-500 mt-1 leading-tight">
+                        {t('menu_ready').replace('{name}', restaurantData.name)}
+                    </p>
+                    <button 
+                        onClick={onClearRestaurant}
+                        className="mt-3 text-[9px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100 hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all flex items-center gap-1.5 shadow-sm"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
+                        {t('exit_restaurant')}
+                    </button>
+                </>
+            ) : (
+                <>
+                    <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
+                        <RestaurantIcon className="w-8 h-8 text-wine-600" filled />
+                        {t('nav_restaurant')}
+                    </h1>
+                    <p className="text-sm text-gray-500 mt-1 leading-tight">
+                        {t('restaurant_desc_scan')}
+                    </p>
+                </>
             )}
         </div>
         <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2 shrink-0">
@@ -270,11 +279,11 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
         {/* Results Section */}
         {suggestions.length > 0 && (
             <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center px-1">
                      <h2 className="text-xl font-serif font-bold text-gray-900">{t('best_pairings_title')}</h2>
                      <button 
                         onClick={() => setSuggestions([])}
-                        className="text-sm text-wine-600 font-medium hover:underline"
+                        className="text-xs text-wine-600 font-black uppercase tracking-widest hover:underline"
                      >
                         {t('new_search')}
                      </button>
@@ -283,13 +292,12 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                 {sortedCategories.map(catKey => {
                     const items = groupedSuggestions[catKey];
                     const isDefault = catKey === 'default';
-                    // Map category names to nicer labels if needed
                     const catLabel = catKey; 
 
                     return (
                         <div key={catKey}>
                             {!isDefault && (
-                                <h3 className="font-bold text-gray-500 uppercase text-xs tracking-wider mb-2 border-b border-gray-200 pb-1">
+                                <h3 className="font-black text-gray-400 uppercase text-[9px] tracking-[0.2em] mb-3 border-b border-gray-100 pb-1.5 ml-1">
                                     {catLabel}
                                 </h3>
                             )}
@@ -298,7 +306,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                                     <div 
                                         key={idx} 
                                         onClick={() => handleSelectWine(wine)}
-                                        className={`bg-white p-4 rounded-xl shadow-sm border border-gray-200 cursor-pointer transition-all hover:shadow-md ${selectedWine === wine ? 'ring-2 ring-wine-600 bg-wine-50' : ''}`}
+                                        className={`bg-white p-4 rounded-2xl shadow-sm border border-gray-200 cursor-pointer transition-all hover:shadow-md ${selectedWine === wine ? 'ring-2 ring-wine-600 bg-wine-50' : ''}`}
                                     >
                                         <div className="flex justify-between items-start mb-2">
                                              <div>
@@ -306,18 +314,18 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                                                  <p className="text-xs text-gray-600">{wine.producer} • {wine.year}</p>
                                              </div>
                                              {wine.price && wine.price > 0 ? (
-                                                 <div className="text-lg font-bold text-gray-800">€{wine.price}</div>
+                                                 <div className="text-lg font-bold text-gray-800 whitespace-nowrap ml-2">€{wine.price}</div>
                                              ) : null}
                                         </div>
                                         
                                         <div className="flex items-center gap-2 mb-3">
-                                             <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded">
+                                             <div className="bg-green-100 text-green-800 text-[10px] font-black px-2 py-0.5 rounded-lg uppercase">
                                                  {t('match_score')} {Math.round(wine.matchScore)}%
                                              </div>
-                                             <span className="text-xs text-gray-400 uppercase font-bold tracking-wider">{wine.type}</span>
+                                             <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{wine.type}</span>
                                         </div>
                                         
-                                        <p className="text-sm text-gray-600 italic border-l-2 border-wine-200 pl-3">
+                                        <p className="text-sm text-gray-600 italic border-l-2 border-wine-100 pl-3 leading-relaxed">
                                             "{wine.reasoning}"
                                         </p>
                                     </div>
@@ -328,7 +336,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                 })}
                 
                 {/* Information Note */}
-                <div className="mt-6 p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex gap-3 items-start animate-in fade-in duration-700">
+                <div className="mt-6 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex gap-3 items-start animate-in fade-in duration-700">
                     <div className="bg-indigo-100 p-2 rounded-full text-indigo-600 shrink-0">
                         <HelpIcon className="w-4 h-4" />
                     </div>
@@ -342,38 +350,38 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
             </div>
         )}
 
-        {/* Confirmation Modal (Floating to avoid overlap) */}
+        {/* Confirmation Modal */}
         {selectedWine && (
             <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                 <div className="bg-white w-full max-w-md p-6 rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200">
-                     <h3 className="font-serif font-bold text-lg mb-4 text-center">{t('confirm_choice_title')}</h3>
-                     <p className="text-sm text-gray-600 text-center mb-6">
+                 <div className="bg-white w-full max-w-md p-8 rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-200">
+                     <h3 className="font-serif font-black text-xl mb-4 text-center">{t('confirm_choice_title')}</h3>
+                     <p className="text-sm text-gray-600 text-center mb-8 leading-relaxed">
                          {t('confirm_choice_desc').replace('{wine}', selectedWine.name)}
                      </p>
                      
-                     <div className="mb-8">
-                         <label className="block text-xs font-bold uppercase text-gray-500 mb-2 text-center">{t('price_paid_label')}</label>
+                     <div className="mb-10">
+                         <label className="block text-[10px] font-black uppercase text-gray-400 mb-2 text-center tracking-[0.2em]">{t('price_paid_label')}</label>
                          <input 
                              type="number" 
                              value={confirmPrice} 
                              onChange={(e) => setConfirmPrice(e.target.value)}
-                             className="w-32 mx-auto block text-center p-2 text-2xl font-bold border-b-2 border-wine-600 focus:outline-none bg-transparent"
+                             className="w-32 mx-auto block text-center p-2 text-3xl font-black border-b-2 border-wine-600 focus:outline-none bg-transparent"
                              autoFocus
                          />
                      </div>
                      
-                     <div className="flex gap-3">
-                         <button 
-                            onClick={() => setSelectedWine(null)}
-                            className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
-                         >
-                            {t('cancel')}
-                         </button>
+                     <div className="flex flex-col gap-3">
                          <button 
                             onClick={handleConfirmSelection}
-                            className="flex-1 py-3.5 bg-wine-600 text-white font-bold rounded-xl shadow-lg hover:bg-wine-700 transition-colors"
+                            className="w-full py-4 bg-wine-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-wine-100 hover:bg-wine-700 transition-all active:scale-[0.98]"
                          >
                             {t('drink_and_rate')}
+                         </button>
+                         <button 
+                            onClick={() => setSelectedWine(null)}
+                            className="w-full py-3.5 bg-gray-50 text-gray-400 font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-gray-100 transition-colors"
+                         >
+                            {t('cancel')}
                          </button>
                      </div>
                  </div>
