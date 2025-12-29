@@ -127,13 +127,22 @@ app.get('/api/users/me', authenticateToken, async (req, res) => {
         const userResult = await pool.query('SELECT id, email, role, is_premium, language, ai_usage_count FROM users WHERE id = $1', [req.user.userId]);
         const user = userResult.rows[0];
         if (!user) return res.status(404).json({ error: 'User not found' });
+        
         const restResult = await pool.query(`
             SELECT r.*, 
             (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count,
             (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage
             FROM restaurants r WHERE r.manager_id = $1`, [user.id]
         );
-        if (restResult.rows[0]) user.managed_restaurant = restResult.rows[0];
+        
+        if (restResult.rows[0]) {
+            const rest = restResult.rows[0];
+            // Ensure analysis is parsed if it came back as a string
+            if (typeof rest.menu_analysis === 'string') {
+                try { rest.menu_analysis = JSON.parse(rest.menu_analysis); } catch(e) {}
+            }
+            user.managed_restaurant = rest;
+        }
         res.json(user);
     } catch (err) { res.status(500).json({ error: 'Fetch failed' }); }
 });
@@ -147,7 +156,6 @@ app.put('/api/managed-restaurant', authenticateToken, async (req, res) => {
 
         if (menu_context !== undefined) { updates.push(`menu_context = $${idx++}`); values.push(menu_context); }
         if (food_menu !== undefined) { updates.push(`food_menu = $${idx++}`); values.push(food_menu); }
-        // Se menu_analysis è un oggetto, lo passiamo direttamente (pg gestisce JSONB)
         if (menu_analysis !== undefined) { 
             updates.push(`menu_analysis = $${idx++}`); 
             values.push(menu_analysis ? JSON.stringify(menu_analysis) : null); 
@@ -161,14 +169,18 @@ app.put('/api/managed-restaurant', authenticateToken, async (req, res) => {
         const result = await pool.query(query, values);
         if (result.rowCount === 0) return res.status(403).json({ error: 'Not a manager or restaurant not found' });
         
-        // Calcola anche i contatori aggiornati per non perdere info nel frontend
         const fullResult = await pool.query(`
             SELECT r.*, 
             (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count,
             (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage
             FROM restaurants r WHERE r.id = $1`, [result.rows[0].id]);
 
-        res.json({ success: true, restaurant: fullResult.rows[0] });
+        const rest = fullResult.rows[0];
+        if (typeof rest.menu_analysis === 'string') {
+            try { rest.menu_analysis = JSON.parse(rest.menu_analysis); } catch(e) {}
+        }
+
+        res.json({ success: true, restaurant: rest });
     } catch (err) { 
         console.error("Restaurant Update Error:", err);
         res.status(500).json({ error: 'Update failed' }); 
@@ -191,7 +203,7 @@ app.get('/api/search-prices', authenticateToken, async (req, res) => {
             contents: `Trova prezzi online per: ${query}. JSON: [{ "source": "Nome", "price": 12.34, "currency": "EUR", "link": "URL" }]`,
             config: { tools: [{ googleSearch: {} }], responseMimeType: "application/json" }
         });
-        res.json(JSON.parse(response.text || "[]"));
+        res.json(JSON.parse(cleanJson(response.text || "[]")));
     } catch (err) { res.status(500).json({ error: 'Search failed' }); }
 });
 

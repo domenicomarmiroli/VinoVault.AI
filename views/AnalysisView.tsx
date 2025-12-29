@@ -72,7 +72,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
                 <UserIcon className="absolute -right-6 -bottom-6 w-32 h-32 opacity-10" filled />
                 <h3 className="text-xs font-bold uppercase tracking-widest opacity-80 mb-2">Il Tuo Profilo Palato</h3>
                 <p className="text-lg font-serif italic leading-relaxed">
-                  "{report.palateProfile}"
+                  "{report.palateProfile || 'Analisi in corso...'}"
                 </p>
             </div>
 
@@ -83,11 +83,11 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
                     <ChartBarIcon className="w-4 h-4 text-purple-500" />
                     Valutazione Cantina
                   </h4>
-                  <p className="text-sm text-gray-700 leading-relaxed">{report.overallAssessment}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{report.overallAssessment || 'N/A'}</p>
                </div>
                <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100">
                   <h4 className="text-xs font-bold text-amber-600 uppercase mb-3">Gap Analysis (Cosa manca)</h4>
-                  <p className="text-sm text-amber-900 leading-relaxed">{report.gapAnalysis}</p>
+                  <p className="text-sm text-amber-900 leading-relaxed">{report.gapAnalysis || 'N/A'}</p>
                </div>
             </div>
 
@@ -95,7 +95,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
             <div className="space-y-3">
                <h3 className="text-lg font-serif font-bold text-gray-900 px-1">Strategia d'Acquisto</h3>
                <div className="grid gap-3">
-                  {report.buyRecommendations.map((rec, i) => (
+                  {report.buyRecommendations?.map((rec, i) => (
                     <div key={i} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex gap-4 items-start">
                         <div className="bg-purple-100 p-2 rounded-lg text-purple-600">
                            <ShoppingCartIcon className="w-5 h-5" />
@@ -106,7 +106,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
                            <p className="text-xs text-gray-500 mt-1 italic">"{rec.reason}"</p>
                         </div>
                     </div>
-                  ))}
+                  )) || <p className="text-center text-xs text-gray-400">Nessun consiglio specifico al momento.</p>}
                </div>
             </div>
 
@@ -116,7 +116,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
                    <WineIcon className="w-4 h-4" filled />
                    Consiglio del Giorno
                 </h4>
-                <p className="text-sm text-emerald-900 leading-relaxed font-medium">{report.drinkNowStrategy}</p>
+                <p className="text-sm text-emerald-900 leading-relaxed font-medium">{report.drinkNowStrategy || 'Goditi un calice della tua collezione.'}</p>
             </div>
 
             <button 
@@ -133,7 +133,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
             <h3 className="text-xs font-bold text-gray-400 uppercase mb-4 tracking-widest">Equity & ROI</h3>
             <div className="flex justify-between items-end">
                 <div>
-                  <p className="text-3xl font-serif font-bold text-gray-900">€{inventory.reduce((s,w) => s + (w.marketPrice || w.price)*w.quantity, 0).toFixed(0)}</p>
+                  <p className="text-3xl font-serif font-bold text-gray-900">€{inventory?.reduce((s,w) => s + (Number(w.marketPrice) || Number(w.price) || 0) * Number(w.quantity || 0), 0).toFixed(0)}</p>
                   <p className="text-[10px] text-gray-400 font-bold uppercase">Valore Stimato Patrimonio</p>
                 </div>
                 <div className="text-right">

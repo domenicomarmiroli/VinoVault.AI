@@ -208,14 +208,52 @@ export const extractTextFromMedia = async (base64Data: string, mimeType: string)
 export const generateCellarReport = async (inventory: Wine[], history: HistoryEntry[], lang: Language = 'it'): Promise<CellarReport> => {
     const model = "gemini-3-flash-preview";
     const langName = getLanguageName(lang);
+    
+    const inventoryText = inventory.map(w => `- ${w.name} (${w.year}), ${w.producer}, ${w.type}, ${w.region}`).join("\n");
+    const historyText = history.map(h => `- ${h.name}, Voto: ${h.rating}/5, Note: ${h.notes}`).join("\n");
+
+    const prompt = `
+      Agisci come un Sommelier di alto livello. Analizza la mia cantina e le mie bevute recenti.
+      
+      INVENTARIO:
+      ${inventoryText || "Nessun vino presente."}
+      
+      STORICO BEVUTE:
+      ${historyText || "Nessuna bevuta registrata."}
+      
+      Genera un report dettagliato in ${langName}.
+    `;
+
     try {
         const response = await ai.models.generateContent({
             model,
-            contents: `Analisi Cantina. In ${langName}.`,
+            contents: prompt,
             config: {
-                systemInstruction: `Sei un Sommelier Senior. Rispondi in ${langName}.`,
+                systemInstruction: `Sei un Sommelier Senior specializzato in analisi di collezioni private. Rispondi SEMPRE in JSON puro seguendo lo schema richiesto in lingua ${langName}.`,
                 temperature: 0.5,
-                responseMimeType: "application/json"
+                responseMimeType: "application/json",
+                responseSchema: {
+                  type: Type.OBJECT,
+                  properties: {
+                    overallAssessment: { type: Type.STRING },
+                    palateProfile: { type: Type.STRING },
+                    gapAnalysis: { type: Type.STRING },
+                    buyRecommendations: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          wineName: { type: Type.STRING },
+                          reason: { type: Type.STRING },
+                          type: { type: Type.STRING }
+                        },
+                        required: ["wineName", "reason", "type"]
+                      }
+                    },
+                    drinkNowStrategy: { type: Type.STRING }
+                  },
+                  required: ["overallAssessment", "palateProfile", "gapAnalysis", "buyRecommendations", "drinkNowStrategy"]
+                }
             }
         });
         return JSON.parse(cleanJson(response.text || "{}"));
