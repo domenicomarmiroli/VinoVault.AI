@@ -6,19 +6,13 @@ const cleanBase64 = (base64: string) => base64.replace(/^data:(image\/(png|jpg|j
 
 const cleanJson = (text: string) => {
     if (!text) return "";
-    // Rimuove blocchi markdown
     let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    
-    // Individua il primo e l'ultimo delimitatore di oggetto o array
     const firstBrace = cleaned.indexOf('{');
     const firstBracket = cleaned.indexOf('[');
     const lastBrace = cleaned.lastIndexOf('}');
     const lastBracket = cleaned.lastIndexOf(']');
-    
     let start = -1;
     let end = -1;
-    
-    // Se c'è sia { che [, decidiamo quale inizia prima
     if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
         start = firstBrace;
         end = lastBrace;
@@ -26,11 +20,9 @@ const cleanJson = (text: string) => {
         start = firstBracket;
         end = lastBracket;
     }
-    
     if (start !== -1 && end !== -1 && end > start) {
         return cleaned.substring(start, end + 1);
     }
-    
     return cleaned;
 };
 
@@ -196,10 +188,19 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
     const model = "gemini-3-flash-preview";
     const langName = getLanguageName(lang);
     const prompt = `
-        ANALISI STRATEGICA RISTORANTE (Modello v3).
+        ANALISI STRATEGICA RISTORANTE (Modello v4).
         CARTA VINI: """${wineList}"""
         MENÙ PIATTI: """${foodMenu}"""
-        Rispondi in ${langName} solo in JSON.
+        
+        Agisci come un Master Sommelier Consultant. 
+        Analizza la coerenza tra i piatti proposti e le etichette in cantina.
+        
+        REGOLE SCORE:
+        - Calcola uno SCORE numerico da 0 a 100.
+        - 100 è eccellenza assoluta, 0 è totale incoerenza.
+        - IMPORTANTE: Assicurati che il punteggio sia espresso in CENTESIMI (es. 75, non 7.5).
+        
+        Rispondi in ${langName} esclusivamente in formato JSON puro.
     `;
     try {
         const response = await ai.models.generateContent({
@@ -211,7 +212,7 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        score: { type: Type.NUMBER },
+                        score: { type: Type.NUMBER, description: "Score da 0 a 100. Se calcolato su scala 10, moltiplicalo per 10." },
                         summary: { type: Type.STRING },
                         strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
                         weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -236,6 +237,12 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
             }
         });
         const result = JSON.parse(cleanJson(response.text));
+        
+        // Normalizzazione score: se l'AI ha restituito un valore <= 10 (e non è 0), probabilmente intendeva scala 1-10
+        if (result.score > 0 && result.score <= 10) {
+            result.score = result.score * 10;
+        }
+
         return { ...result, generatedAt: new Date().toISOString() };
     } catch (err: any) { throw new Error("Errore analisi professionale"); }
 };

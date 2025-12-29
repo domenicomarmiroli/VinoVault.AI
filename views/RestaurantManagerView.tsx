@@ -92,7 +92,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
       try {
           const analysis = await analyzeRestaurantcompleteness(wineList, foodMenu, language);
           setReport(analysis);
-          // Salviamo immediatamente il report per persistenza
           await onUpdateRestaurant({ 
               menu_context: wineList,
               food_menu: foodMenu,
@@ -134,7 +133,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
           />
       )}
 
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
         <div className="min-w-0">
             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">Pannello Direzione Locale</p>
@@ -157,7 +155,7 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
              </div>
         </div>
 
-        {/* Marketing Kit - Descriptive Vertical Layout */}
+        {/* Marketing Kit */}
         <div className="bg-gray-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
             <div className="relative z-10 w-full space-y-8">
@@ -191,9 +189,8 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
             </div>
         </div>
 
-        {/* Data Inputs - FULL WIDTH */}
+        {/* Data Inputs */}
         <div className="space-y-8">
-            {/* Wine List Section */}
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-3">
@@ -219,7 +216,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                 <button onClick={handleSave} className="w-full mt-4 py-3 bg-gray-100 text-gray-600 font-bold uppercase text-[10px] tracking-widest rounded-xl hover:bg-gray-200 transition-all">Salva solo Carta Vini</button>
             </div>
 
-            {/* Food Menu Section */}
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-3">
@@ -246,7 +242,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
             </div>
         </div>
 
-        {/* Professional Analysis Action */}
         <div className="space-y-4">
             <button onClick={runProfessionalAnalysis} className="w-full py-5 bg-emerald-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-emerald-200 active:scale-[0.98] transition-all flex items-center justify-center gap-3">
                 <ShieldCheckIcon className="w-5 h-5" filled /> 
@@ -255,7 +250,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
             <p className="text-[10px] text-gray-400 text-center uppercase font-bold tracking-widest">Incrocia cucina e cantina in un report professionale</p>
         </div>
 
-        {/* Analysis Report Display */}
         {report && (
             <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
                 <div className="bg-white rounded-[2.5rem] border border-emerald-100 overflow-hidden shadow-2xl">
@@ -266,7 +260,7 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                             <p className="text-[10px] uppercase font-bold opacity-80 mt-1 tracking-widest">Aggiornato il {new Date(report.generatedAt).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right relative z-10">
-                            <span className="block text-5xl font-black">{report.score}/100</span>
+                            <span className="block text-5xl font-black">{Math.round(report.score)}/100</span>
                             <span className="text-[10px] uppercase font-bold opacity-80">Qualità Coerenza</span>
                         </div>
                     </div>
@@ -277,7 +271,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                             <p className="text-base text-gray-800 leading-relaxed italic border-l-4 border-emerald-500 pl-6 py-2 bg-stone-50 rounded-r-2xl">"{report.summary}"</p>
                         </div>
 
-                        {/* Stacked Strength & Weakness sections instead of Grid for better readability */}
                         <div className="space-y-6">
                             <div className="bg-green-50 p-6 rounded-3xl border border-green-100">
                                 <h4 className="text-[10px] font-black text-green-700 uppercase mb-4 tracking-widest">Punti di Forza</h4>
@@ -328,7 +321,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                 </div>
             </div>
         )}
-        
       </div>
     </div>
   );
