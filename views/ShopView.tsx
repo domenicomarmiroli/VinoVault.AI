@@ -83,7 +83,8 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           const result = await analyzePurchase(input, inputPrice, inventory, language);
           
           if (!result.wineDetails) {
-              result.wineDetails = { name: 'Unknown', producer: 'Unknown', type: 'Rosso' as any };
+              // Added missing 'year' property to satisfy the PurchaseAnalysis interface requirements
+              result.wineDetails = { name: 'Unknown', producer: 'Unknown', year: 'N/A', type: 'Rosso' as any };
           }
           
           setAnalysis(result);
