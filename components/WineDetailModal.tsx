@@ -32,13 +32,17 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
   const [formData, setFormData] = useState<Wine | null>(null);
   const { t } = useLanguage();
 
+  // Reset e inizializzazione sicura quando cambia il vino selezionato
   useEffect(() => {
     if (wine) {
       setFormData({ ...wine });
       setIsEditing(false);
+    } else {
+      setFormData(null);
     }
   }, [wine]);
 
+  // Se non c'è il vino o lo stato non è ancora pronto, non renderizzare nulla per evitare crash
   if (!wine || !formData) return null;
 
   const handleSave = () => {
@@ -53,24 +57,27 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
   };
 
   const handleQuantityChange = (delta: number) => {
-      if (formData.quantity + delta < 0) return;
-      const newQty = formData.quantity + delta;
-      handleChange('quantity', newQty);
+      if (!formData) return;
+      const newQty = Math.max(0, formData.quantity + delta);
+      const updated = { ...formData, quantity: newQty };
+      setFormData(updated);
       if (!isEditing) {
-          onUpdateWine({ ...formData, quantity: newQty });
+          onUpdateWine(updated);
       }
   };
 
   const handleLocationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      if (!formData) return;
       const newLoc = e.target.value;
-      handleChange('location', newLoc);
+      const updated = { ...formData, location: newLoc };
+      setFormData(updated);
       if (!isEditing) {
-          onUpdateWine({ ...formData, location: newLoc });
+          onUpdateWine(updated);
       }
   };
 
   const content = (
-    <div className="fixed inset-0 bg-black/70 z-[200] flex items-end md:items-center justify-center animate-in fade-in duration-200 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black/70 z-[300] flex items-end md:items-center justify-center animate-in fade-in duration-200 backdrop-blur-sm">
       <div className="bg-white w-full h-[100dvh] md:h-auto md:max-h-[85vh] md:max-w-2xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
         
         <div className="relative h-48 md:h-56 bg-gray-100 flex-shrink-0">
@@ -87,7 +94,7 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
                <button onClick={() => isEditing ? handleSave() : setIsEditing(true)} className={`rounded-full p-2 backdrop-blur-md transition-all shadow-sm flex items-center justify-center ${isEditing ? 'bg-wine-600 text-white hover:bg-wine-700' : 'bg-black/30 text-white hover:bg-black/50'}`} title={isEditing ? t('save_changes') : t('edit')}>
                    {isEditing ? <span className="text-xs font-bold px-2">{t('save')}</span> : <PencilIcon className="w-5 h-5" />}
                </button>
-               <button onClick={() => { setIsEditing(false); onClose(); }} className="bg-black/30 hover:bg-black/50 text-white rounded-full p-2 backdrop-blur-md transition-all"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+               <button onClick={onClose} className="bg-black/30 hover:bg-black/50 text-white rounded-full p-2 backdrop-blur-md transition-all"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
            </div>
         </div>
 
@@ -95,7 +102,7 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
             <div>
                 <div className="flex justify-between items-start mb-3">
                      {isEditing ? (
-                         <select value={formData.type} onChange={(e) => handleChange('type', e.target.value)} className="text-xs font-bold uppercase tracking-wide border border-gray-300 rounded p-1">
+                         <select value={formData.type} onChange={(e) => handleChange('type', e.target.value as WineType)} className="text-xs font-bold uppercase tracking-wide border border-gray-300 rounded p-1">
                              {Object.values(WineType).map(t => <option key={t} value={t}>{t}</option>)}
                          </select>
                      ) : (
@@ -139,7 +146,6 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
             <div className="space-y-3">
                 <h3 className="text-lg font-serif font-bold text-gray-900 flex items-center gap-2"><span className="w-1.5 h-5 bg-wine-600 rounded-full"></span> {t('advice')}</h3>
                 <div className="grid grid-cols-1 gap-4">
-                    {/* Serving Advice */}
                     <div className="bg-stone-50 p-4 rounded-xl border border-stone-100 flex gap-4 items-start">
                         <ThermometerIcon className="w-6 h-6 text-wine-800 mt-0.5" />
                         <div className="flex-1">
@@ -157,7 +163,6 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
                             )}
                         </div>
                     </div>
-                    {/* Storage Advice */}
                     <div className="bg-stone-50 p-4 rounded-xl border border-stone-100 flex gap-4 items-start">
                         <BoxIcon className="w-6 h-6 text-wine-800 mt-0.5" />
                         <div className="flex-1">
@@ -178,10 +183,10 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
                 </div>
             </div>
 
-            {(formData.foodPairings.length > 0 || isEditing) && (
+            {((formData.foodPairings && formData.foodPairings.length > 0) || isEditing) && (
                 <div className="space-y-3">
                      <h3 className="text-lg font-serif font-bold text-gray-900 flex items-center gap-2"><span className="w-1.5 h-5 bg-orange-400 rounded-full"></span> {t('pairings')}</h3>
-                    {isEditing ? <textarea value={formData.foodPairings.join(', ')} onChange={(e) => handleChange('foodPairings', e.target.value.split(',').map(s => s.trim()))} className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm min-h-[80px]" /> : <div className="flex flex-wrap gap-2">{formData.foodPairings.map((pair, idx) => (<span key={idx} className="bg-orange-50 text-orange-800 px-3 py-1.5 rounded-lg border border-orange-100 text-sm font-medium">{pair}</span>))}</div>}
+                    {isEditing ? <textarea value={formData.foodPairings?.join(', ') || ''} onChange={(e) => handleChange('foodPairings', e.target.value.split(',').map(s => s.trim()))} className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm min-h-[80px]" /> : <div className="flex flex-wrap gap-2">{formData.foodPairings?.map((pair, idx) => (<span key={idx} className="bg-orange-50 text-orange-800 px-3 py-1.5 rounded-lg border border-orange-100 text-sm font-medium">{pair}</span>))}</div>}
                 </div>
             )}
             

@@ -32,6 +32,30 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
+// Helper per mappare record DB a Oggetto Wine Frontend
+const mapWineToFrontend = (w) => ({
+    id: w.id,
+    name: w.name,
+    producer: w.producer,
+    year: w.year,
+    type: w.type,
+    region: w.region,
+    grape: w.grape,
+    alcohol: w.alcohol,
+    purchaseDate: w.purchase_date,
+    price: parseFloat(w.price) || 0,
+    quantity: parseInt(w.quantity) || 0,
+    location: w.location,
+    storageTemp: w.storage_temp || '',
+    storageAdvice: w.storage_advice || '',
+    servingTemp: w.serving_temp || '',
+    servingAdvice: w.serving_advice || '',
+    foodPairings: w.food_pairings || [],
+    imageUrl: w.image_url,
+    drinkWindow: w.drink_window || '',
+    marketPrice: parseFloat(w.market_price) || 0
+});
+
 // --- AUTH MIDDLEWARE ---
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -153,7 +177,7 @@ app.get('/api/search-prices', authenticateToken, async (req, res) => {
 app.get('/api/wines', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM wines WHERE user_id = $1 ORDER BY created_at DESC', [req.user.userId]);
-        res.json(result.rows.map(w => ({ ...w, price: parseFloat(w.price), marketPrice: parseFloat(w.market_price), imageUrl: w.image_url, purchaseDate: w.purchase_date })));
+        res.json(result.rows.map(mapWineToFrontend));
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -189,7 +213,20 @@ app.delete('/api/wines/:id', authenticateToken, async (req, res) => {
 app.get('/api/history', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM history WHERE user_id = $1 ORDER BY consumed_date DESC', [req.user.userId]);
-        res.json(result.rows.map(h => ({ ...h, price: parseFloat(h.price), consumedDate: h.consumed_date, wineId: h.wine_id, imageUrl: h.image_url })));
+        res.json(result.rows.map(h => ({ 
+            id: h.id,
+            wineId: h.wine_id,
+            name: h.name,
+            producer: h.producer,
+            year: h.year,
+            type: h.type,
+            price: parseFloat(h.price) || 0,
+            imageUrl: h.image_url,
+            consumedDate: h.consumed_date,
+            rating: h.rating || 0,
+            notes: h.notes || '',
+            location: h.location || 'Cantina'
+        })));
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
