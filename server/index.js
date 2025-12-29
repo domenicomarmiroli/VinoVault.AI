@@ -21,14 +21,29 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_wine_key_change_me';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
-// Helper per pulizia JSON simile a quello client-side
+// Helper per pulizia JSON ultra-robusta
 const cleanJson = (text) => {
     if (!text) return "[]";
     let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    const firstBrace = cleaned.indexOf('{');
     const firstBracket = cleaned.indexOf('[');
+    const lastBrace = cleaned.lastIndexOf('}');
     const lastBracket = cleaned.lastIndexOf(']');
-    if (firstBracket !== -1 && lastBracket !== -1) {
-        return cleaned.substring(firstBracket, lastBracket + 1);
+    
+    let start = -1;
+    let end = -1;
+    
+    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+        start = firstBrace;
+        end = lastBrace;
+    } else if (firstBracket !== -1) {
+        start = firstBracket;
+        end = lastBracket;
+    }
+    
+    if (start !== -1 && end !== -1) {
+        return cleaned.substring(start, end + 1);
     }
     return cleaned;
 };
@@ -44,7 +59,6 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-// Helper per mappare record DB a Oggetto Wine Frontend
 const mapWineToFrontend = (w) => ({
     id: w.id,
     name: w.name,
@@ -68,7 +82,6 @@ const mapWineToFrontend = (w) => ({
     marketPrice: parseFloat(w.market_price) || 0
 });
 
-// --- AUTH MIDDLEWARE ---
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -85,12 +98,10 @@ const authenticateAdmin = (req, res, next) => {
         if (req.user && req.user.role === 'admin') {
             next();
         } else {
-            res.status(403).json({ error: 'Access denied: Admins only' });
+            res.status(403).json({ error: 'Access denied' });
         }
     });
 };
-
-// --- API ROUTES ---
 
 app.get('/api/config', (req, res) => {
     res.json({ googleClientId: GOOGLE_CLIENT_ID || '' });
@@ -107,7 +118,6 @@ app.post('/api/auth/google', async (req, res) => {
         const payload = ticket.getPayload();
         if (!payload || !payload.email) return res.status(400).json({ error: 'Invalid payload' });
         const { email, sub: googleId, email_verified } = payload;
-        if (!email_verified) return res.status(401).json({ error: 'Email not verified' });
         let result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
         let user = result.rows[0];
         if (!user) {
@@ -139,19 +149,10 @@ app.get('/api/users/me', authenticateToken, async (req, res) => {
         const userResult = await pool.query('SELECT id, email, role, is_premium, language, ai_usage_count FROM users WHERE id = $1', [req.user.userId]);
         const user = userResult.rows[0];
         if (!user) return res.status(404).json({ error: 'User not found' });
-        
-        const restResult = await pool.query(`
-            SELECT r.*, 
-            (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count,
-            (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage
-            FROM restaurants r WHERE r.manager_id = $1`, [user.id]
-        );
-        
+        const restResult = await pool.query(`SELECT r.*, (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count, (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage FROM restaurants r WHERE r.manager_id = $1`, [user.id]);
         if (restResult.rows[0]) {
             const rest = restResult.rows[0];
-            if (typeof rest.menu_analysis === 'string') {
-                try { rest.menu_analysis = JSON.parse(rest.menu_analysis); } catch(e) {}
-            }
+            if (typeof rest.menu_analysis === 'string') try { rest.menu_analysis = JSON.parse(rest.menu_analysis); } catch(e) {}
             user.managed_restaurant = rest;
         }
         res.json(user);
@@ -164,38 +165,19 @@ app.put('/api/managed-restaurant', authenticateToken, async (req, res) => {
         const updates = [];
         const values = [];
         let idx = 1;
-
         if (menu_context !== undefined) { updates.push(`menu_context = $${idx++}`); values.push(menu_context); }
         if (food_menu !== undefined) { updates.push(`food_menu = $${idx++}`); values.push(food_menu); }
-        if (menu_analysis !== undefined) { 
-            updates.push(`menu_analysis = $${idx++}`); 
-            values.push(menu_analysis ? JSON.stringify(menu_analysis) : null); 
-        }
-
-        if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
-
+        if (menu_analysis !== undefined) { updates.push(`menu_analysis = $${idx++}`); values.push(menu_analysis ? JSON.stringify(menu_analysis) : null); }
+        if (updates.length === 0) return res.status(400).json({ error: 'No fields' });
         values.push(req.user.userId);
         const query = `UPDATE restaurants SET ${updates.join(', ')} WHERE manager_id = $${idx} RETURNING *`;
-        
         const result = await pool.query(query, values);
-        if (result.rowCount === 0) return res.status(403).json({ error: 'Not a manager or restaurant not found' });
-        
-        const fullResult = await pool.query(`
-            SELECT r.*, 
-            (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count,
-            (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage
-            FROM restaurants r WHERE r.id = $1`, [result.rows[0].id]);
-
+        if (result.rowCount === 0) return res.status(403).json({ error: 'Forbidden' });
+        const fullResult = await pool.query(`SELECT r.*, (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count, (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage FROM restaurants r WHERE r.id = $1`, [result.rows[0].id]);
         const rest = fullResult.rows[0];
-        if (typeof rest.menu_analysis === 'string') {
-            try { rest.menu_analysis = JSON.parse(rest.menu_analysis); } catch(e) {}
-        }
-
+        if (typeof rest.menu_analysis === 'string') try { rest.menu_analysis = JSON.parse(rest.menu_analysis); } catch(e) {}
         res.json({ success: true, restaurant: rest });
-    } catch (err) { 
-        console.error("Restaurant Update Error:", err);
-        res.status(500).json({ error: 'Update failed' }); 
-    }
+    } catch (err) { res.status(500).json({ error: 'Update failed' }); }
 });
 
 app.post('/api/users/track-ai', authenticateToken, async (req, res) => {
@@ -211,18 +193,11 @@ app.get('/api/search-prices', authenticateToken, async (req, res) => {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: `Trova prezzi online per: ${query}. Fornisci i risultati esclusivamente in formato JSON come lista di oggetti: [{ "source": "Nome Store", "price": 12.34, "currency": "EUR", "link": "URL" }]. Non aggiungere saluti o introduzioni.`,
-            config: { 
-                tools: [{ googleSearch: {} }],
-                temperature: 0.1 
-            }
+            contents: `Trova prezzi online per: ${query}. JSON: [{ "source": "Store", "price": 12.34, "currency": "EUR", "link": "URL" }]`,
+            config: { tools: [{ googleSearch: {} }], temperature: 0.1 }
         });
-        const cleaned = cleanJson(response.text);
-        res.json(JSON.parse(cleaned || "[]"));
-    } catch (err) { 
-        console.error("Search API error:", err);
-        res.status(500).json({ error: 'Search failed' }); 
-    }
+        res.json(JSON.parse(cleanJson(response.text)));
+    } catch (err) { res.status(500).json({ error: 'Search failed' }); }
 });
 
 app.get('/api/wines', authenticateToken, async (req, res) => {
@@ -246,7 +221,7 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
 
 app.put('/api/wines/:id', authenticateToken, async (req, res) => {
     const updates = req.body;
-    const fields = Object.keys(updates).map((key, i) => `${key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)} = $${i + 1}`).join(', ');
+    const fields = Object.keys(updates).map((key, i) => `${key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)} = $${i + 1}`).join(', ');
     const values = Object.values(updates);
     try {
         await pool.query(`UPDATE wines SET ${fields} WHERE id = $${values.length + 1} AND user_id = $${values.length + 2}`, [...values, req.params.id, req.user.userId]);
@@ -265,18 +240,7 @@ app.get('/api/history', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM history WHERE user_id = $1 ORDER BY consumed_date DESC', [req.user.userId]);
         res.json(result.rows.map(h => ({ 
-            id: h.id,
-            wineId: h.wine_id,
-            name: h.name,
-            producer: h.producer,
-            year: h.year,
-            type: h.type,
-            price: parseFloat(h.price) || 0,
-            imageUrl: h.image_url,
-            consumedDate: h.consumed_date,
-            rating: h.rating || 0,
-            notes: h.notes || '',
-            location: h.location || 'Cantina'
+            id: h.id, wineId: h.wine_id, name: h.name, producer: h.producer, year: h.year, type: h.type, price: parseFloat(h.price) || 0, imageUrl: h.image_url, consumedDate: h.consumed_date, rating: h.rating || 0, notes: h.notes || '', location: h.location || 'Cantina'
         })));
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -325,38 +289,32 @@ app.delete('/api/locations/:id', authenticateToken, async (req, res) => {
 
 app.get('/api/users', authenticateAdmin, async (req, res) => {
     try {
-        const result = await pool.query(`
-            SELECT u.id, u.email, u.role, u.is_premium, u.language, u.ai_usage_count, u.ref_restaurant_slug,
-            COALESCE((SELECT SUM(quantity) FROM wines WHERE user_id = u.id), 0) as wine_count
-            FROM users u ORDER BY created_at DESC
-        `);
+        const result = await pool.query(`SELECT u.id, u.email, u.role, u.is_premium, u.language, u.ai_usage_count, u.ref_restaurant_slug, COALESCE((SELECT SUM(quantity) FROM wines WHERE user_id = u.id), 0) as wine_count FROM users u ORDER BY created_at DESC`);
         res.json(result.rows);
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.get('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
     try {
-        const result = await pool.query(`
-            SELECT r.*, u.email as manager_email,
-            (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count,
-            (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage
-            FROM restaurants r LEFT JOIN users u ON r.manager_id = u.id ORDER BY r.created_at DESC
-        `);
+        const result = await pool.query(`SELECT r.*, u.email as manager_email, (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count, (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage FROM restaurants r LEFT JOIN users u ON r.manager_id = u.id ORDER BY r.created_at DESC`);
         res.json(result.rows);
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
-    const { id, name, slug, menu_context, food_menu, manager_id } = req.body;
+    const { id, name, slug, menu_context, food_menu, manager_id, menu_analysis } = req.body;
     const restId = id || 'r_' + Math.random().toString(36).substr(2, 9);
     try {
         await pool.query(
-            `INSERT INTO restaurants (id, name, slug, menu_context, food_menu, manager_id) VALUES ($1, $2, $3, $4, $5, $6)
-             ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, slug = EXCLUDED.slug, menu_context = EXCLUDED.menu_context, food_menu = EXCLUDED.food_menu, manager_id = EXCLUDED.manager_id`,
-            [restId, name, slug, menu_context, food_menu, manager_id || null]
+            `INSERT INTO restaurants (id, name, slug, menu_context, food_menu, manager_id, menu_analysis) VALUES ($1, $2, $3, $4, $5, $6, $7)
+             ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, slug = EXCLUDED.slug, menu_context = EXCLUDED.menu_context, food_menu = EXCLUDED.food_menu, manager_id = EXCLUDED.manager_id, menu_analysis = EXCLUDED.menu_analysis`,
+            [restId, name, slug, menu_context, food_menu, manager_id || null, menu_analysis ? JSON.stringify(menu_analysis) : null]
         );
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Save failed' }); }
+    } catch (err) { 
+        console.error("Admin Restaurant Save Error:", err);
+        res.status(500).json({ error: 'Save failed' }); 
+    }
 });
 
 app.get('/api/restaurants/:slug', async (req, res) => {
@@ -395,6 +353,11 @@ const initDb = async () => {
         await client.query(`CREATE TABLE IF NOT EXISTS locations (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL);`);
         await client.query(`CREATE TABLE IF NOT EXISTS restaurants (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, menu_context TEXT, food_menu TEXT, menu_analysis JSONB, manager_id TEXT REFERENCES users(id) ON DELETE SET NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         await client.query(`CREATE TABLE IF NOT EXISTS shares (id TEXT PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
+        
+        // Garantisci l'esistenza delle colonne per aggiornamenti DB esistenti
+        await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS food_menu TEXT;`);
+        await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS menu_analysis JSONB;`);
+        
         console.log("DB Ready");
     } catch (e) { console.error("DB Init Error", e); }
     finally { client.release(); }

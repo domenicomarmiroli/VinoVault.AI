@@ -3,10 +3,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, RestaurantSuggestion, HistoryEntry, CellarReport, Language, RestaurantAnalysis } from "../types";
 
 const cleanBase64 = (base64: string) => base64.replace(/^data:(image\/(png|jpg|jpeg|webp)|application\/pdf);base64,/, "");
+
 const cleanJson = (text: string) => {
-    // Rimuove blocchi di codice markdown se presenti
+    if (!text) return "";
+    // Rimuove blocchi markdown
     let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    // Se per qualche motivo l'AI aggiunge testo prima o dopo il JSON, cerchiamo di estrarre solo l'oggetto/array
+    
+    // Individua il primo e l'ultimo delimitatore di oggetto o array
     const firstBrace = cleaned.indexOf('{');
     const firstBracket = cleaned.indexOf('[');
     const lastBrace = cleaned.lastIndexOf('}');
@@ -15,6 +18,7 @@ const cleanJson = (text: string) => {
     let start = -1;
     let end = -1;
     
+    // Se c'è sia { che [, decidiamo quale inizia prima
     if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
         start = firstBrace;
         end = lastBrace;
@@ -23,7 +27,7 @@ const cleanJson = (text: string) => {
         end = lastBracket;
     }
     
-    if (start !== -1 && end !== -1) {
+    if (start !== -1 && end !== -1 && end > start) {
         return cleaned.substring(start, end + 1);
     }
     
@@ -48,7 +52,7 @@ export const analyzeWineLabel = async (base64Image: string, lang: Language = 'it
   try {
       const response = await ai.models.generateContent({
         model,
-        contents: { parts: [ { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } }, { text: `Analizza questa etichetta in ${langName}.` } ] },
+        contents: { parts: [ { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } }, { text: `Analizza questa etichetta in ${langName}. Rispondi solo in JSON.` } ] },
         config: {
           systemInstruction: `Sei un sommelier professionista. Estrai dati tecnici in ${langName}. Rispondi esclusivamente in JSON.`,
           temperature: 0.1,
@@ -120,11 +124,11 @@ export const analyzePurchase = async (input: { type: 'image' | 'url', data: stri
             model,
             contents: { parts: [
                 input.type === 'image' ? { inlineData: { mimeType: "image/jpeg", data: cleanBase64(input.data) } } : { text: input.data },
-                { text: `Prezzo offerto: €${inputPrice}. Mia cantina attuale: ${inventoryContext || 'vuota'}. Analizza se l'acquisto è sensato in ${langName}.` }
+                { text: `Prezzo offerto: €${inputPrice}. Mia cantina attuale: ${inventoryContext || 'vuota'}. Analizza se l'acquisto è sensato in ${langName}. Rispondi SOLO in JSON.` }
             ]},
             config: {
-                systemInstruction: `Agisci come un Broker di vini e Sommelier professionista. Analizza l'affare e la coerenza con la cantina esistente. Rispondi esclusivamente in formato JSON seguendo lo schema indicato. Non aggiungere testo conversazionale (saluti, Buongiorno, etc).`,
-                temperature: 0.2,
+                systemInstruction: `Agisci come un Broker di vini e Sommelier professionista. Analizza l'affare e la coerenza con la cantina esistente. Rispondi esclusivamente in formato JSON seguendo lo schema indicato. NON AGGIUNGERE SALUTI O COMMENTI ESTERNI AL JSON.`,
+                temperature: 0.1,
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
@@ -161,10 +165,9 @@ export const analyzePurchase = async (input: { type: 'image' | 'url', data: stri
                 }
             }
         });
-        const text = response.text;
-        return JSON.parse(cleanJson(text));
+        return JSON.parse(cleanJson(response.text));
     } catch (err: any) { 
-        console.error("Analysis Error:", err);
+        console.error("Shop Analysis Error:", err);
         throw new Error(err.message || "Errore Shop Advisor"); 
     }
 };
@@ -177,7 +180,7 @@ export const suggestRestaurantPairing = async (menuSource: { type: 'images' | 't
             model,
             contents: { parts: [
                 ...(menuSource.type === 'images' ? (menuSource.data as string[]).map(img => ({ inlineData: { mimeType: "image/jpeg", data: cleanBase64(img) } })) : [{ text: menuSource.data as string }]),
-                { text: `Scegli vini per: ${dish}. Rispondi in ${langName}.` }
+                { text: `Scegli vini per: ${dish}. Rispondi in ${langName} solo JSON.` }
             ]},
             config: {
                 systemInstruction: `Sommelier Digitale. Suggerisci i migliori abbinamenti dalla carta vini fornita. Rispondi esclusivamente in formato JSON (Array di oggetti).`,
@@ -196,11 +199,7 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
         ANALISI STRATEGICA RISTORANTE (Modello v3).
         CARTA VINI: """${wineList}"""
         MENÙ PIATTI: """${foodMenu}"""
-        
-        Agisci come un Master Sommelier Consultant. 
-        Analizza la coerenza tra i piatti proposti e le etichette in cantina.
-        
-        Rispondi in ${langName}. JSON puro.
+        Rispondi in ${langName} solo in JSON.
     `;
     try {
         const response = await ai.models.generateContent({
@@ -246,7 +245,7 @@ export const extractTextFromMedia = async (base64Data: string, mimeType: string)
     try {
         const response = await ai.models.generateContent({
             model,
-            contents: { parts: [ { inlineData: { mimeType, data: cleanBase64(base64Data) } }, { text: "OCR PROFESSIONALE. Estrai il testo mantenendo struttura e prezzi. Non aggiungere commenti." } ] },
+            contents: { parts: [ { inlineData: { mimeType, data: cleanBase64(base64Data) } }, { text: "OCR PROFESSIONALE. Estrai il testo mantenendo struttura e prezzi." } ] },
             config: { temperature: 0.1 }
         });
         return response.text || "";
@@ -256,28 +255,16 @@ export const extractTextFromMedia = async (base64Data: string, mimeType: string)
 export const generateCellarReport = async (inventory: Wine[], history: HistoryEntry[], lang: Language = 'it'): Promise<CellarReport> => {
     const model = "gemini-3-flash-preview";
     const langName = getLanguageName(lang);
-    
-    const inventoryText = inventory.map(w => `- ${w.name} (${w.year}), ${w.producer}, ${w.type}, ${w.region}`).join("\n");
-    const historyText = history.map(h => `- ${h.name}, Voto: ${h.rating}/5, Note: ${h.notes}`).join("\n");
-
-    const prompt = `
-      Agisci come un Sommelier di alto livello. Analizza la mia cantina e le mie bevute recenti.
-      
-      INVENTARIO:
-      ${inventoryText || "Nessun vino presente."}
-      
-      STORICO BEVUTE:
-      ${historyText || "Nessuna bevuta registrata."}
-      
-      Genera un report dettagliato in ${langName}. Rispondi solo in JSON.
-    `;
+    const inventoryText = inventory.map(w => `- ${w.name} (${w.year}), ${w.producer}, ${w.type}`).join("\n");
+    const historyText = history.map(h => `- ${h.name}, Voto: ${h.rating}/5`).join("\n");
+    const prompt = `Analizza la mia cantina e le mie bevute: ${inventoryText} / ${historyText}. Report in ${langName} solo JSON.`;
 
     try {
         const response = await ai.models.generateContent({
             model,
             contents: prompt,
             config: {
-                systemInstruction: `Sei un Sommelier Senior specializzato in analisi di collezioni private. Rispondi SEMPRE in JSON puro seguendo lo schema richiesto in lingua ${langName}. Non aggiungere testo introduttivo.`,
+                systemInstruction: `Sei un Sommelier Senior. Rispondi in JSON seguendo lo schema richiesto in lingua ${langName}.`,
                 temperature: 0.5,
                 responseMimeType: "application/json",
                 responseSchema: {
