@@ -1,4 +1,5 @@
 
+
 export type Language = 'it' | 'en' | 'fr' | 'es' | 'de';
 
 export enum WineType {
@@ -103,6 +104,18 @@ export interface RestaurantSuggestion {
     priceCategory?: 'Fascia Economica' | 'Fascia Media' | 'Fascia Alta'; 
 }
 
+export interface Restaurant {
+    id: string;
+    name: string;
+    slug: string; 
+    menu_context: string; 
+    manager_id?: string; 
+    manager_email?: string; 
+    created_at?: string;
+    user_count?: number;
+    total_ai_usage?: number;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -112,9 +125,10 @@ export interface User {
   created_at?: string;
   last_login?: string;
   ref_restaurant_slug?: string; 
-  // Stats
-  wine_count?: number;     
   ai_usage_count?: number; 
+  // Fix: Added wine_count to fix TypeScript errors in AdminView. This field is populated by the admin users endpoint.
+  wine_count?: number;
+  managed_restaurant?: Restaurant; // Dati del ristorante se l'utente è un gestore
 }
 
 export interface OnlinePrice {
@@ -137,16 +151,4 @@ export interface CellarReport {
     gapAnalysis: string;
     buyRecommendations: CellarRecommendation[];
     drinkNowStrategy: string;
-}
-
-export interface Restaurant {
-    id: string;
-    name: string;
-    slug: string; 
-    menu_context: string; 
-    manager_id?: string; // ID dell'utente gestore
-    manager_email?: string; // Email per visualizzazione in admin
-    created_at?: string;
-    user_count?: number;
-    total_ai_usage?: number;
 }
