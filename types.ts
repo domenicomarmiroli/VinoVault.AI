@@ -144,6 +144,8 @@ export interface Restaurant {
     name: string;
     slug: string; 
     menu_context: string; 
+    manager_id?: string; // ID dell'utente gestore
+    manager_email?: string; // Email per visualizzazione in admin
     created_at?: string;
     user_count?: number;
     total_ai_usage?: number;

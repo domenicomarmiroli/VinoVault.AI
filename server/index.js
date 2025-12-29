@@ -361,23 +361,25 @@ app.put('/api/users/:id/reset-password', authenticateAdmin, async (req, res) => 
 app.get('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT r.*, 
+            SELECT r.*, u.email as manager_email,
             (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count,
             (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage
-            FROM restaurants r ORDER BY created_at DESC
+            FROM restaurants r 
+            LEFT JOIN users u ON r.manager_id = u.id
+            ORDER BY r.created_at DESC
         `);
         res.json(result.rows);
     } catch (err) { res.status(500).json({ error: 'Fetch failed' }); }
 });
 
 app.post('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
-    const { id, name, slug, menu_context } = req.body;
+    const { id, name, slug, menu_context, manager_id } = req.body;
     const restId = id || 'r_' + Math.random().toString(36).substr(2, 9);
     try {
         await pool.query(
-            `INSERT INTO restaurants (id, name, slug, menu_context) VALUES ($1, $2, $3, $4)
-             ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, slug = EXCLUDED.slug, menu_context = EXCLUDED.menu_context`,
-            [restId, name, slug, menu_context]
+            `INSERT INTO restaurants (id, name, slug, menu_context, manager_id) VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, slug = EXCLUDED.slug, menu_context = EXCLUDED.menu_context, manager_id = EXCLUDED.manager_id`,
+            [restId, name, slug, menu_context, manager_id || null]
         );
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: 'Save failed' }); }
@@ -424,11 +426,14 @@ const initDb = async () => {
         await client.query(`CREATE TABLE IF NOT EXISTS wines (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, producer TEXT, year TEXT, type TEXT, region TEXT, grape TEXT, alcohol TEXT, purchase_date TEXT, price DECIMAL, quantity INTEGER DEFAULT 1, location TEXT, storage_temp TEXT, storage_advice TEXT, serving_temp TEXT, serving_advice TEXT, food_pairings TEXT[], image_url TEXT, drink_window TEXT, market_price DECIMAL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         await client.query(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, wine_id TEXT, name TEXT, producer TEXT, year TEXT, type TEXT, price DECIMAL, image_url TEXT, consumed_date TEXT, rating INTEGER DEFAULT 0, notes TEXT, location TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         
-        // MIGRATION: Assicura che la colonna location esista nella tabella history
+        // MIGRATIONS
         await client.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS location TEXT;`);
         
         await client.query(`CREATE TABLE IF NOT EXISTS locations (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL);`);
+        
         await client.query(`CREATE TABLE IF NOT EXISTS restaurants (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, menu_context TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
+        await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id) ON DELETE SET NULL;`);
+        
         await client.query(`CREATE TABLE IF NOT EXISTS shares (id TEXT PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         console.log("DB Ready");
     } catch (e) { console.error("DB Init Error", e); }

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Restaurant } from '../types';
-import { ShieldCheckIcon, LogoutIcon, TrashIcon, WineIcon, ChartBarIcon, RestaurantIcon, CameraIcon } from '../components/Icons';
+import { ShieldCheckIcon, LogoutIcon, TrashIcon, WineIcon, ChartBarIcon, RestaurantIcon, CameraIcon, UserIcon } from '../components/Icons';
 import { extractTextFromMedia } from '../services/geminiService';
 
 interface AdminViewProps {
@@ -359,6 +359,20 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                                 required
                              />
                          </div>
+
+                         <div>
+                             <label className="block text-xs font-bold text-gray-500 mb-1">Gestore Assegnato (Utente)</label>
+                             <select 
+                                value={editingRest?.manager_id || ''} 
+                                onChange={e => setEditingRest(prev => ({ ...prev, manager_id: e.target.value }))}
+                                className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white"
+                             >
+                                 <option value="">-- Nessun Gestore --</option>
+                                 {users.map(u => (
+                                     <option key={u.id} value={u.id}>{u.email}</option>
+                                 ))}
+                             </select>
+                         </div>
                          
                          <div>
                              <div className="flex justify-between items-end mb-1">
@@ -401,6 +415,17 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                                      <button onClick={() => setEditingRest(r)} className="text-blue-600 hover:text-blue-800 text-xs font-bold">Edit</button>
                                      <button onClick={() => handleDeleteRestaurant(r.id)} className="text-red-500 hover:text-red-700"><TrashIcon className="w-4 h-4" /></button>
                                  </div>
+                             </div>
+
+                             {/* Manager Info */}
+                             <div className="mb-3 flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-100">
+                                <UserIcon className="w-4 h-4 text-gray-400" />
+                                <div className="min-w-0">
+                                    <p className="text-[9px] uppercase font-bold text-gray-400 leading-none mb-1">Gestore</p>
+                                    <p className="text-xs font-medium text-gray-700 truncate">
+                                        {r.manager_email || <span className="text-red-400 italic">Non Assegnato</span>}
+                                    </p>
+                                </div>
                              </div>
                              
                              {/* Stats Badge */}
