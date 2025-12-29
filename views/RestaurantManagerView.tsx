@@ -264,7 +264,8 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                             <p className="text-base text-gray-800 leading-relaxed italic border-l-4 border-emerald-500 pl-6 py-2 bg-stone-50 rounded-r-2xl">"{report.summary}"</p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Stacked Strength & Weakness sections instead of Grid for better readability */}
+                        <div className="space-y-6">
                             <div className="bg-green-50 p-6 rounded-3xl border border-green-100">
                                 <h4 className="text-[10px] font-black text-green-700 uppercase mb-4 tracking-widest">Punti di Forza</h4>
                                 <ul className="space-y-3">
@@ -321,3 +322,4 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
 };
 
 export default RestaurantManagerView;
+
