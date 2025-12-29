@@ -19,19 +19,22 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
   const [report, setReport] = useState<CellarReport | null>(null);
   const { t, language } = useLanguage();
 
+  const safeInventory = Array.isArray(inventory) ? inventory : [];
+  const safeHistory = Array.isArray(history) ? history : [];
+
   const handleGenerateAnalysis = async () => {
     if (!isPremium) {
       alert("L'analisi avanzata è una funzione Premium.");
       return;
     }
-    if (inventory.length < 3) {
+    if (safeInventory.length < 3) {
       alert("Aggiungi almeno 3 vini in cantina per permettere all'IA di analizzare il tuo profilo.");
       return;
     }
 
     setLoading(true);
     try {
-      const data = await generateCellarReport(inventory, history, language);
+      const data = await generateCellarReport(safeInventory, safeHistory, language);
       setReport(data);
       onAiUsed();
     } catch (e: any) {
@@ -40,6 +43,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
       setLoading(false);
     }
   };
+
+  const totalMarketValue = safeInventory.reduce((s,w) => s + (Number(w.marketPrice) || Number(w.price) || 0) * Number(w.quantity || 0), 0);
 
   return (
     <div className="h-full flex flex-col bg-slate-50 overflow-hidden relative">
@@ -67,7 +72,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
           </div>
         ) : (
           <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
-            {/* Profilo Palato */}
             <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
                 <UserIcon className="absolute -right-6 -bottom-6 w-32 h-32 opacity-10" filled />
                 <h3 className="text-xs font-bold uppercase tracking-widest opacity-80 mb-2">Il Tuo Profilo Palato</h3>
@@ -76,7 +80,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
                 </p>
             </div>
 
-            {/* Assessment & Gap */}
             <div className="grid grid-cols-1 gap-4">
                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
                   <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
@@ -91,7 +94,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
                </div>
             </div>
 
-            {/* Consigli Acquisto */}
             <div className="space-y-3">
                <h3 className="text-lg font-serif font-bold text-gray-900 px-1">Strategia d'Acquisto</h3>
                <div className="grid gap-3">
@@ -110,7 +112,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
                </div>
             </div>
 
-            {/* Strategia Bevuta */}
             <div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-100">
                 <h4 className="text-xs font-bold text-emerald-600 uppercase mb-2 flex items-center gap-2">
                    <WineIcon className="w-4 h-4" filled />
@@ -128,12 +129,11 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
           </div>
         )}
 
-        {/* ROI Mini Card (Always Visible) */}
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
             <h3 className="text-xs font-bold text-gray-400 uppercase mb-4 tracking-widest">Equity & ROI</h3>
             <div className="flex justify-between items-end">
                 <div>
-                  <p className="text-3xl font-serif font-bold text-gray-900">€{inventory?.reduce((s,w) => s + (Number(w.marketPrice) || Number(w.price) || 0) * Number(w.quantity || 0), 0).toFixed(0)}</p>
+                  <p className="text-3xl font-serif font-bold text-gray-900">€{(totalMarketValue || 0).toFixed(0)}</p>
                   <p className="text-[10px] text-gray-400 font-bold uppercase">Valore Stimato Patrimonio</p>
                 </div>
                 <div className="text-right">

@@ -2,7 +2,8 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { CellarReport } from '../types';
-import { ReportIcon, WineIcon, ShoppingCartIcon, ClockIcon } from './Icons';
+// Add missing UserIcon import
+import { ReportIcon, WineIcon, ShoppingCartIcon, ClockIcon, UserIcon } from './Icons';
 
 interface CellarReportModalProps {
   isOpen: boolean;
@@ -50,18 +51,18 @@ const CellarReportModal: React.FC<CellarReportModalProps> = ({ isOpen, onClose, 
                             Valutazione Generale
                         </h3>
                         <p className="text-gray-600 text-sm leading-relaxed">
-                            {report.overallAssessment}
+                            {report.overallAssessment || "In valutazione..."}
                         </p>
                     </div>
 
                     {/* Palate Profile */}
                     <div className="bg-purple-50 p-5 rounded-xl border border-purple-100">
                         <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2 text-sm uppercase tracking-wide">
-                            <WineIcon className="w-4 h-4" filled />
+                            <UserIcon className="w-4 h-4" filled />
                             Il Tuo Profilo
                         </h3>
                         <p className="text-purple-800 text-sm leading-relaxed">
-                            {report.palateProfile}
+                            {report.palateProfile || "Analisi in corso..."}
                         </p>
                     </div>
 
@@ -71,7 +72,7 @@ const CellarReportModal: React.FC<CellarReportModalProps> = ({ isOpen, onClose, 
                             Cosa Manca (Gap Analysis)
                         </h3>
                         <p className="text-orange-800 text-sm leading-relaxed">
-                            {report.gapAnalysis}
+                            {report.gapAnalysis || "In analisi..."}
                         </p>
                     </div>
 
@@ -80,7 +81,7 @@ const CellarReportModal: React.FC<CellarReportModalProps> = ({ isOpen, onClose, 
                         <h3 className="font-serif font-bold text-gray-900 text-lg pl-2">
                             Consigli per gli Acquisti
                         </h3>
-                        {report.buyRecommendations.map((rec, idx) => (
+                        {report.buyRecommendations?.map((rec, idx) => (
                             <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex gap-3">
                                 <div className="bg-wine-50 w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-wine-700">
                                     <ShoppingCartIcon className="w-5 h-5" />
@@ -93,7 +94,7 @@ const CellarReportModal: React.FC<CellarReportModalProps> = ({ isOpen, onClose, 
                                     </p>
                                 </div>
                             </div>
-                        ))}
+                        )) || <p className="text-center text-xs text-gray-400 italic">Nessun consiglio specifico.</p>}
                     </div>
 
                     {/* Drink Now Strategy */}
@@ -103,7 +104,7 @@ const CellarReportModal: React.FC<CellarReportModalProps> = ({ isOpen, onClose, 
                             Strategia di Consumo
                         </h3>
                         <p className="text-green-800 text-sm leading-relaxed">
-                            {report.drinkNowStrategy}
+                            {report.drinkNowStrategy || "Goditi un calice della tua collezione."}
                         </p>
                     </div>
 

@@ -5,14 +5,16 @@ import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, RestaurantSuggesti
 const cleanBase64 = (base64: string) => base64.replace(/^data:(image\/(png|jpg|jpeg|webp)|application\/pdf);base64,/, "");
 
 const cleanJson = (text: string) => {
-    if (!text) return "";
+    if (!text) return "{}";
     let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
     const firstBrace = cleaned.indexOf('{');
     const firstBracket = cleaned.indexOf('[');
     const lastBrace = cleaned.lastIndexOf('}');
     const lastBracket = cleaned.lastIndexOf(']');
+    
     let start = -1;
     let end = -1;
+    
     if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
         start = firstBrace;
         end = lastBrace;
@@ -20,10 +22,13 @@ const cleanJson = (text: string) => {
         start = firstBracket;
         end = lastBracket;
     }
+    
     if (start !== -1 && end !== -1 && end > start) {
         return cleaned.substring(start, end + 1);
     }
-    return cleaned;
+    
+    // Se non trova strutture JSON, restituisce un oggetto vuoto per evitare crash al parse
+    return text.includes('[') ? "[]" : "{}";
 };
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -217,7 +222,7 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
             model,
             contents: prompt,
             config: {
-                temperature: 0.1, // Ridotta drasticamente per massima costanza
+                temperature: 0.1,
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
@@ -247,12 +252,7 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
             }
         });
         const result = JSON.parse(cleanJson(response.text));
-        
-        // Normalizzazione score se necessario
-        if (result.score > 10) {
-            result.score = result.score / 10;
-        }
-
+        if (result.score > 10) result.score = result.score / 10;
         return { ...result, generatedAt: new Date().toISOString() };
     } catch (err: any) { throw new Error("Errore analisi professionale"); }
 };

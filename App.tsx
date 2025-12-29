@@ -195,9 +195,15 @@ const AppContent: React.FC = () => {
             if (profile.managed_restaurant) setManagedRestaurant(profile.managed_restaurant);
         }
 
-        setWines(await winesRes.json());
-        setHistory(await historyRes.json());
-        setLocations(await locationsRes.json());
+        const winesData = await winesRes.json();
+        setWines(Array.isArray(winesData) ? winesData : []);
+        
+        const historyData = await historyRes.json();
+        setHistory(Array.isArray(historyData) ? historyData : []);
+        
+        const locationsData = await locationsRes.json();
+        setLocations(Array.isArray(locationsData) ? locationsData : []);
+        
         setIsOfflineMode(false);
         setIsLoaded(true);
       } catch (e) {
@@ -362,7 +368,7 @@ const AppContent: React.FC = () => {
         )}
         {userRole === 'admin' && (
           <button onClick={() => setActiveTab('admin')} className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.2rem] ${activeTab === 'admin' ? 'text-wine-700' : 'text-gray-400'}`}>
-            <ShieldCheckIcon className="w-5 h-5 mb-1" filled={activeTab === 'admin'} />
+            <ShieldCheckIcon className="w-5 h-5" filled={activeTab === 'admin'} />
             <span className="text-[7px] font-bold uppercase tracking-wider">Admin</span>
           </button>
         )}
