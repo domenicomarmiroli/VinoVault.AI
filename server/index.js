@@ -141,17 +141,28 @@ app.get('/api/users/me', authenticateToken, async (req, res) => {
 app.put('/api/managed-restaurant', authenticateToken, async (req, res) => {
     const { menu_context, food_menu, menu_analysis } = req.body;
     try {
-        const result = await pool.query(
-            `UPDATE restaurants 
-             SET menu_context = COALESCE($1, menu_context), 
-                 food_menu = COALESCE($2, food_menu), 
-                 menu_analysis = COALESCE($3, menu_analysis) 
-             WHERE manager_id = $4 RETURNING *`,
-            [menu_context || null, food_menu || null, menu_analysis ? JSON.stringify(menu_analysis) : null, req.user.userId]
-        );
-        if (result.rowCount === 0) return res.status(403).json({ error: 'Not a manager' });
+        // Costruiamo la query dinamicamente per evitare blocchi COALESCE se vogliamo resettare a stringa vuota
+        const updates = [];
+        const values = [];
+        let idx = 1;
+
+        if (menu_context !== undefined) { updates.push(`menu_context = $${idx++}`); values.push(menu_context); }
+        if (food_menu !== undefined) { updates.push(`food_menu = $${idx++}`); values.push(food_menu); }
+        if (menu_analysis !== undefined) { updates.push(`menu_analysis = $${idx++}`); values.push(menu_analysis ? JSON.stringify(menu_analysis) : null); }
+
+        if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
+
+        values.push(req.user.userId);
+        const query = `UPDATE restaurants SET ${updates.join(', ')} WHERE manager_id = $${idx} RETURNING *`;
+        
+        const result = await pool.query(query, values);
+        if (result.rowCount === 0) return res.status(403).json({ error: 'Not a manager or restaurant not found' });
+        
         res.json({ success: true, restaurant: result.rows[0] });
-    } catch (err) { res.status(500).json({ error: 'Update failed' }); }
+    } catch (err) { 
+        console.error("Restaurant Update Error:", err);
+        res.status(500).json({ error: 'Update failed' }); 
+    }
 });
 
 app.post('/api/users/track-ai', authenticateToken, async (req, res) => {

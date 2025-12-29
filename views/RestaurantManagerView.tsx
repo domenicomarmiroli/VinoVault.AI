@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Restaurant, RestaurantAnalysis } from '../types';
 import { RestaurantIcon, CameraIcon, ChartBarIcon, ExternalLinkIcon, ChefIcon, StarIcon, ShieldCheckIcon, WineIcon, PlusIcon } from '../components/Icons';
 import { extractTextFromMedia, analyzeRestaurantcompleteness } from '../services/geminiService';
@@ -50,15 +50,23 @@ const readFileAsBase64 = (file: File): Promise<string> => {
 const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restaurant, onUpdateRestaurant, onLogout }) => {
   const [wineList, setWineList] = useState(restaurant.menu_context || '');
   const [foodMenu, setFoodMenu] = useState(restaurant.food_menu || '');
+  const [report, setReport] = useState<RestaurantAnalysis | null>(restaurant.menu_analysis || null);
+  
   const [isSaving, setIsSaving] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [showCopyFeedback, setShowCopyFeedback] = useState(false);
-  const [report, setReport] = useState<RestaurantAnalysis | null>(restaurant.menu_analysis || null);
   
   const wineFileInputRef = useRef<HTMLInputElement>(null);
   const foodFileInputRef = useRef<HTMLInputElement>(null);
   const { language } = useLanguage();
+
+  // Sincronizza lo stato se le props cambiano esternamente
+  useEffect(() => {
+      setWineList(restaurant.menu_context || '');
+      setFoodMenu(restaurant.food_menu || '');
+      setReport(restaurant.menu_analysis || null);
+  }, [restaurant]);
 
   const restaurantUrl = `https://www.aiknow.wine/?ref=${restaurant.slug}`;
 
@@ -84,7 +92,12 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
       try {
           const analysis = await analyzeRestaurantcompleteness(wineList, foodMenu, language);
           setReport(analysis);
-          await onUpdateRestaurant({ menu_analysis: analysis });
+          // Salviamo immediatamente il report per persistenza
+          await onUpdateRestaurant({ 
+              menu_context: wineList,
+              food_menu: foodMenu,
+              menu_analysis: analysis 
+          });
       } catch (err) { alert("Errore durante l'analisi strategica."); }
       finally { setIsAnalyzing(false); }
   };
@@ -322,4 +335,3 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
 };
 
 export default RestaurantManagerView;
-
