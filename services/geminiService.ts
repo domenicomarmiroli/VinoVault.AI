@@ -57,7 +57,6 @@ export const analyzeWineLabel = async (base64Image: string, lang: Language = 'it
           temperature: 0.5,
           responseMimeType: "application/json",
           // Use Type enum for responseSchema as per guidelines
-          // Fix: Ensure SchemaType is not used, use Type instead.
           responseSchema: {
             type: Type.OBJECT,
             properties: {
@@ -226,7 +225,6 @@ export const analyzePurchase = async (
            "type": "Rosso" | "Bianco" | "Rosato" | "Spumante/Champagne" | "Dolce/Passito",
            "region": "Regione",
            "grape": "Vitigno principale",
-           "alcohol": "Gradazione alcolica",
            "foodPairings": ["Piatto 1", "Piatto 2"]
          },
          "marketPriceEstimate": numero (prezzo medio trovato, es. 25.50),
@@ -268,7 +266,7 @@ export const analyzePurchase = async (
         } catch (e) {
             console.error("JSON Parse Error on:", jsonString);
             return {
-                wineDetails: { name: 'Errore Analisi', producer: '?', year: 'N/A', type: WineType.RED, region: '', grape: '', alcohol: '', foodPairings: [] },
+                wineDetails: { name: 'Errore Analisi', producer: '?', year: 'N/A', type: 'Rosso' as any, region: '', grape: '', foodPairings: [] },
                 marketPriceEstimate: inputPrice,
                 isGoodDeal: false,
                 dealRating: 'Fair',
@@ -299,10 +297,9 @@ export const analyzePurchase = async (
                 name: parsed.wineDetails?.name || 'Sconosciuto',
                 producer: parsed.wineDetails?.producer || 'Sconosciuto',
                 year: parsed.wineDetails?.year || 'N/A',
-                type: parsed.wineDetails?.type || WineType.RED, 
+                type: parsed.wineDetails?.type || 'Rosso', 
                 region: parsed.wineDetails?.region || '',
                 grape: parsed.wineDetails?.grape || '',
-                alcohol: parsed.wineDetails?.alcohol || '',
                 foodPairings: parsed.wineDetails?.foodPairings || []
             },
             marketPriceEstimate: marketPrice > 0 ? marketPrice : inputPrice,

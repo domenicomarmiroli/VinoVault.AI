@@ -24,14 +24,16 @@ export interface Wine {
   quantity: number;
   location: string;
   
+  // AI Generated Advice
   storageTemp: string;
   storageAdvice: string;
   servingTemp: string;
   servingAdvice: string;
   foodPairings: string[];
   
-  drinkWindow: string; 
-  marketPrice: number; 
+  // Analytics & Smart Features
+  drinkWindow: string; // Format "2025-2028"
+  marketPrice: number; // Estimated current value
 
   imageUrl?: string;
 }
@@ -48,7 +50,7 @@ export interface HistoryEntry {
   imageUrl?: string;
   rating?: number;
   notes?: string;
-  location?: string;
+  location?: string; // NEW: Where it was drunk
 }
 
 export interface Location {
@@ -56,28 +58,38 @@ export interface Location {
     name: string;
 }
 
-export interface User {
-  id: string;
-  email: string;
-  role: 'user' | 'admin' | 'restaurant'; 
-  is_premium?: boolean; 
-  language?: Language; 
-  ref_restaurant_slug?: string; 
-  // Added properties for AdminView statistics
-  wine_count?: number;
-  ai_usage_count?: number;
+export interface MenuRequest {
+  menuText: string;
+  guests: number;
+  courseCount: 'single' | 'multiple';
 }
 
-export interface Restaurant {
-    id: string;
-    name: string;
-    slug: string; 
-    menu_context: string; 
-    owner_id?: string; 
-    created_at?: string;
-    // Added properties for AdminView statistics
-    user_count?: number;
-    total_ai_usage?: number;
+export interface PairingOption {
+  wineId?: string; // If owned
+  wineName: string; // Fallback or display name
+  reasoning: string;
+  type: 'owned' | 'purchase';
+  servingTemp?: string;   
+  servingAdvice?: string; 
+}
+
+export interface PairingSuggestion {
+  courseName: string;
+  dishName: string;
+  options: PairingOption[];
+}
+
+export interface PurchaseAnalysis {
+  wineDetails: Partial<Wine>;
+  marketPriceEstimate: number;
+  isGoodDeal: boolean;
+  dealRating: 'Bad' | 'Fair' | 'Good' | 'Excellent';
+  qualityScore: number;
+  sommelierNotes: string;
+  cellarFit: {
+    isRecommended: boolean;
+    reasoning: string;
+  };
 }
 
 export interface RestaurantSuggestion {
@@ -91,49 +103,18 @@ export interface RestaurantSuggestion {
     priceCategory?: 'Fascia Economica' | 'Fascia Media' | 'Fascia Alta'; 
 }
 
-// Added missing interface for geminiService and SommelierView
-export interface PairingSuggestion {
-    courseName: string;
-    dishName: string;
-    options: Array<{
-        wineId?: string | null;
-        wineName: string;
-        reasoning: string;
-        type: 'owned' | 'purchase';
-        servingTemp: string;
-        servingAdvice: string;
-    }>;
-}
-
-// Added missing interface for geminiService and ShopView
-export interface PurchaseAnalysis {
-    wineDetails: {
-        name: string;
-        producer: string;
-        year: string;
-        type: WineType;
-        region: string;
-        grape: string;
-        alcohol: string; // Added alcohol to match Wine interface
-        foodPairings: string[];
-    };
-    marketPriceEstimate: number;
-    isGoodDeal: boolean;
-    dealRating: 'Excellent' | 'Good' | 'Fair' | 'Bad';
-    qualityScore: number;
-    sommelierNotes: string;
-    cellarFit: {
-        isRecommended: boolean;
-        reasoning: string;
-    };
-}
-
-export interface CellarReport {
-    overallAssessment: string;
-    palateProfile: string;
-    gapAnalysis: string;
-    buyRecommendations: Array<{wineName: string, reason: string, type: string}>;
-    drinkNowStrategy: string;
+export interface User {
+  id: string;
+  email: string;
+  role: 'user' | 'admin';
+  is_premium?: boolean; 
+  language?: Language; 
+  created_at?: string;
+  last_login?: string;
+  ref_restaurant_slug?: string; 
+  // Stats
+  wine_count?: number;     
+  ai_usage_count?: number; 
 }
 
 export interface OnlinePrice {
@@ -141,4 +122,29 @@ export interface OnlinePrice {
     price: number;
     currency: string;
     link: string;
+    thumbnail?: string;
+}
+
+export interface CellarRecommendation {
+    wineName: string;
+    reason: string;
+    type: string;
+}
+
+export interface CellarReport {
+    overallAssessment: string;
+    palateProfile: string;
+    gapAnalysis: string;
+    buyRecommendations: CellarRecommendation[];
+    drinkNowStrategy: string;
+}
+
+export interface Restaurant {
+    id: string;
+    name: string;
+    slug: string; 
+    menu_context: string; 
+    created_at?: string;
+    user_count?: number;
+    total_ai_usage?: number;
 }

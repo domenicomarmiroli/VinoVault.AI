@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Wine, PurchaseAnalysis, WineType } from '../types';
+import { Wine, PurchaseAnalysis } from '../types';
 import { analyzePurchase } from '../services/geminiService';
 import { CameraIcon, LogoutIcon, ShopIcon, WineIcon, ExternalLinkIcon, ChefIcon } from '../components/Icons';
 import PriceComparison from '../components/PriceComparison';
@@ -82,18 +82,8 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           const input = mode === 'camera' ? { type: 'image' as const, data: image! } : { type: 'url' as const, data: linkUrl };
           const result = await analyzePurchase(input, inputPrice, inventory, language);
           
-          // Fix for line 86: Added missing properties to the object literal to match the expected type
           if (!result.wineDetails) {
-              result.wineDetails = { 
-                name: 'Unknown', 
-                producer: 'Unknown', 
-                year: 'N/A', 
-                type: WineType.RED, 
-                region: '', 
-                grape: '', 
-                alcohol: '',
-                foodPairings: [] 
-              };
+              result.wineDetails = { name: 'Unknown', producer: 'Unknown', type: 'Rosso' as any };
           }
           
           setAnalysis(result);
@@ -118,7 +108,6 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           type: analysis.wineDetails?.type as any || 'Rosso',
           region: analysis.wineDetails?.region || '',
           grape: analysis.wineDetails?.grape || '',
-          // Fix for line 111: access to alcohol property is now valid through interface update
           alcohol: analysis.wineDetails?.alcohol || '',
           purchaseDate: today,
           price: Number(price) || safeMarketPrice,

@@ -384,7 +384,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                             {t('cancel')}
                          </button>
                      </div>
-                 </div> 
+                 </div>
             </div>
         )}
       </div>

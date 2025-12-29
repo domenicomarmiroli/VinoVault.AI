@@ -17,9 +17,8 @@ const compressImage = (file: File): Promise<string> => {
             img.src = event.target?.result as string;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                // Ridotto ulteriormente per risparmiare memoria (da 800 a 600)
-                const MAX_WIDTH = 600;
-                const MAX_HEIGHT = 600;
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 800;
                 let width = img.width;
                 let height = img.height;
                 if (width > height) {
@@ -32,8 +31,7 @@ const compressImage = (file: File): Promise<string> => {
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                     ctx.drawImage(img, 0, 0, width, height);
-                    // Qualità ridotta a 0.4 per evitare payload enormi nel database
-                    resolve(canvas.toDataURL('image/jpeg', 0.4));
+                    resolve(canvas.toDataURL('image/jpeg', 0.7));
                 } else reject(new Error("Canvas context error"));
             };
             img.onerror = (err) => reject(err);
