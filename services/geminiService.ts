@@ -188,7 +188,7 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
     const model = "gemini-3-flash-preview";
     const langName = getLanguageName(lang);
     const prompt = `
-        ANALISI STRATEGICA RISTORANTE (Modello v4).
+        ANALISI STRATEGICA RISTORANTE (Modello v5).
         CARTA VINI: """${wineList}"""
         MENÙ PIATTI: """${foodMenu}"""
         
@@ -196,9 +196,9 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
         Analizza la coerenza tra i piatti proposti e le etichette in cantina.
         
         REGOLE SCORE:
-        - Calcola uno SCORE numerico da 0 a 100.
-        - 100 è eccellenza assoluta, 0 è totale incoerenza.
-        - IMPORTANTE: Assicurati che il punteggio sia espresso in CENTESIMI (es. 75, non 7.5).
+        - Calcola un voto numerico da 0.0 a 10.0 (con un decimale).
+        - 10.0 è eccellenza assoluta, 0.0 è totale incoerenza.
+        - Se il punteggio è alto, il summary deve rispecchiare l'entusiasmo.
         
         Rispondi in ${langName} esclusivamente in formato JSON puro.
     `;
@@ -212,7 +212,7 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        score: { type: Type.NUMBER, description: "Score da 0 a 100. Se calcolato su scala 10, moltiplicalo per 10." },
+                        score: { type: Type.NUMBER, description: "Score da 0.0 a 10.0." },
                         summary: { type: Type.STRING },
                         strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
                         weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -238,9 +238,9 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
         });
         const result = JSON.parse(cleanJson(response.text));
         
-        // Normalizzazione score: se l'AI ha restituito un valore <= 10 (e non è 0), probabilmente intendeva scala 1-10
-        if (result.score > 0 && result.score <= 10) {
-            result.score = result.score * 10;
+        // Se l'AI ha restituito un valore su scala 100 (> 10), normalizziamolo a scala 10
+        if (result.score > 10) {
+            result.score = result.score / 10;
         }
 
         return { ...result, generatedAt: new Date().toISOString() };

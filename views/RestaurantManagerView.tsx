@@ -61,7 +61,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
   const foodFileInputRef = useRef<HTMLInputElement>(null);
   const { language } = useLanguage();
 
-  // Sincronizza lo stato se le props cambiano esternamente
   useEffect(() => {
       setWineList(restaurant.menu_context || '');
       setFoodMenu(restaurant.food_menu || '');
@@ -143,7 +142,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
 
       <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-8">
         
-        {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-3">
              <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
                  <span className="text-2xl font-black text-emerald-600">{restaurant.user_count || 0}</span>
@@ -155,7 +153,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
              </div>
         </div>
 
-        {/* Marketing Kit */}
         <div className="bg-gray-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
             <div className="relative z-10 w-full space-y-8">
@@ -189,7 +186,6 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
             </div>
         </div>
 
-        {/* Data Inputs */}
         <div className="space-y-8">
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
@@ -260,7 +256,7 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                             <p className="text-[10px] uppercase font-bold opacity-80 mt-1 tracking-widest">Aggiornato il {new Date(report.generatedAt).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right relative z-10">
-                            <span className="block text-5xl font-black">{Math.round(report.score)}/100</span>
+                            <span className="block text-5xl font-black">{report.score.toFixed(1)}/10</span>
                             <span className="text-[10px] uppercase font-bold opacity-80">Qualità Coerenza</span>
                         </div>
                     </div>

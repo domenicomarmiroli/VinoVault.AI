@@ -268,7 +268,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                    <div className="bg-emerald-600 p-6 text-white flex justify-between items-center"><h3 className="font-serif font-black text-xl">Report Strategico</h3><button onClick={() => setViewingReport(null)} className="text-white/70 hover:text-white">✕</button></div>
                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
                         <div className="flex justify-between items-center bg-stone-50 p-4 rounded-2xl border border-stone-100">
-                            <div><p className="text-xs font-black uppercase text-gray-400 tracking-widest">Punteggio</p><p className="text-4xl font-black text-emerald-600">{Math.round(viewingReport.score)}/100</p></div>
+                            <div><p className="text-xs font-black uppercase text-gray-400 tracking-widest">Punteggio</p><p className="text-4xl font-black text-emerald-600">{viewingReport.score.toFixed(1)}/10</p></div>
                             <div className="text-right"><p className="text-xs font-bold text-gray-400">Generato il</p><p className="text-sm font-medium">{new Date(viewingReport.generatedAt).toLocaleDateString()}</p></div>
                         </div>
                         <p className="text-lg italic text-gray-800 leading-relaxed border-l-4 border-emerald-500 pl-4">"{viewingReport.summary}"</p>
