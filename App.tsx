@@ -224,7 +224,11 @@ const AppContent: React.FC = () => {
           const res = await authFetch('/api/managed-restaurant', { method: 'PUT', body: JSON.stringify(updates) });
           if (res.ok) {
               const data = await res.json();
-              setManagedRestaurant(prev => prev ? { ...prev, ...updates } : null);
+              if (data.restaurant) {
+                  setManagedRestaurant(data.restaurant);
+              } else {
+                  setManagedRestaurant(prev => prev ? { ...prev, ...updates } : null);
+              }
           }
       } catch (e) { console.error(e); throw e; }
   };
