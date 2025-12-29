@@ -114,6 +114,7 @@ export interface PurchaseAnalysis {
         type: WineType;
         region: string;
         grape: string;
+        alcohol: string; // Added alcohol to match Wine interface
         foodPairings: string[];
     };
     marketPriceEstimate: number;

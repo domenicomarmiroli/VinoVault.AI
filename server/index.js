@@ -21,9 +21,9 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_wine_key_change_me';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
+// Aumentato limite per gestire le immagini caricate (anche se compresse)
+app.use(express.json({ limit: '10mb' }));
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -48,6 +48,53 @@ const authenticateAdmin = (req, res, next) => {
     });
 };
 
+// --- ADMIN API ---
+
+app.get('/api/users', authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.email, u.role, u.is_premium, u.ref_restaurant_slug, u.ai_usage_count,
+            (SELECT COUNT(*) FROM wines WHERE user_id = u.id) as wine_count
+            FROM users u ORDER BY created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: 'Fetch users failed' }); }
+});
+
+app.delete('/api/users/:id', authenticateAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM users WHERE id = $1 AND role != $2', [req.params.id, 'admin']);
+        res.sendStatus(200);
+    } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
+});
+
+app.put('/api/users/:id/role', authenticateAdmin, async (req, res) => {
+    const { role } = req.body;
+    if (!['user', 'restaurant'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
+    try {
+        await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, req.params.id]);
+        res.sendStatus(200);
+    } catch (err) { res.status(500).json({ error: 'Update failed' }); }
+});
+
+app.put('/api/users/:id/premium', authenticateAdmin, async (req, res) => {
+    try {
+        await pool.query('UPDATE users SET is_premium = NOT is_premium WHERE id = $1', [req.params.id]);
+        res.sendStatus(200);
+    } catch (err) { res.status(500).json({ error: 'Update failed' }); }
+});
+
+app.get('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT r.*, 
+            (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count
+            FROM restaurants r ORDER BY created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: 'Fetch restaurants failed' }); }
+});
+
 // --- RESTAURANT API ---
 
 app.get('/api/my-restaurant', authenticateToken, async (req, res) => {
@@ -58,6 +105,7 @@ app.get('/api/my-restaurant', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/my-restaurant', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'restaurant' && req.user.role !== 'admin') return res.status(403).json({ error: 'Solo ristoranti abilitati' });
     const { name, slug, menu_context } = req.body;
     try {
         const result = await pool.query(
@@ -69,36 +117,29 @@ app.post('/api/my-restaurant', authenticateToken, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (err) { 
-        if (err.code === '23505') return res.status(400).json({ error: 'Slug già in uso da un altro ristorante' });
+        if (err.code === '23505') return res.status(400).json({ error: 'Slug già in uso' });
         res.status(500).json({ error: 'Save failed' }); 
     }
 });
 
-// --- STANDARD API ---
+// --- AUTH ---
 
-app.get('/api/config', (req, res) => res.json({ googleClientId: GOOGLE_CLIENT_ID || '' }));
-
-app.post('/api/auth/google', async (req, res) => {
-    const { token, language, ref } = req.body;
-    if (!GOOGLE_CLIENT_ID || !token) return res.status(400).json({ error: 'Missing data' });
+app.post('/api/auth/register', async (req, res) => {
+    const { email, password, language, ref } = req.body;
     try {
-        const client = new OAuth2Client(GOOGLE_CLIENT_ID);
-        const ticket = await client.verifyIdToken({ idToken: token, audience: GOOGLE_CLIENT_ID });
-        const payload = ticket.getPayload();
-        const { email, sub: googleId } = payload;
-        let result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        let user = result.rows[0];
-        if (!user) {
-            const userId = 'u_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-            const newUser = await pool.query(
-                "INSERT INTO users (id, email, google_id, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, 'user', FALSE, $4, $5) RETURNING *",
-                [userId, email, googleId, language || 'it', ref || null]
-            );
-            user = newUser.rows[0];
-        }
-        const jwtToken = jwt.sign({ userId: user.id, email: user.email, role: user.role, isPremium: user.is_premium, language: user.language || 'it' }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token: jwtToken, user });
-    } catch (err) { res.status(500).json({ error: 'Google auth failed' }); }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const userId = 'u_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        // FORZATO RUOLO USER. RISTORANTE SOLO VIA ADMIN
+        await pool.query(
+            "INSERT INTO users (id, email, password, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            [userId, email, hashedPassword, 'user', false, language || 'it', ref || null]
+        );
+        const token = jwt.sign({ userId, email, role: 'user', isPremium: false, language: language || 'it' }, JWT_SECRET, { expiresIn: '30d' });
+        res.json({ token, user: { id: userId, email, role: 'user' } });
+    } catch (err) { 
+        if (err.code === '23505') return res.status(400).json({ error: 'Email già registrata' });
+        res.status(500).json({ error: 'Registration failed' }); 
+    }
 });
 
 app.post('/api/auth/login', async (req, res) => {
@@ -112,27 +153,13 @@ app.post('/api/auth/login', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Login failed' }); }
 });
 
-app.post('/api/auth/register', async (req, res) => {
-    const { email, password, language, ref, role } = req.body;
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const userId = 'u_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-        const finalRole = role === 'restaurant' ? 'restaurant' : 'user';
-        await pool.query(
-            "INSERT INTO users (id, email, password, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            [userId, email, hashedPassword, finalRole, false, language || 'it', ref || null]
-        );
-        const token = jwt.sign({ userId, email, role: finalRole, isPremium: false, language: language || 'it' }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, user: { id: userId, email, role: finalRole } });
-    } catch (err) { res.status(500).json({ error: 'Registration failed' }); }
-});
-
 app.get('/api/users/me', authenticateToken, async (req, res) => {
-    const result = await pool.query('SELECT id, email, role, is_premium, language FROM users WHERE id = $1', [req.user.userId]);
+    const result = await pool.query('SELECT id, email, role, is_premium, language, ai_usage_count FROM users WHERE id = $1', [req.user.userId]);
     res.json(result.rows[0]);
 });
 
 app.get('/api/wines', authenticateToken, async (req, res) => {
+    // RESTITUIAMO I VINI MA CON ATTENZIONE AL PESO
     const result = await pool.query('SELECT * FROM wines WHERE user_id = $1 ORDER BY created_at DESC', [req.user.userId]);
     res.json(result.rows);
 });
@@ -162,8 +189,8 @@ const initDb = async () => {
         await client.query(`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, password TEXT, role TEXT DEFAULT 'user', is_premium BOOLEAN DEFAULT FALSE, language TEXT DEFAULT 'it', ai_usage_count INTEGER DEFAULT 0, google_id TEXT, ref_restaurant_slug TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         await client.query(`CREATE TABLE IF NOT EXISTS restaurants (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, menu_context TEXT, owner_id TEXT UNIQUE, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         await client.query(`CREATE TABLE IF NOT EXISTS wines (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, producer TEXT, year TEXT, type TEXT, region TEXT, grape TEXT, alcohol TEXT, purchase_date TEXT, price DECIMAL, quantity INTEGER DEFAULT 1, location TEXT, storage_temp TEXT, storage_advice TEXT, serving_temp TEXT, serving_advice TEXT, food_pairings TEXT[], image_url TEXT, drink_window TEXT, market_price DECIMAL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
-        console.log("DB Ready");
+        console.log("Database initialized");
     } finally { client.release(); }
 };
 
-app.listen(PORT, () => { console.log(`Server on port ${PORT}`); initDb(); });
+app.listen(PORT, () => { console.log(`Server running on port ${PORT}`); initDb(); });
