@@ -8,25 +8,12 @@ import AnalyticsView from './views/AnalyticsView';
 import RestaurantView from './views/RestaurantView';
 import SommelierView from './views/SommelierView';
 import AdminView from './views/AdminView';
-import RestaurantCellarView from './views/RestaurantCellarView'; // New
-import DigitalCellarGuide from './views/DigitalCellarGuide';
-import SommelierHomeGuide from './views/SommelierHomeGuide';
-import RestaurantGuide from './views/RestaurantGuide';
-import ShopGuide from './views/ShopGuide';
-import AnalyticsGuide from './views/AnalyticsGuide';
-import SommelierAnalysisGuide from './views/SommelierAnalysisGuide';
-import HistoryGuide from './views/HistoryGuide';
-import AllGuidesView from './views/AllGuidesView';
-import RestaurantBusinessView from './views/RestaurantBusinessView';
+import RestaurantCellarView from './views/RestaurantCellarView';
 import AuthForm from './components/AuthForm';
-import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
-import SharedPairingModal from './components/SharedPairingModal';
 import LoadingScreen from './components/LoadingScreen';
-import { WineIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon, ChefIcon } from './components/Icons';
+import { WineIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon, ChefIcon, UserIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-
-const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
 const AppContent: React.FC = () => {
   const tokenRef = useRef<string | null>(localStorage.getItem('vinovault_token'));
@@ -34,22 +21,14 @@ const AppContent: React.FC = () => {
   
   const [userRole, setUserRole] = useState<'user' | 'admin' | 'restaurant'>('user'); 
   const [userPremium, setUserPremium] = useState(false);
-  const { t, setLanguage, language } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<string>('inventory');
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
   
   const [wines, setWines] = useState<Wine[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [isAuthProcessing, setIsAuthProcessing] = useState(false);
-  const [authStatus, setAuthStatus] = useState<string>('Avvio...');
-  const [isOfflineMode, setIsOfflineMode] = useState(false);
-  const [ratingModalEntry, setRatingModalEntry] = useState<HistoryEntry | null>(null);
   const [restaurantData, setRestaurantData] = useState<Restaurant | null>(null);
-  const [sharedPairingData, setSharedPairingData] = useState<any | null>(null);
   const [showAuth, setShowAuth] = useState(false);
 
   const authFetch = async (url: string, options: RequestInit = {}) => {
@@ -58,7 +37,7 @@ const AppContent: React.FC = () => {
       return fetch(url, { ...options, headers });
   };
 
-  const handleLogin = (newToken: string, userEmail: string) => {
+  const handleLogin = (newToken: string) => {
       localStorage.setItem('vinovault_token', newToken);
       tokenRef.current = newToken;
       setToken(newToken);
@@ -67,7 +46,9 @@ const AppContent: React.FC = () => {
         const payload = JSON.parse(atob(newToken.split('.')[1]));
         setUserRole(payload.role || 'user');
         setUserPremium(payload.isPremium || false);
-        if (payload.role === 'restaurant') setActiveTab('wine_list_mgmt');
+        
+        if (payload.role === 'admin') setActiveTab('admin');
+        else if (payload.role === 'restaurant') setActiveTab('wine_list_mgmt');
         else setActiveTab('inventory');
       } catch (e) {}
       setIsInitializing(false);
@@ -80,7 +61,6 @@ const AppContent: React.FC = () => {
       setUserRole('user');
       setUserPremium(false);
       window.history.pushState({}, '', '/');
-      setCurrentPath('/');
   };
 
   useEffect(() => {
@@ -96,24 +76,23 @@ const AppContent: React.FC = () => {
             const profile = await profileRes.json();
             setUserPremium(profile.is_premium || false);
             setUserRole(profile.role || 'user');
-            if (profile.role === 'restaurant') setActiveTab('wine_list_mgmt');
+            if (profile.role === 'admin') setActiveTab('admin');
+            else if (profile.role === 'restaurant') setActiveTab('wine_list_mgmt');
         }
-        setWines(await winesRes.json());
-        setHistory(await historyRes.json());
-        setIsLoaded(true);
-      } catch (e) { setIsOfflineMode(true); setIsLoaded(true); }
+        if (winesRes.ok) setWines(await winesRes.json());
+        if (historyRes.ok) setHistory(await historyRes.json());
+      } catch (e) { console.error(e); }
       finally { setIsInitializing(false); }
     };
     fetchData();
   }, [token]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const ref = params.get('ref');
-    if (ref) fetch(`/api/restaurants/${ref}`).then(res => res.json()).then(data => { if (data) setRestaurantData(data); });
-  }, []);
-
   const getTabs = () => {
+    if (userRole === 'admin') {
+        return [
+          { id: 'admin', icon: ShieldCheckIcon, label: 'Admin' }
+        ];
+    }
     if (userRole === 'restaurant') {
         return [
           { id: 'shop', icon: ShopIcon, label: t('nav_shop') },
@@ -141,7 +120,9 @@ const AppContent: React.FC = () => {
   return (
     <div className="flex flex-col h-full w-full md:max-w-md mx-auto bg-white shadow-2xl overflow-hidden md:border-x md:border-gray-200">
       <main className="flex-1 overflow-hidden relative">
-        {userRole === 'restaurant' ? (
+        {userRole === 'admin' ? (
+             <div className="absolute inset-0"><AdminView onLogout={handleLogout} token={token || ''} /></div>
+        ) : userRole === 'restaurant' ? (
             <>
                 <div className={`absolute inset-0 transition-opacity ${activeTab === 'shop' ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}><ShopView inventory={[]} onLogout={handleLogout} onAddToInventory={() => {}} onAiUsed={() => {}} isPremium={userPremium} /></div>
                 <div className={`absolute inset-0 transition-opacity ${activeTab === 'sommelier' ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}><SommelierView inventory={[]} onLogout={handleLogout} onAiUsed={() => {}} onConsume={() => {}} /></div>
@@ -155,23 +136,16 @@ const AppContent: React.FC = () => {
                 <div className={`absolute inset-0 transition-opacity ${activeTab === 'restaurant' ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}><RestaurantView onLogout={handleLogout} onAddToHistory={() => {}} onAiUsed={() => {}} onClearRestaurant={() => {}} restaurantData={restaurantData} /></div>
                 <div className={`absolute inset-0 transition-opacity ${activeTab === 'analytics' ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}><AnalyticsView inventory={wines} history={history} onLogout={handleLogout} isPremium={userPremium} onAiUsed={() => {}} /></div>
                 <div className={`absolute inset-0 transition-opacity ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}><HistoryView wines={wines} history={history} onClearHistory={() => {}} onLogout={handleLogout} onUpdateHistoryEntry={() => {}} onDeleteHistoryEntry={() => {}} isPremium={userPremium} onAiUsed={() => {}} /></div>
-                {userRole === 'admin' && activeTab === 'admin' && <div className="absolute inset-0 z-50"><AdminView onLogout={handleLogout} token={token || ''} /></div>}
             </>
         )}
       </main>
       <nav className="bg-white border-t border-gray-200 flex justify-between px-2 pb-safe z-50 overflow-x-auto">
         {getTabs().map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === tab.id ? 'text-wine-700' : 'text-gray-400'}`}>
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === tab.id ? 'text-wine-700' : 'text-gray-400'}`}>
             <tab.icon className="w-6 h-6 mb-1" filled={activeTab === tab.id} />
             <span className="text-[8px] font-bold uppercase tracking-wider">{tab.label}</span>
           </button>
         ))}
-        {userRole === 'admin' && (
-             <button onClick={() => setActiveTab('admin')} className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.5rem] ${activeTab === 'admin' ? 'text-wine-700' : 'text-gray-400'}`}>
-                <ShieldCheckIcon className="w-6 h-6 mb-1" filled={activeTab === 'admin'} />
-                <span className="text-[8px] font-bold uppercase tracking-wider">Admin</span>
-            </button>
-        )}
       </nav>
     </div>
   );
