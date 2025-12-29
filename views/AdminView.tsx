@@ -89,6 +89,10 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
       fetchData();
   }, [token]);
 
+  // Global Totals
+  const totalBottlesGlobal = users.reduce((acc, u) => acc + Number(u.wine_count || 0), 0);
+  const totalAiUsageGlobal = users.reduce((acc, u) => acc + Number(u.ai_usage_count || 0), 0);
+
   // --- RESTAURANT ACTIONS ---
   const handleSaveRestaurant = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -224,6 +228,31 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
         <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2"><LogoutIcon className="w-6 h-6" /></button>
       </div>
 
+      {/* Global Stats Panel */}
+      <div className="px-6 py-4 bg-white border-b border-gray-100 flex gap-6 overflow-x-auto no-scrollbar">
+          <div className="flex-1 min-w-[140px] bg-wine-50 p-3 rounded-2xl border border-wine-100">
+              <span className="block text-[10px] font-black text-wine-600 uppercase tracking-widest mb-1">Bottiglie Totali</span>
+              <div className="flex items-center gap-2">
+                  <WineIcon className="w-5 h-5 text-wine-700" filled />
+                  <span className="text-2xl font-black text-wine-900">{totalBottlesGlobal.toLocaleString()}</span>
+              </div>
+          </div>
+          <div className="flex-1 min-w-[140px] bg-cyan-50 p-3 rounded-2xl border border-cyan-100">
+              <span className="block text-[10px] font-black text-cyan-600 uppercase tracking-widest mb-1">Interazioni AI</span>
+              <div className="flex items-center gap-2">
+                  <ChartBarIcon className="w-5 h-5 text-cyan-700" filled />
+                  <span className="text-2xl font-black text-cyan-900">{totalAiUsageGlobal.toLocaleString()}</span>
+              </div>
+          </div>
+          <div className="flex-1 min-w-[140px] bg-stone-50 p-3 rounded-2xl border border-stone-200">
+              <span className="block text-[10px] font-black text-stone-500 uppercase tracking-widest mb-1">Utenti Totali</span>
+              <div className="flex items-center gap-2">
+                  <ShieldCheckIcon className="w-5 h-5 text-stone-700" />
+                  <span className="text-2xl font-black text-stone-900">{users.length.toLocaleString()}</span>
+              </div>
+          </div>
+      </div>
+
       <div className="flex border-b border-gray-200 bg-white">
           <button 
             onClick={() => setActiveTab('users')} 
@@ -279,7 +308,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                                              {user.is_premium ? <span className="px-2 py-0.5 rounded text-[10px] bg-amber-100 text-amber-700">Premium</span> : <span className="px-2 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500">Free</span>}
                                          </td>
                                          <td className="p-3 text-center text-xs">
-                                             {user.wine_count || 0} Vini / {user.ai_usage_count || 0} AI
+                                             {user.wine_count || 0} Bott. / {user.ai_usage_count || 0} AI
                                          </td>
                                          <td className="p-3 text-right flex gap-2 justify-end">
                                              <button onClick={() => handleTogglePremium(user.id)} className="text-amber-600 hover:text-amber-800 text-lg p-1" title="Toggle Premium">💎</button>

@@ -321,7 +321,7 @@ app.get('/api/users', authenticateAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT u.id, u.email, u.role, u.is_premium, u.language, u.ai_usage_count, u.ref_restaurant_slug,
-            (SELECT COUNT(*) FROM wines WHERE user_id = u.id) as wine_count
+            COALESCE((SELECT SUM(quantity) FROM wines WHERE user_id = u.id), 0) as wine_count
             FROM users u ORDER BY created_at DESC
         `);
         res.json(result.rows);
