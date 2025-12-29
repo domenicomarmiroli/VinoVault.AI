@@ -21,6 +21,18 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_wine_key_change_me';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
+// Helper per pulizia JSON simile a quello client-side
+const cleanJson = (text) => {
+    if (!text) return "[]";
+    let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const firstBracket = cleaned.indexOf('[');
+    const lastBracket = cleaned.lastIndexOf(']');
+    if (firstBracket !== -1 && lastBracket !== -1) {
+        return cleaned.substring(firstBracket, lastBracket + 1);
+    }
+    return cleaned;
+};
+
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -137,7 +149,6 @@ app.get('/api/users/me', authenticateToken, async (req, res) => {
         
         if (restResult.rows[0]) {
             const rest = restResult.rows[0];
-            // Ensure analysis is parsed if it came back as a string
             if (typeof rest.menu_analysis === 'string') {
                 try { rest.menu_analysis = JSON.parse(rest.menu_analysis); } catch(e) {}
             }
@@ -200,11 +211,18 @@ app.get('/api/search-prices', authenticateToken, async (req, res) => {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: `Trova prezzi online per: ${query}. JSON: [{ "source": "Nome", "price": 12.34, "currency": "EUR", "link": "URL" }]`,
-            config: { tools: [{ googleSearch: {} }], responseMimeType: "application/json" }
+            contents: `Trova prezzi online per: ${query}. Fornisci i risultati esclusivamente in formato JSON come lista di oggetti: [{ "source": "Nome Store", "price": 12.34, "currency": "EUR", "link": "URL" }]. Non aggiungere saluti o introduzioni.`,
+            config: { 
+                tools: [{ googleSearch: {} }],
+                temperature: 0.1 
+            }
         });
-        res.json(JSON.parse(cleanJson(response.text || "[]")));
-    } catch (err) { res.status(500).json({ error: 'Search failed' }); }
+        const cleaned = cleanJson(response.text);
+        res.json(JSON.parse(cleaned || "[]"));
+    } catch (err) { 
+        console.error("Search API error:", err);
+        res.status(500).json({ error: 'Search failed' }); 
+    }
 });
 
 app.get('/api/wines', authenticateToken, async (req, res) => {

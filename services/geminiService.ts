@@ -3,7 +3,33 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Wine, WineType, PairingSuggestion, PurchaseAnalysis, RestaurantSuggestion, HistoryEntry, CellarReport, Language, RestaurantAnalysis } from "../types";
 
 const cleanBase64 = (base64: string) => base64.replace(/^data:(image\/(png|jpg|jpeg|webp)|application\/pdf);base64,/, "");
-const cleanJson = (text: string) => text.replace(/```json/g, '').replace(/```/g, '').trim();
+const cleanJson = (text: string) => {
+    // Rimuove blocchi di codice markdown se presenti
+    let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    // Se per qualche motivo l'AI aggiunge testo prima o dopo il JSON, cerchiamo di estrarre solo l'oggetto/array
+    const firstBrace = cleaned.indexOf('{');
+    const firstBracket = cleaned.indexOf('[');
+    const lastBrace = cleaned.lastIndexOf('}');
+    const lastBracket = cleaned.lastIndexOf(']');
+    
+    let start = -1;
+    let end = -1;
+    
+    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+        start = firstBrace;
+        end = lastBrace;
+    } else if (firstBracket !== -1) {
+        start = firstBracket;
+        end = lastBracket;
+    }
+    
+    if (start !== -1 && end !== -1) {
+        return cleaned.substring(start, end + 1);
+    }
+    
+    return cleaned;
+};
+
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const getLanguageName = (code: Language) => {
@@ -24,8 +50,8 @@ export const analyzeWineLabel = async (base64Image: string, lang: Language = 'it
         model,
         contents: { parts: [ { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } }, { text: `Analizza questa etichetta in ${langName}.` } ] },
         config: {
-          systemInstruction: `Sei un sommelier professionista. Estrai dati tecnici in ${langName}.`,
-          temperature: 0.5,
+          systemInstruction: `Sei un sommelier professionista. Estrai dati tecnici in ${langName}. Rispondi esclusivamente in JSON.`,
+          temperature: 0.1,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -54,7 +80,7 @@ export const suggestPairing = async (menu: string, guests: number, inventory: Wi
         model,
         contents: `Menu: ${menu}. Inventario: ${inventoryList}. Stile: ${style}.`,
         config: {
-          systemInstruction: `Sei un sommelier esperto. Rispondi in ${langName} con JSON puro.`,
+          systemInstruction: `Sei un sommelier esperto. Rispondi in ${langName} con JSON puro. Non aggiungere chiacchiere.`,
           temperature: 0.5,
           responseMimeType: "application/json",
           responseSchema: {
@@ -94,25 +120,53 @@ export const analyzePurchase = async (input: { type: 'image' | 'url', data: stri
             model,
             contents: { parts: [
                 input.type === 'image' ? { inlineData: { mimeType: "image/jpeg", data: cleanBase64(input.data) } } : { text: input.data },
-                { text: `Prezzo: €${inputPrice}. Cantina: ${inventoryContext}.` }
+                { text: `Prezzo offerto: €${inputPrice}. Mia cantina attuale: ${inventoryContext || 'vuota'}. Analizza se l'acquisto è sensato in ${langName}.` }
             ]},
             config: {
-                systemInstruction: `Broker di vini e Sommelier. Analizza l'affare in ${langName}.`,
-                tools: [{ googleSearch: {} }],
-                temperature: 0.5
+                systemInstruction: `Agisci come un Broker di vini e Sommelier professionista. Analizza l'affare e la coerenza con la cantina esistente. Rispondi esclusivamente in formato JSON seguendo lo schema indicato. Non aggiungere testo conversazionale (saluti, Buongiorno, etc).`,
+                temperature: 0.2,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        wineDetails: {
+                            type: Type.OBJECT,
+                            properties: {
+                                name: { type: Type.STRING },
+                                producer: { type: Type.STRING },
+                                year: { type: Type.STRING },
+                                type: { type: Type.STRING },
+                                region: { type: Type.STRING },
+                                grape: { type: Type.STRING },
+                                alcohol: { type: Type.STRING },
+                                foodPairings: { type: Type.ARRAY, items: { type: Type.STRING } }
+                            },
+                            required: ["name", "producer", "year", "type"]
+                        },
+                        marketPriceEstimate: { type: Type.NUMBER },
+                        isGoodDeal: { type: Type.BOOLEAN },
+                        dealRating: { type: Type.STRING, enum: ['Excellent', 'Good', 'Fair', 'Bad'] },
+                        qualityScore: { type: Type.NUMBER },
+                        sommelierNotes: { type: Type.STRING },
+                        cellarFit: {
+                            type: Type.OBJECT,
+                            properties: {
+                                isRecommended: { type: Type.BOOLEAN },
+                                reasoning: { type: Type.STRING }
+                            },
+                            required: ["isRecommended", "reasoning"]
+                        }
+                    },
+                    required: ["wineDetails", "marketPriceEstimate", "dealRating", "sommelierNotes", "cellarFit"]
+                }
             }
         });
-        const parsed = JSON.parse(cleanJson(response.text));
-        return {
-            wineDetails: parsed.wineDetails,
-            marketPriceEstimate: parsed.marketPriceEstimate || inputPrice,
-            isGoodDeal: parsed.isGoodDeal || false,
-            dealRating: parsed.dealRating || 'Fair',
-            qualityScore: 85,
-            sommelierNotes: parsed.sommelierNotes || "Identificato.",
-            cellarFit: parsed.cellarFit || { isRecommended: true, reasoning: "Ok." }
-        };
-    } catch (err: any) { throw new Error(err.message || "Errore Shop Advisor"); }
+        const text = response.text;
+        return JSON.parse(cleanJson(text));
+    } catch (err: any) { 
+        console.error("Analysis Error:", err);
+        throw new Error(err.message || "Errore Shop Advisor"); 
+    }
 };
 
 export const suggestRestaurantPairing = async (menuSource: { type: 'images' | 'text', data: string[] | string }, dish: string, lang: Language = 'it'): Promise<RestaurantSuggestion[]> => {
@@ -123,10 +177,10 @@ export const suggestRestaurantPairing = async (menuSource: { type: 'images' | 't
             model,
             contents: { parts: [
                 ...(menuSource.type === 'images' ? (menuSource.data as string[]).map(img => ({ inlineData: { mimeType: "image/jpeg", data: cleanBase64(img) } })) : [{ text: menuSource.data as string }]),
-                { text: `Scegli vini per: ${dish}.` }
+                { text: `Scegli vini per: ${dish}. Rispondi in ${langName}.` }
             ]},
             config: {
-                systemInstruction: `Sommelier Digitale. Suggerisci 3-6 vini dal menu in ${langName}.`,
+                systemInstruction: `Sommelier Digitale. Suggerisci i migliori abbinamenti dalla carta vini fornita. Rispondi esclusivamente in formato JSON (Array di oggetti).`,
                 temperature: 0.5,
                 responseMimeType: "application/json",
             }
@@ -145,12 +199,6 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
         
         Agisci come un Master Sommelier Consultant. 
         Analizza la coerenza tra i piatti proposti e le etichette in cantina.
-        
-        REGOLE:
-        1. Calcola uno SCORE (0-100) basato sulla copertura gastronomica.
-        2.courseDetails deve analizzare ogni categoria di piatti (Antipasti, Primi, etc).
-        3. Identifica vini 'poco adatti' (es. troppi rossi pesanti per un menù di pesce crudo).
-        4. Suggerisci STILI di vino mancanti (es. "Manca un Riesling strutturato per i piatti piccanti").
         
         Rispondi in ${langName}. JSON puro.
     `;
@@ -198,7 +246,7 @@ export const extractTextFromMedia = async (base64Data: string, mimeType: string)
     try {
         const response = await ai.models.generateContent({
             model,
-            contents: { parts: [ { inlineData: { mimeType, data: cleanBase64(base64Data) } }, { text: "OCR PROFESSIONALE. Estrai il testo mantenendo struttura e prezzi." } ] },
+            contents: { parts: [ { inlineData: { mimeType, data: cleanBase64(base64Data) } }, { text: "OCR PROFESSIONALE. Estrai il testo mantenendo struttura e prezzi. Non aggiungere commenti." } ] },
             config: { temperature: 0.1 }
         });
         return response.text || "";
@@ -221,7 +269,7 @@ export const generateCellarReport = async (inventory: Wine[], history: HistoryEn
       STORICO BEVUTE:
       ${historyText || "Nessuna bevuta registrata."}
       
-      Genera un report dettagliato in ${langName}.
+      Genera un report dettagliato in ${langName}. Rispondi solo in JSON.
     `;
 
     try {
@@ -229,7 +277,7 @@ export const generateCellarReport = async (inventory: Wine[], history: HistoryEn
             model,
             contents: prompt,
             config: {
-                systemInstruction: `Sei un Sommelier Senior specializzato in analisi di collezioni private. Rispondi SEMPRE in JSON puro seguendo lo schema richiesto in lingua ${langName}.`,
+                systemInstruction: `Sei un Sommelier Senior specializzato in analisi di collezioni private. Rispondi SEMPRE in JSON puro seguendo lo schema richiesto in lingua ${langName}. Non aggiungere testo introduttivo.`,
                 temperature: 0.5,
                 responseMimeType: "application/json",
                 responseSchema: {

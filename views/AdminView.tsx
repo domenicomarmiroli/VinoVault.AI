@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Restaurant } from '../types';
-import { ShieldCheckIcon, LogoutIcon, TrashIcon, WineIcon, ChartBarIcon, RestaurantIcon, CameraIcon, UserIcon } from '../components/Icons';
+import { User, Restaurant, RestaurantAnalysis } from '../types';
+import { ShieldCheckIcon, LogoutIcon, TrashIcon, WineIcon, ChartBarIcon, RestaurantIcon, CameraIcon, UserIcon, ChefIcon, StarIcon, PlusIcon } from '../components/Icons';
 import { extractTextFromMedia } from '../services/geminiService';
 
 interface AdminViewProps {
@@ -9,7 +9,6 @@ interface AdminViewProps {
   token: string;
 }
 
-// Reuse helper locally
 const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -59,8 +58,11 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
 
   // Restaurant Form State
   const [editingRest, setEditingRest] = useState<Partial<Restaurant> | null>(null);
-  const [extracting, setExtracting] = useState(false);
+  const [extracting, setExtracting] = useState<'wine' | 'food' | null>(null);
+  const [viewingReport, setViewingReport] = useState<RestaurantAnalysis | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const foodFileInputRef = useRef<HTMLInputElement>(null);
 
   // User Reset State
   const [resetModalUser, setResetModalUser] = useState<User | null>(null);
@@ -77,7 +79,15 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
           ]);
           
           if (usersRes.ok) setUsers(await usersRes.json());
-          if (restRes.ok) setRestaurants(await restRes.json());
+          if (restRes.ok) {
+              const data = await restRes.json();
+              // Parse analysis if it's stringified
+              const parsedData = data.map((r: any) => ({
+                  ...r,
+                  menu_analysis: typeof r.menu_analysis === 'string' ? JSON.parse(r.menu_analysis) : r.menu_analysis
+              }));
+              setRestaurants(parsedData);
+          }
       } catch (e) {
           console.error("Failed to fetch admin data", e);
       } finally {
@@ -89,11 +99,9 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
       fetchData();
   }, [token]);
 
-  // Global Totals
   const totalBottlesGlobal = users.reduce((acc, u) => acc + Number(u.wine_count || 0), 0);
   const totalAiUsageGlobal = users.reduce((acc, u) => acc + Number(u.ai_usage_count || 0), 0);
 
-  // --- RESTAURANT ACTIONS ---
   const handleSaveRestaurant = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!editingRest?.name || !editingRest?.slug) return;
@@ -129,11 +137,11 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
       } catch(e) { alert("Errore"); }
   };
 
-  const handleMenuImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'wine' | 'food') => {
       const file = e.target.files?.[0];
       if (file) {
           try {
-              setExtracting(true);
+              setExtracting(type);
               let processedData = "";
               let mimeType = file.type;
 
@@ -144,27 +152,26 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                   mimeType = 'image/jpeg';
               } else {
                   alert("Formato non supportato. Usa JPG, PNG o PDF.");
-                  setExtracting(false);
+                  setExtracting(null);
                   return;
               }
 
               const text = await extractTextFromMedia(processedData, mimeType);
-              setEditingRest(prev => ({
-                  ...prev,
-                  menu_context: (prev?.menu_context || '') + "\n" + text
-              }));
+              if (type === 'wine') {
+                  setEditingRest(prev => ({ ...prev, menu_context: (prev?.menu_context || '') + "\n" + text }));
+              } else {
+                  setEditingRest(prev => ({ ...prev, food_menu: (prev?.food_menu || '') + "\n" + text }));
+              }
           } catch(e) {
               alert("Errore lettura menu");
           } finally {
-              setExtracting(false);
+              setExtracting(null);
           }
       }
   };
 
-  // Ensure strict domain for QR Codes
   const generateQrUrl = (slug: string) => `https://www.aiknow.wine/?ref=${encodeURIComponent(slug)}`;
 
-  // --- USER ACTIONS ---
   const handleDeleteUser = async (id: string) => {
       if (!confirm("Eliminare definitivamente l'utente e tutti i suoi dati? Questa azione è irreversibile.")) return;
       try {
@@ -175,7 +182,6 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
           if (res.ok) {
               setUsers(prev => prev.filter(u => u.id !== id));
           } else {
-              // Try to parse error
               let errorMsg = "Errore sconosciuto";
               try {
                  const json = await res.json();
@@ -217,7 +223,6 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
 
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
         <div>
             <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
@@ -228,7 +233,6 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
         <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2"><LogoutIcon className="w-6 h-6" /></button>
       </div>
 
-      {/* Global Stats Panel */}
       <div className="px-6 py-4 bg-white border-b border-gray-100 flex gap-6 overflow-x-auto no-scrollbar">
           <div className="flex-1 min-w-[140px] bg-wine-50 p-3 rounded-2xl border border-wine-100">
               <span className="block text-[10px] font-black text-wine-600 uppercase tracking-widest mb-1">Bottiglie Totali</span>
@@ -271,7 +275,6 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
       <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-6">
          
          {activeTab === 'users' ? (
-             /* Users Table */
              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                  <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                      <h3 className="font-bold text-gray-700">Utenti Registrati</h3>
@@ -323,16 +326,14 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                  )}
              </div>
          ) : (
-             /* Restaurants Management */
              <div className="space-y-6">
-                 {/* Create/Edit Form */}
                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
                      <div className="flex justify-between items-center mb-4">
                         <h3 className="font-bold text-gray-700">{editingRest?.id ? 'Modifica Ristorante' : 'Nuovo Ristorante'}</h3>
                         {editingRest && <button onClick={() => setEditingRest(null)} className="text-xs text-gray-500">Chiudi</button>}
                      </div>
                      
-                     <form onSubmit={handleSaveRestaurant} className="space-y-3">
+                     <form onSubmit={handleSaveRestaurant} className="space-y-4">
                          <div className="grid grid-cols-2 gap-3">
                              <input 
                                 type="text" 
@@ -343,7 +344,6 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                                     setEditingRest(prev => ({ 
                                         ...prev, 
                                         name: val,
-                                        // Auto-slug only if new
                                         slug: (!prev?.id && !prev?.slug) ? val.toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '') : prev?.slug 
                                     }));
                                 }}
@@ -361,7 +361,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                          </div>
 
                          <div>
-                             <label className="block text-xs font-bold text-gray-500 mb-1">Gestore Assegnato (Utente)</label>
+                             <label className="block text-xs font-bold text-gray-500 mb-1">Gestore Assegnato</label>
                              <select 
                                 value={editingRest?.manager_id || ''} 
                                 onChange={e => setEditingRest(prev => ({ ...prev, manager_id: e.target.value }))}
@@ -374,50 +374,72 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                              </select>
                          </div>
                          
-                         <div>
-                             <div className="flex justify-between items-end mb-1">
-                                <label className="text-xs font-bold text-gray-500">Carta Vini (Testo)</label>
-                                <button 
-                                    type="button" 
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="text-xs text-wine-600 font-bold flex items-center gap-1 hover:underline"
-                                    disabled={extracting}
-                                >
-                                    <CameraIcon className="w-3 h-3" />
-                                    {extracting ? 'Analisi in corso...' : 'Estrai da Foto/PDF'}
-                                </button>
-                                <input type="file" ref={fileInputRef} className="hidden" accept="image/*,application/pdf" onChange={handleMenuImageUpload} />
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div>
+                                 <div className="flex justify-between items-end mb-1">
+                                    <label className="text-xs font-bold text-gray-500">Carta Vini (Testo)</label>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="text-xs text-wine-600 font-bold flex items-center gap-1 hover:underline"
+                                        disabled={extracting !== null}
+                                    >
+                                        <CameraIcon className="w-3 h-3" />
+                                        {extracting === 'wine' ? '...' : 'Estrai'}
+                                    </button>
+                                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*,application/pdf" onChange={(e) => handleMediaUpload(e, 'wine')} />
+                                 </div>
+                                 <textarea 
+                                    value={editingRest?.menu_context || ''} 
+                                    onChange={e => setEditingRest(prev => ({ ...prev, menu_context: e.target.value }))}
+                                    className="w-full h-32 p-2 border border-gray-300 rounded-lg text-xs font-mono"
+                                    placeholder="Carta vini..."
+                                 />
                              </div>
-                             <textarea 
-                                value={editingRest?.menu_context || ''} 
-                                onChange={e => setEditingRest(prev => ({ ...prev, menu_context: e.target.value }))}
-                                className="w-full h-32 p-2 border border-gray-300 rounded-lg text-xs font-mono"
-                                placeholder="Incolla qui il testo del menu o usa 'Estrai da Foto/PDF'..."
-                             />
+
+                             <div>
+                                 <div className="flex justify-between items-end mb-1">
+                                    <label className="text-xs font-bold text-gray-500">Menù Cibo (Testo)</label>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => foodFileInputRef.current?.click()}
+                                        className="text-xs text-orange-600 font-bold flex items-center gap-1 hover:underline"
+                                        disabled={extracting !== null}
+                                    >
+                                        <CameraIcon className="w-3 h-3" />
+                                        {extracting === 'food' ? '...' : 'Estrai'}
+                                    </button>
+                                    <input type="file" ref={foodFileInputRef} className="hidden" accept="image/*,application/pdf" onChange={(e) => handleMediaUpload(e, 'food')} />
+                                 </div>
+                                 <textarea 
+                                    value={editingRest?.food_menu || ''} 
+                                    onChange={e => setEditingRest(prev => ({ ...prev, food_menu: e.target.value }))}
+                                    className="w-full h-32 p-2 border border-gray-300 rounded-lg text-xs font-mono"
+                                    placeholder="Menù piatti..."
+                                 />
+                             </div>
                          </div>
 
-                         <button type="submit" className="w-full py-2 bg-wine-600 text-white font-bold rounded-lg hover:bg-wine-700">
-                             {editingRest?.id ? 'Aggiorna' : 'Crea Ristorante'}
+                         <button type="submit" className="w-full py-3 bg-wine-600 text-white font-bold rounded-lg hover:bg-wine-700 shadow-md">
+                             {editingRest?.id ? 'Aggiorna Ristorante' : 'Crea Ristorante'}
                          </button>
                      </form>
                  </div>
 
-                 {/* List */}
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      {restaurants.map(r => (
-                         <div key={r.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                         <div key={r.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col">
                              <div className="flex justify-between items-start mb-2">
                                  <div>
                                      <h4 className="font-bold text-gray-900">{r.name}</h4>
                                      <p className="text-xs text-gray-500 font-mono">?ref={r.slug}</p>
                                  </div>
                                  <div className="flex gap-2">
-                                     <button onClick={() => setEditingRest(r)} className="text-blue-600 hover:text-blue-800 text-xs font-bold">Edit</button>
-                                     <button onClick={() => handleDeleteRestaurant(r.id)} className="text-red-500 hover:text-red-700"><TrashIcon className="w-4 h-4" /></button>
+                                     <button onClick={() => setEditingRest(r)} className="text-blue-600 hover:text-blue-800 text-xs font-bold bg-blue-50 px-2 py-1 rounded border border-blue-100">Modifica</button>
+                                     <button onClick={() => handleDeleteRestaurant(r.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-1 rounded border border-red-100"><TrashIcon className="w-4 h-4" /></button>
                                  </div>
                              </div>
 
-                             {/* Manager Info */}
                              <div className="mb-3 flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-100">
                                 <UserIcon className="w-4 h-4 text-gray-400" />
                                 <div className="min-w-0">
@@ -428,7 +450,6 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                                 </div>
                              </div>
                              
-                             {/* Stats Badge */}
                              <div className="grid grid-cols-2 gap-2 mb-3">
                                  <div className="bg-blue-50 p-2 rounded text-center border border-blue-100">
                                      <span className="block text-xl font-bold text-blue-800">{r.user_count || 0}</span>
@@ -440,16 +461,22 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                                  </div>
                              </div>
 
-                             <div className="bg-gray-50 p-2 rounded border border-gray-100 flex gap-4 items-center mb-2">
+                             {r.menu_analysis && (
+                                 <button 
+                                    onClick={() => setViewingReport(r.menu_analysis!)}
+                                    className="mb-3 w-full py-2 bg-emerald-50 text-emerald-700 text-xs font-black uppercase tracking-widest rounded-lg border border-emerald-100 flex items-center justify-center gap-2 hover:bg-emerald-100 transition-all"
+                                 >
+                                     <ShieldCheckIcon className="w-4 h-4" filled />
+                                     Visualizza Report IA
+                                 </button>
+                             )}
+
+                             <div className="bg-gray-50 p-2 rounded border border-gray-100 flex gap-4 items-center mt-auto">
                                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(generateQrUrl(r.slug))}`} className="w-16 h-16" />
                                  <div className="overflow-hidden">
                                      <p className="text-[10px] text-gray-400 uppercase">QR Code & Link</p>
-                                     <a href={generateQrUrl(r.slug)} target="_blank" className="text-xs text-wine-600 truncate block hover:underline">{generateQrUrl(r.slug)}</a>
+                                     <a href={generateQrUrl(r.slug)} target="_blank" className="text-xs text-wine-600 truncate block hover:underline font-medium">{generateQrUrl(r.slug)}</a>
                                  </div>
-                             </div>
-                             
-                             <div className="text-[10px] text-gray-400">
-                                 Menu: {r.menu_context ? `${r.menu_context.length} caratteri` : 'Vuoto'}
                              </div>
                          </div>
                      ))}
@@ -458,7 +485,55 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
          )}
       </div>
 
-      {/* Reset Password Modal */}
+      {/* Report Modal */}
+      {viewingReport && (
+          <div className="fixed inset-0 z-[300] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+               <div className="bg-white w-full max-w-2xl h-[85vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
+                   <div className="bg-emerald-600 p-6 text-white flex justify-between items-center">
+                        <h3 className="font-serif font-black text-xl">Report Strategico Ristorante</h3>
+                        <button onClick={() => setViewingReport(null)} className="text-white/70 hover:text-white">✕</button>
+                   </div>
+                   <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        <div className="flex justify-between items-center bg-stone-50 p-4 rounded-2xl border border-stone-100">
+                            <div>
+                                <p className="text-xs font-black uppercase text-gray-400 tracking-widest">Punteggio Qualità</p>
+                                <p className="text-4xl font-black text-emerald-600">{viewingReport.score}/100</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xs font-bold text-gray-400">Generato il</p>
+                                <p className="text-sm font-medium">{new Date(viewingReport.generatedAt).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                        
+                        <p className="text-lg italic text-gray-800 leading-relaxed border-l-4 border-emerald-500 pl-4">"{viewingReport.summary}"</p>
+                        
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="bg-green-50 p-4 rounded-2xl border border-green-100">
+                                <h4 className="text-xs font-black text-green-700 uppercase mb-3">Punti di Forza</h4>
+                                <ul className="space-y-2 text-xs text-green-800">
+                                    {viewingReport.strengths.map((s, i) => <li key={i}>✓ {s}</li>)}
+                                </ul>
+                            </div>
+                            <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
+                                <h4 className="text-xs font-black text-red-700 uppercase mb-3">Aree di Miglioramento</h4>
+                                <ul className="space-y-2 text-xs text-red-800">
+                                    {viewingReport.weaknesses.map((w, i) => <li key={i}>⚠ {w}</li>)}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="bg-indigo-900 p-6 rounded-2xl text-white shadow-lg">
+                             <h4 className="text-xs font-black uppercase text-indigo-300 mb-2 flex items-center gap-2"><StarIcon className="w-4 h-4" filled /> Consiglio Strategico</h4>
+                             <p className="text-sm italic leading-relaxed">"{viewingReport.strategicAdvice}"</p>
+                        </div>
+                   </div>
+                   <div className="p-4 bg-gray-50 border-t border-gray-100">
+                        <button onClick={() => setViewingReport(null)} className="w-full py-3 bg-white border border-gray-200 rounded-xl font-bold text-sm text-gray-600 hover:bg-gray-100">Chiudi</button>
+                   </div>
+               </div>
+          </div>
+      )}
+
       {resetModalUser && (
           <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-xl animate-in zoom-in-95">
