@@ -122,53 +122,55 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
              </div>
         </div>
 
-        {/* Marketing Kit - REDESIGNED */}
-        <div className="bg-gray-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden group">
-            {/* Decorative background effects */}
-            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/20 transition-all duration-700"></div>
+        {/* Marketing Kit - VERTICAL LAYOUT */}
+        <div className="bg-gray-900 rounded-[2.5rem] p-6 text-white shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
+            {/* Background effects */}
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
             <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-            <div className="relative z-10 space-y-8">
-                <div className="text-center md:text-left">
-                    <h3 className="text-2xl font-serif font-bold mb-2">Marketing Kit</h3>
-                    <p className="text-xs text-gray-400 leading-relaxed max-w-xs mx-auto md:mx-0">
-                        Scarica o copia questi strumenti per promuovere il Sommelier IA nel tuo locale.
-                    </p>
+            <div className="relative z-10 w-full space-y-6">
+                <div>
+                    <h3 className="text-2xl font-serif font-bold mb-1">Marketing Kit</h3>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-widest">Promuovi il tuo Sommelier IA</p>
+                </div>
+
+                {/* QR Code - TOP */}
+                <div className="bg-white p-4 rounded-[2rem] shadow-xl w-fit mx-auto border-4 border-emerald-500/20">
+                    <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(restaurantUrl)}`} 
+                        className="w-40 h-40"
+                        alt="QR Code Ristorante"
+                    />
                 </div>
                 
-                <div className="flex flex-col md:flex-row gap-8 items-center">
-                    {/* QR Code with custom styling */}
-                    <div className="bg-white p-4 rounded-[2rem] shadow-xl shrink-0 group-hover:scale-105 transition-transform duration-500 border-4 border-emerald-500/20">
-                        <img 
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(restaurantUrl)}`} 
-                            className="w-36 h-36"
-                            alt="QR Code Ristorante"
-                        />
-                    </div>
-                    
-                    <div className="flex-1 space-y-6 w-full text-center md:text-left">
-                        <div>
-                            <p className="text-sm font-medium text-gray-200 mb-2">Tavoli e Menu</p>
-                            <p className="text-[11px] text-gray-400 leading-relaxed">
-                                Stampa questo codice sui tavoli. I clienti accederanno direttamente ai consigli abbinati ai tuoi piatti.
-                            </p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                            <label className="text-[9px] font-black uppercase text-emerald-500 tracking-widest block mb-1">Direct Link</label>
-                            <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl p-1 overflow-hidden transition-all focus-within:border-emerald-500/50 focus-within:bg-white/10">
-                                <input 
-                                    readOnly 
-                                    value={restaurantUrl} 
-                                    className="flex-1 bg-transparent px-4 py-2.5 text-xs font-mono truncate outline-none text-gray-300"
-                                />
-                                <button 
-                                    onClick={copyToClipboard}
-                                    className={`px-6 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all flex items-center gap-2 ${showCopyFeedback ? 'bg-green-500 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-500'}`}
-                                >
-                                    {showCopyFeedback ? 'Copiato!' : 'Copia'}
-                                </button>
-                            </div>
+                {/* Description - MIDDLE */}
+                <div className="space-y-2 max-w-xs mx-auto">
+                    <p className="text-sm font-bold text-gray-100">Per Tavoli e Menu</p>
+                    <p className="text-xs text-gray-400 leading-relaxed px-2">
+                        Stampa il codice qui sopra e posizionalo sui tavoli. I tuoi ospiti potranno consultare la tua carta vini digitale in autonomia.
+                    </p>
+                </div>
+
+                {/* Link and Copy Button - BOTTOM */}
+                <div className="space-y-3 pt-2">
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[9px] font-black uppercase text-emerald-500 tracking-widest block text-left ml-4">Link Diretto Sommelier</label>
+                        <div className="flex flex-col sm:flex-row items-stretch bg-white/5 border border-white/10 rounded-2xl p-1.5 overflow-hidden gap-2">
+                            <input 
+                                readOnly 
+                                value={restaurantUrl} 
+                                className="flex-1 bg-transparent px-3 py-2 text-xs font-mono truncate outline-none text-gray-300 border-b sm:border-b-0 sm:border-r border-white/10 text-center sm:text-left"
+                            />
+                            <button 
+                                onClick={copyToClipboard}
+                                className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase transition-all flex items-center justify-center gap-2 ${showCopyFeedback ? 'bg-green-500 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-500'}`}
+                            >
+                                {showCopyFeedback ? (
+                                    <><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg> Copiato!</>
+                                ) : (
+                                    <><ExternalLinkIcon className="w-3.5 h-3.5" /> Copia Link</>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -189,13 +191,12 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                     className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-100 flex items-center gap-1.5 active:scale-95 transition-all"
                 >
                     <CameraIcon className="w-4 h-4" />
-                    Aggiorna da Foto
+                    Foto Menu
                 </button>
             </div>
             
             <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-                Elenca i vini (Nome | Produttore | Annata | Prezzo).<br/>
-                L'IA consiglierà i tuoi clienti basandosi su questo elenco.
+                Aggiorna l'elenco dei vini disponibili (Nome | Produttore | Annata | Prezzo).
             </p>
 
             <div className="relative">
@@ -214,7 +215,7 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                 disabled={isSaving || menuText === restaurant.menu_context}
                 className="w-full mt-5 py-4 bg-emerald-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-emerald-100 disabled:opacity-30 disabled:shadow-none active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
-                {isSaving ? 'Salvataggio in corso...' : 'Pubblica Cambiamenti Carta'}
+                {isSaving ? 'Salvataggio in corso...' : 'Salva Carta dei Vini'}
             </button>
         </div>
 
@@ -224,7 +225,7 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
              <div>
                  <p className="text-xs text-blue-700 font-bold mb-1 tracking-tight">Consiglio del Sommelier</p>
                  <p className="text-[11px] text-blue-600/80 leading-relaxed">
-                    Mantieni la lista aggiornata rimuovendo le bottiglie esaurite per garantire consigli sempre affidabili ai tuoi ospiti.
+                    Un menu testuale ben strutturato permette all'IA di fornire consigli molto più precisi ai tuoi clienti.
                  </p>
              </div>
         </div>
