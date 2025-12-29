@@ -77,7 +77,7 @@ export const suggestPairing = async (menu: string, guests: number, inventory: Wi
         contents: `Menu: ${menu}. Inventario: ${inventoryList}. Stile: ${style}.`,
         config: {
           systemInstruction: `Sei un sommelier esperto. Rispondi in ${langName} con JSON puro. Non aggiungere chiacchiere.`,
-          temperature: 0.5,
+          temperature: 0.1,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.ARRAY,
@@ -176,7 +176,7 @@ export const suggestRestaurantPairing = async (menuSource: { type: 'images' | 't
             ]},
             config: {
                 systemInstruction: `Sommelier Digitale. Suggerisci i migliori abbinamenti dalla carta vini fornita. Rispondi esclusivamente in formato JSON (Array di oggetti).`,
-                temperature: 0.5,
+                temperature: 0.1,
                 responseMimeType: "application/json",
             }
         });
@@ -188,17 +188,27 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
     const model = "gemini-3-flash-preview";
     const langName = getLanguageName(lang);
     const prompt = `
-        ANALISI STRATEGICA RISTORANTE (Modello v5).
-        CARTA VINI: """${wineList}"""
-        MENÙ PIATTI: """${foodMenu}"""
+        ANALISI STRATEGICA PROFESSIONALE (Modello Audit v6 - Rigoroso).
         
-        Agisci come un Master Sommelier Consultant. 
-        Analizza la coerenza tra i piatti proposti e le etichette in cantina.
+        DOCUMENTAZIONE FORNITA:
+        - CARTA VINI: """${wineList}"""
+        - MENÙ PIATTI: """${foodMenu}"""
         
-        REGOLE SCORE:
-        - Calcola un voto numerico da 0.0 a 10.0 (con un decimale).
-        - 10.0 è eccellenza assoluta, 0.0 è totale incoerenza.
-        - Se il punteggio è alto, il summary deve rispecchiare l'entusiasmo.
+        ISTRUZIONI MANDATORIE:
+        Agisci come un Master Sommelier Consultant. Esegui un audit tecnico freddo e analitico.
+        Evita termini puramente descrittivi se non supportati da sinergia tecnica.
+        
+        CRITERI DI AUDIT:
+        1. STRUTTURA: Corrispondenza tra corpo del vino e succulenza del piatto.
+        2. ACIDITÀ: Valuta se i bianchi hanno acidità sufficiente per piatti grassi.
+        3. TANNINO: Valuta se i rossi hanno tannini adeguati per carni strutturate.
+        4. GAP ANALYSIS: Identifica mancanze specifiche (es. mancano vini dolci per dessert, mancano rossi d'annata per cacciagione).
+        
+        REGOLE SCORE (Voto da 0.0 a 10.0):
+        - 9.0-10.0: Eccellenza tecnica, sinergia quasi perfetta in ogni sezione.
+        - 7.0-8.9: Buona carta, ma con alcuni sbilanciamenti o mancanze di annata.
+        - 5.0-6.9: Carta sufficiente ma pigra o poco coerente con la cucina.
+        - < 5.0: Incoerenza strutturale grave tra piatti e cantina.
         
         Rispondi in ${langName} esclusivamente in formato JSON puro.
     `;
@@ -207,13 +217,13 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
             model,
             contents: prompt,
             config: {
-                temperature: 0.2,
+                temperature: 0.1, // Ridotta drasticamente per massima costanza
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        score: { type: Type.NUMBER, description: "Score da 0.0 a 10.0." },
-                        summary: { type: Type.STRING },
+                        score: { type: Type.NUMBER, description: "Score tecnico da 0.0 a 10.0." },
+                        summary: { type: Type.STRING, description: "Sintesi tecnica dell'audit (max 300 caratteri)." },
                         strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
                         weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
                         courseDetails: {
@@ -230,7 +240,7 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
                                 required: ["course", "feedback", "bestMatches", "unsuitableWines", "missingStyles"]
                             }
                         },
-                        strategicAdvice: { type: Type.STRING }
+                        strategicAdvice: { type: Type.STRING, description: "Consiglio operativo di mercato." }
                     },
                     required: ["score", "summary", "strengths", "weaknesses", "courseDetails", "strategicAdvice"]
                 }
@@ -238,7 +248,7 @@ export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: 
         });
         const result = JSON.parse(cleanJson(response.text));
         
-        // Se l'AI ha restituito un valore su scala 100 (> 10), normalizziamolo a scala 10
+        // Normalizzazione score se necessario
         if (result.score > 10) {
             result.score = result.score / 10;
         }
@@ -272,7 +282,7 @@ export const generateCellarReport = async (inventory: Wine[], history: HistoryEn
             contents: prompt,
             config: {
                 systemInstruction: `Sei un Sommelier Senior. Rispondi in JSON seguendo lo schema richiesto in lingua ${langName}.`,
-                temperature: 0.5,
+                temperature: 0.1,
                 responseMimeType: "application/json",
                 responseSchema: {
                   type: Type.OBJECT,
