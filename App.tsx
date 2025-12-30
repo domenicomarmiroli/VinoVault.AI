@@ -28,6 +28,14 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
+const languageToBusinessPath: Record<Language, string> = {
+    it: '/ristoranti',
+    en: '/restaurants',
+    fr: '/restaurants-fr',
+    es: '/restaurantes',
+    de: '/restaurants-de'
+};
+
 const AppContent: React.FC = () => {
   const tokenRef = useRef<string | null>(localStorage.getItem('vinovault_token'));
   const [token, setToken] = useState<string | null>(tokenRef.current);
@@ -315,7 +323,7 @@ const AppContent: React.FC = () => {
   
   if (isInitializing || isAuthProcessing) return <LoadingScreen message="Verifica Accesso" subMessage={authStatus} />;
 
-  // Localized Business Routing
+  // Localized Business Routing Mapping (Inbound)
   const businessPaths = {
       '/ristoranti': 'it',
       '/restaurants': 'en',
@@ -334,14 +342,20 @@ const AppContent: React.FC = () => {
 
   if (currentPath.startsWith('/guida/')) {
     const Guide = { 'cantina-digitale': DigitalCellarGuide, 'sommelier-a-casa': SommelierHomeGuide, 'al-ristorante': RestaurantGuide, 'acquisti-intelligenti': ShopGuide, 'analisi-e-roi': AnalyticsGuide, 'analisi-sommelier': SommelierAnalysisGuide, 'storico-degustazioni': HistoryGuide }[currentPath.split('/')[2]];
-    return Guide ? <Guide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} /> : <LandingPage onStart={() => setShowAuth(true)} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} />;
+    return Guide ? <Guide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} /> : <LandingPage onStart={() => setShowAuth(true)} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} onOpenBusiness={() => navigateTo(languageToBusinessPath[language])} />;
   }
-  if (currentPath === '/guide') return <AllGuidesView onBack={() => navigateTo('/')} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} />;
+  
+  if (currentPath === '/guide') return <AllGuidesView onBack={() => navigateTo('/')} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} onOpenBusiness={() => navigateTo(languageToBusinessPath[language])} />;
 
   if (!token) {
     if (showAuth) return <AuthForm onLogin={handleLogin} onBack={() => { setShowAuth(false); navigateTo('/'); }} referralRef={restaurantData?.slug} />;
     return <>
-        <LandingPage onStart={() => setShowAuth(true)} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} onViewAllGuides={() => navigateTo('/guide')} onOpenBusiness={() => navigateTo('/ristoranti')} />
+        <LandingPage 
+            onStart={() => setShowAuth(true)} 
+            onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} 
+            onViewAllGuides={() => navigateTo('/guide')} 
+            onOpenBusiness={() => navigateTo(languageToBusinessPath[language])} 
+        />
         {sharedPairingData && <SharedPairingModal data={sharedPairingData} onClose={() => { setSharedPairingData(null); window.history.replaceState({}, '', '/'); }} />}
     </>;
   }

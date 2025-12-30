@@ -7,9 +7,10 @@ import { useLanguage } from '../contexts/LanguageContext';
 interface AllGuidesViewProps {
   onBack: () => void;
   onOpenGuide: (slug: string) => void;
+  onOpenBusiness?: () => void;
 }
 
-const AllGuidesView: React.FC<AllGuidesViewProps> = ({ onBack, onOpenGuide }) => {
+const AllGuidesView: React.FC<AllGuidesViewProps> = ({ onBack, onOpenGuide, onOpenBusiness }) => {
   const { t } = useLanguage();
   
   useEffect(() => {
@@ -34,7 +35,7 @@ const AllGuidesView: React.FC<AllGuidesViewProps> = ({ onBack, onOpenGuide }) =>
           <div className="cursor-pointer transition-transform hover:scale-95" onClick={onBack}>
             <Logo className="w-8 h-8" showText={true} />
           </div>
-          <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Academy</span>
+          <button onClick={onOpenBusiness} className="text-xs font-bold uppercase tracking-widest text-emerald-600 hover:text-emerald-700">Business</button>
         </div>
       </nav>
 
