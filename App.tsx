@@ -315,7 +315,23 @@ const AppContent: React.FC = () => {
   
   if (isInitializing || isAuthProcessing) return <LoadingScreen message="Verifica Accesso" subMessage={authStatus} />;
 
-  if (currentPath === '/ristoranti') return <RestaurantBusinessView onBack={() => navigateTo('/')} onContact={() => {}} />;
+  // Localized Business Routing
+  const businessPaths = {
+      '/ristoranti': 'it',
+      '/restaurants': 'en',
+      '/restaurants-fr': 'fr',
+      '/restaurantes': 'es',
+      '/restaurants-de': 'de'
+  };
+
+  if (Object.keys(businessPaths).includes(currentPath)) {
+      const pathLang = businessPaths[currentPath as keyof typeof businessPaths] as Language;
+      if (language !== pathLang) {
+          setTimeout(() => setLanguage(pathLang), 0);
+      }
+      return <RestaurantBusinessView onBack={() => navigateTo('/')} onContact={() => {}} />;
+  }
+
   if (currentPath.startsWith('/guida/')) {
     const Guide = { 'cantina-digitale': DigitalCellarGuide, 'sommelier-a-casa': SommelierHomeGuide, 'al-ristorante': RestaurantGuide, 'acquisti-intelligenti': ShopGuide, 'analisi-e-roi': AnalyticsGuide, 'analisi-sommelier': SommelierAnalysisGuide, 'storico-degustazioni': HistoryGuide }[currentPath.split('/')[2]];
     return Guide ? <Guide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} /> : <LandingPage onStart={() => setShowAuth(true)} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} />;

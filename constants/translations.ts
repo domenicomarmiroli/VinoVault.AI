@@ -1,7 +1,6 @@
 
 import { Language } from "../types";
 
-// Base translations used as fallback for missing localizations
 const englishTranslations = {
     nav_cellar: "Cellar", nav_shop: "Shop", nav_restaurant: "Restaurant", nav_sommelier: "Sommelier", nav_data: "Data", nav_history: "History", nav_admin: "Admin",
     loading: "Loading...", error: "Error", save: "Save", cancel: "Cancel", delete: "Delete", confirm: "Confirm", logout: "Logout",
@@ -28,11 +27,18 @@ const englishTranslations = {
     guide_title_somm: "AI Sommelier Analysis", guide_desc_somm: "Palate profile and gap analysis.",
     guide_title_hist: "History & Memories", guide_desc_hist: "The diary of your tastings.",
     guide_back: "Back", guide_start_now: "Start Now", guide_read_more: "Read guide",
-    b2b_title: "Stop using paper Wine Lists.", b2b_desc: "Turn your menu into a smart Virtual Sommelier.", b2b_cta_setup: "Request Free Setup", b2b_contact_free: "Contact Free",
-    b2b_benefit1_t: "Always updated", b2b_benefit1_d: "No more reprints. Manage availability in real-time.",
-    b2b_benefit2_t: "Scientific Pairings", b2b_benefit2_d: "AI suggests the best wine for every dish.",
-    b2b_benefit3_t: "5-Star Service", b2b_benefit3_d: "Empower your staff and customers.",
-    b2b_free_title: "Completely FREE.", b2b_free_desc: "Launch phase offer.", b2b_check1: "Zero monthly fee", b2b_check2: "Setup included", b2b_check3: "QR Codes", b2b_check4: "AI Support",
+    b2b_title: "AI at the service of your venue.", b2b_desc: "Replace your paper wine list with a Virtual Sommelier that knows every dish and technically analyzes your cellar.", b2b_cta_setup: "Start Digitizing", b2b_contact_free: "Contact Us",
+    b2b_hero_tag: "Smart Restaurant Solutions", b2b_hero_subtitle: "at the service of your venue.", b2b_audit_cta: "Discover Strategic Audit",
+    b2b_scanner_t: "Pro Scanner", b2b_scanner_d: "Upload your wine list as PDF or photo. AI extracts names, vintages, and producers in seconds.",
+    b2b_marketing_t: "Marketing Kit Ready", b2b_marketing_d: "We generate custom QR Codes for your tables. Customers access the list without downloading any app.",
+    b2b_analytics_t: "Customer Analytics", b2b_analytics_d: "Monitor which wines are searched most and which pairings are most successful in your venue.",
+    b2b_audit_title: "A Master Sommelier evaluating your business.", b2b_audit_desc: "Our technology doesn't just show bottles. It performs a Professional Technical Audit by crossing your Food Menu with your Wine List.",
+    b2b_audit_check1: "Technical score from 0 to 10 on offer consistency", b2b_audit_check2: "Analysis of strengths and areas for improvement", b2b_audit_check3: "Gap Analysis: missing labels to complete the menu", b2b_audit_check4: "Strategic purchase suggestions based on the cuisine",
+    b2b_audit_example_title: "Technical Audit Example", b2b_audit_example_res: "The Horizon Restaurant", b2b_audit_example_quality: "Consistency Quality", b2b_audit_example_quote: "Excellent bubbles selection for raw appetizers, but lacks depth in vintage reds to accompany the game main courses.",
+    b2b_audit_example_strength: "Strength", b2b_audit_example_strength_d: "Perfect territorial synergy between whites and seafood.",
+    b2b_audit_example_gap: "Gap", b2b_audit_example_gap_d: "Lacks international varieties for foreign target.",
+    b2b_free_title: "Join the Network.", b2b_free_desc: "We are digitizing the best restaurants in Europe. Join the AIKNOW.WINE network with a unique launch offer.",
+    b2b_check1: "Zero setup fee", b2b_check2: "Unlimited AI Audits", b2b_check3: "QR Marketing Kit", b2b_check4: "Dedicated Support",
     gc_title: "The Digital Cellar", gc_subtitle: "From Rack to Smartphone.", gc_intro: "Ever forgotten a precious bottle in the fridge?", gc_feature_1_t: "Smart Scanner", gc_feature_1_d: "One photo, AI extracts all data instantly.", gc_feature_2_t: "Location", gc_feature_2_d: "Map your cellar and find bottles in seconds.", gc_feature_3_t: "Market Value", gc_feature_3_d: "We track value and drinking window.", gc_cta: "Digitalize today", gc_cta_sub: "Create Cellar for Free",
     gh_tag: "Gourmet Experience", gh_title: "Which wine tonight?", gh_subtitle: "AI Sommelier answers.", gh_intro: "Turn every dinner into a professional event. AI pairs wines to your dishes.", gh_feature_1_t: "You cook, AI pairs.", gh_feature_1_d: "Analysis of structure and flavors for the perfect match.", gh_quote: "A good pairing doesn't add flavors, it multiplies them.", gh_step_1_t: "1. Write the Menu", gh_step_1_d: "Type your dinner dishes.", gh_step_2_t: "2. Let AI work", gh_step_2_d: "Algorithm checks your own cellar.", gh_step_3_t: "3. Enjoy", gh_step_3_d: "Open the recommended bottle.", gh_cta: "Become the Sommelier",
     gs_tag: "Smart Shopping", gs_title: "No more", gs_subtitle: "Wrong Purchases.", gs_intro: "At the shop and unsure about the price? AIKNOW analyzes the market for you.", gs_feature_1_t: "Photo or Link", gs_feature_1_d: "Scan physical labels or paste web URLs.", gs_feature_2_t: "Cellar Fit", gs_feature_2_d: "AI tells you if it completes your collection or is a duplicate.", gs_feature_3_t: "Deal Analysis", gs_feature_3_d: "Real-time price comparison with online average.", gs_premium_tag: "Premium Feature", gs_premium_title: "Online Price Benchmark", gs_premium_desc: "Access real-time pricing from hundreds of online stores.", gs_cta_title: "Optimize your budget", gs_cta_desc: "Buy with the confidence of an expert.", gs_cta_btn: "Enter Shop Advisor",
@@ -60,7 +66,36 @@ const englishTranslations = {
     location_placeholder: "e.g. Cellar, Restaurant Name...", notes_placeholder: "How was the wine? Aromas, pairings, impressions..."
 };
 
-// Fixed translations object including all supported languages to satisfy TypeScript constraints
+const frenchTranslations = {
+    ...englishTranslations,
+    nav_cellar: "Cave", nav_shop: "Boutique", nav_restaurant: "Restaurant", nav_sommelier: "Sommelier", nav_data: "Données", nav_history: "Historique",
+    b2b_title: "L'IA au service de votre établissement.", b2b_desc: "Remplacez votre carte des vins papier par un Sommelier Virtuel qui connaît chaque plat et analyse techniquement votre cave.",
+    b2b_hero_subtitle: "au service de votre local.", b2b_audit_cta: "Découvrir l'Audit Stratégique",
+    b2b_scanner_t: "Scanner Pro", b2b_scanner_d: "Téléchargez votre carte des vins au format PDF ou photo. L'IA extrait noms, millésimes et producteurs en quelques secondes.",
+    b2b_marketing_t: "Kit Marketing Prêt", b2b_marketing_d: "Nous générons des QR Codes personnalisés pour vos tables. Les clients accèdent à la carte sans télécharger d'application.",
+    b2b_free_title: "Rejoignez le Réseau.", b2b_cta_setup: "Démarrer la Numérisation"
+};
+
+const spanishTranslations = {
+    ...englishTranslations,
+    nav_cellar: "Bodega", nav_shop: "Tienda", nav_restaurant: "Restaurante", nav_sommelier: "Sommelier", nav_data: "Datos", nav_history: "Historial",
+    b2b_title: "La IA al servicio de tu local.", b2b_desc: "Sustituye tu carta de vinos en papel por un Sommelier Virtual que conoce cada plato y analiza técnicamente tu bodega.",
+    b2b_hero_subtitle: "al servicio de tu local.", b2b_audit_cta: "Descubrir Auditoría Estratégica",
+    b2b_scanner_t: "Escáner Pro", b2b_scanner_d: "Sube tu carta de vinos en PDF o foto. La IA extrae nombres, añadas y productores en segundos.",
+    b2b_marketing_t: "Kit de Marketing Listo", b2b_marketing_d: "Generamos Códigos QR personalizados para tus mesas. Los clientes acceden a la carta sin descargar ninguna app.",
+    b2b_free_title: "Únete a la Red.", b2b_cta_setup: "Iniciar Digitalización"
+};
+
+const germanTranslations = {
+    ...englishTranslations,
+    nav_cellar: "Keller", nav_shop: "Shop", nav_restaurant: "Restaurant", nav_sommelier: "Sommelier", nav_data: "Daten", nav_history: "Verlauf",
+    b2b_title: "KI im Dienste Ihres Lokals.", b2b_desc: "Ersetzen Sie Ihre Weinkarte aus Papier durch einen virtuellen Sommelier, der jedes Gericht kennt und Ihren Keller technisch analysiert.",
+    b2b_hero_subtitle: "im Dienste Ihres Lokals.", b2b_audit_cta: "Strategisches Audit entdecken",
+    b2b_scanner_t: "Profi-Scanner", b2b_scanner_d: "Laden Sie Ihre Weinkarte als PDF oder Foto hoch. Die KI extrahiert Namen, Jahrgänge und Erzeuger in Sekunden.",
+    b2b_marketing_t: "Marketing-Kit Bereit", b2b_marketing_d: "Wir generieren individuelle QR-Codes für Ihre Tische. Kunden greifen auf die Karte zu, ohne eine App herunterzuladen.",
+    b2b_free_title: "Treten Sie dem Netzwerk bei.", b2b_cta_setup: "Digitalisierung starten"
+};
+
 export const translations: Record<Language, Record<string, string>> = {
   it: {
     nav_cellar: "Cantina", nav_shop: "Shop", nav_restaurant: "Ristorante", nav_sommelier: "Sommelier", nav_data: "Dati", nav_history: "Storico", nav_admin: "Admin",
@@ -88,17 +123,24 @@ export const translations: Record<Language, Record<string, string>> = {
     guide_title_somm: "Analisi Sommelier IA", guide_desc_somm: "Il tuo profilo palato e gap analysis.",
     guide_title_hist: "Storico & Memorie", guide_desc_hist: "Il diario delle tue bevute.",
     guide_back: "Indietro", guide_start_now: "Inizia Ora", guide_read_more: "Leggi la guida",
-    b2b_title: "Smetti di usare la Carta dei Vini cartacea.", b2b_desc: "Trasforma il tuo menu in un Sommelier Virtuale intelligente.", b2b_cta_setup: "Richiedi Setup Gratuito", b2b_contact_free: "Contattaci Gratis",
-    b2b_benefit1_t: "Menu sempre aggiornato", b2b_benefit1_d: "Basta ristampe costose. Aggiorna la disponibilità in tempo reale.",
-    b2b_benefit2_t: "Abbinamenti Scientifici", b2b_benefit2_d: "L'IA analizza i piatti e suggerisce il vino migliore.",
-    b2b_benefit3_t: "Servizio 5 Stelle", b2b_benefit3_d: "Dona autonomia ai clienti. Personale sempre preparato.",
-    b2b_free_title: "Completamente GRATIS.", b2b_free_desc: "Siamo in fase di lancio.", b2b_check1: "Zero canone mensile", b2b_check2: "Setup incluso", b2b_check3: "QR Code per i tavoli", b2b_check4: "Supporto IA",
+    b2b_title: "L'Intelligenza Artificiale al servizio del tuo locale.", b2b_desc: "Sostituisci la carta vini cartacea con un Sommelier Virtuale che conosce ogni tuo piatto e analizza tecnicamente la tua cantina.", b2b_cta_setup: "Inizia la Digitalizzazione", b2b_contact_free: "Contattaci Gratis",
+    b2b_hero_tag: "Smart Restaurant Solutions", b2b_hero_subtitle: "al servizio del tuo locale.", b2b_audit_cta: "Scopri l'Audit Strategico",
+    b2b_scanner_t: "Scanner Professionale", b2b_scanner_d: "Carica la tua carta vini in PDF o scattando una foto. L'IA estrae nomi, annate e produttori in pochi secondi.",
+    b2b_marketing_t: "Marketing Kit Ready", b2b_marketing_d: "Generiamo QR Code personalizzati per i tuoi tavoli. I clienti accedono alla carta senza scaricare nessuna app.",
+    b2b_analytics_t: "Analytics Clienti", b2b_analytics_d: "Monitora quali vini vengono cercati di più e quali abbinamenti riscuotono maggior successo nel tuo locale.",
+    b2b_audit_title: "Un Master Sommelier che valuta il tuo business.", b2b_audit_desc: "La nostra tecnologia non si limita a mostrare le bottiglie. Esegue un Audit Tecnico Professionale incrociando il tuo Menù Piatti con la tua Carta Vini.",
+    b2b_audit_check1: "Voto tecnico da 0 a 10 sulla coerenza dell'offerta", b2b_audit_check2: "Analisi dei punti di forza e aree di miglioramento", b2b_audit_check3: "Gap Analysis: etichette mancanti per completare il menù", b2b_audit_check4: "Suggerimenti di acquisto strategici basati sulla cucina",
+    b2b_audit_example_title: "Esempio Audit Tecnico", b2b_audit_example_res: "Ristorante L'Orizzonte", b2b_audit_example_quality: "Qualità Coerenza", b2b_audit_example_quote: "Ottima selezione di bollicine per gli antipasti crudi, ma manca profondità nei rossi d'annata per accompagnare i secondi di cacciagione in menù.",
+    b2b_audit_example_strength: "Forza", b2b_audit_example_strength_d: "Sinergia territoriale perfetta tra bianchi e pescato.",
+    b2b_audit_example_gap: "Gap", b2b_audit_example_gap_d: "Mancano vitigni internazionali per target estero.",
+    b2b_free_title: "Entra nel Network.", b2b_free_desc: "Stiamo digitalizzando i migliori ristoranti d'Europa. Entra a far parte del network AIKNOW.WINE con un'offerta di lancio irripetibile.",
+    b2b_check1: "Zero costi di setup", b2b_check2: "Audit IA Illimitati", b2b_check3: "QR Code Marketing Kit", b2b_check4: "Supporto dedicato",
     gc_title: "La Tua Cantina Digitale", gc_subtitle: "Da Scaffale a Smartphone.", gc_intro: "Hai mai dimenticato una bottiglia preziosa in fondo al frigo?", gc_feature_1_t: "Scanner Intelligente", gc_feature_1_d: "Basta una foto, l'IA estrae i dati tecnici istantaneamente.", gc_feature_2_t: "Gestione Location", gc_feature_2_d: "Mappa ogni scaffale e trova la bottiglia in 2 secondi.", gc_feature_3_t: "Valore di Mercato", gc_feature_3_d: "Monitoriamo il valore e il picco di bevibilità.", gc_cta: "Digitalizza oggi", gc_cta_sub: "Crea la tua Cantina Gratis",
     gh_tag: "Esperienza Gourmet", gh_title: "Che vino apro stasera?", gh_subtitle: "Il Sommelier IA risponde.", gh_intro: "Trasforma ogni cena in un evento professionale. L'IA abbina i vini ai tuoi piatti.", gh_feature_1_t: "Tu cucini, l'IA abbina.", gh_feature_1_d: "Analizziamo struttura e sapori per il match perfetto.", gh_quote: "Un buon abbinamento non somma i sapori, li moltiplica.", gh_step_1_t: "1. Scrivi il Menu", gh_step_1_d: "Digita i piatti della tua cena.", gh_step_2_t: "2. Lascia fare all'IA", gh_step_2_d: "L'algoritmo consulta la tua cantina.", gh_step_3_t: "3. Goditi la serata", gh_step_3_d: "Apri la bottiglia consigliata.", gh_cta: "Diventa il Sommelier della serata",
     gs_tag: "Smart Shopping", gs_title: "Mai più acquisti", gs_subtitle: "Sbagliati.", gs_intro: "Sei in enoteca e non sai se il prezzo è giusto? AIKNOW analizza il mercato per te.", gs_feature_1_t: "Foto o Link", gs_feature_1_d: "Scansiona etichette fisiche o incolla URL di siti web.", gs_feature_2_t: "Cellar Fit", gs_feature_2_d: "L'IA ti dice se il vino completa la tua collezione o è un doppione.", gs_feature_3_t: "Analisi Deal", gs_feature_3_d: "Confronto prezzi in tempo reale con la media online.", gs_premium_tag: "Funzione Premium", gs_premium_title: "Benchmark Prezzi Online", gs_premium_desc: "Accedi ai prezzi in tempo reale da centinaia di store online.", gs_cta_title: "Ottimizza il tuo budget", gs_cta_desc: "Compra con la sicurezza di un esperto.", gs_cta_btn: "Accedi allo Shop Advisor",
     gr_title: "Addio stress da Carta Vini.", gr_subtitle: "Al Ristorante.", gr_intro: "Un sommelier professionista al tuo tavolo, pronto ad analizzare la carta.", gr_step_1_t: "1. Scansiona la Lista", gr_step_1_d: "Scatta una foto, l'IA legge nomi e prezzi.", gr_step_2_t: "2. Dimmi cosa mangi", gr_step_2_d: "L'IA incrocia i sapori con le bottiglie disponibili.", gr_step_3_t: "3. Scegli tra i Top 3", gr_step_3_d: "Riceverai i 3 migliori abbinamenti.", gr_cta: "Non sbagliare mai più vino",
     ga_tag: "Wine Intelligence", ga_title: "Analisi Avanzata", ga_subtitle: "e ROI della Cantina.", ga_intro: "Il vino non è solo piacere, è un asset. Scopri come l'IA trasforma la tua passione in dati.", ga_feat1_t: "Il ROI del tuo Gusto", ga_feat1_d: "Confronta il prezzo d'acquisto storico con il valore attuale.", ga_feat2_t: "Distribuzione Tipologia", ga_feat2_d: "Grafici sulla composizione della tua collezione.", ga_feat3_t: "Mappa delle Regioni", ga_feat3_d: "Esplora la tua cantina geograficamente.", ga_feat4_t: "Valore del Bevuto", ga_feat4_d: "Tieni traccia economica delle bottiglie stappate.", ga_stat1: "Statistiche", ga_stat1_d: "Mensili e Annuali", ga_stat2: "Feedback", ga_stat2_d: "Rating medio", ga_premium_tag: "Report Professionale", ga_premium_t: "L'IA diventa il tuo Analyst.", ga_premium_d: "Genera un Cellar Report completo con Gap Analysis.", ga_cta_t: "Pronto per un'analisi approfondita?", ga_cta_btn: "Inizia l'Analisi",
-    gan_tag: "Intelligenza Sensorial", gan_title: "Più di un database.", gan_subtitle: "Un Sommelier che ti capisce.", gan_intro: "AIKNOW.WINE studia le tue scelte e i tuoi voti per aiutarti a costruire la cantina dei sogni.", gan_feat1_t: "DNA del Gusto", gan_feat1_d: "Analizziamo vitigni e strutture che preferisci.", gan_feat2_t: "Gap Analysis", gan_feat2_d: "Identifichiamo cosa manca nella tua collezione.", gan_feat3_t: "Consigli Mirati", gan_feat3_d: "Suggerimenti basati sul mercato reale.", gan_time_t: "Time Optimization", gan_time_d: "Calcoliamo la finestra di bevibilità ottimale.", gan_ready: "Pronto", gan_wait: "Attesa", gan_decline: "Declino", gan_cta_t: "Trasforma i dati in degustazioni.", gan_cta_d: "Attiva l'analisi professionale oggi.", gan_cta_btn: "Analisi Sommelier",
+    gan_tag: "Intelligenza Sensoriale", gan_title: "Più di un database.", gan_subtitle: "Un Sommelier che ti capisce.", gan_intro: "AIKNOW.WINE studia le tue scelte e i tuoi voti per aiutarti a costruire la cantina dei sogni.", gan_feat1_t: "DNA del Gusto", gan_feat1_d: "Analizziamo vitigni e strutture che preferisci.", gan_feat2_t: "Gap Analysis", gan_feat2_d: "Identifichiamo cosa manca nella tua collezione.", gan_feat3_t: "Consigli Mirati", gan_feat3_d: "Suggerimenti basati sul mercato reale.", gan_time_t: "Time Optimization", gan_time_d: "Calcoliamo la finestra di bevibilità ottimale.", gan_ready: "Pronto", gan_wait: "Attesa", gan_decline: "Declino", gan_cta_t: "Trasforma i dati in degustazioni.", gan_cta_d: "Attiva l'analisi professionale oggi.", gan_cta_btn: "Analisi Sommelier",
     gy_tag: "Memoria Enologica", gy_title: "Ogni bottiglia", gy_subtitle: "Ha una storia.", gy_intro: "Non lasciare che il ricordo di un grande vino svanisca. Crea un archivio immortale.", gy_feat1_t: "Diario Cronologico", gy_feat1_d: "Tieni traccia di quando e dove hai bevuto.", gy_feat2_t: "Rating Personale", gy_feat2_d: "Usa il sistema a 5 stelle per valutare il piacere.", gy_feat3_t: "Note di Degustazione", gy_feat3_d: "Conserva i tuoi pensieri su aromi e abbinamenti.", gy_feat4_t: "Investimento nel Piacere", gy_feat4_d: "Analizziamo il valore economico di ciò che hai consumato.", gy_stat1: "Bottiglie Bevute", gy_stat1_d: "In tempo reale", gy_stat2: "Valore Totale", gy_stat2_d: "Calculato per te", gy_quote: "La memoria è il sommelier del cuore.", gy_cta_t: "Non dimenticare un solo sorso.", gy_cta_d: "Inizia oggi. Scansiona, bevi, vota.", gy_cta_btn: "Accedi allo Storico",
     bottles: "Bottiglie", labels: "Etichette", value: "Valore", search_placeholder: "Cerca...", add_wine: "Aggiungi", no_wines: "Nessun vino.", filter_all: "Tutti", filter_red: "Rossi", filter_white: "Bianchi", filter_bubbles: "Bollicine",
     sommelier_title: "Sommelier Virtuale", sommelier_desc: "L'IA trova il vino perfetto.", menu_placeholder: "Es. Lasagne...", service_type: "Service", per_course: "Per Portata", single_wine: "Tutto Pasto", ask_sommelier: "Chiedi al Sommelier", share_pairing: "Condividi", shared_menu_title: "Menu della Serata", shared_pairings_title: "Abbinamenti Suggeriti", owned_badge: "In Cantina", to_buy_badge: "Da Comprare",
@@ -120,7 +162,7 @@ export const translations: Record<Language, Record<string, string>> = {
     location_placeholder: "Es. Cantina, Nome Ristorante...", notes_placeholder: "Com'era il vino? Aromi, abbinamenti, impressioni..."
   },
   en: englishTranslations,
-  fr: englishTranslations,
-  es: englishTranslations,
-  de: englishTranslations
+  fr: frenchTranslations,
+  es: spanishTranslations,
+  de: germanTranslations
 };
