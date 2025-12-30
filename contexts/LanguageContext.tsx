@@ -13,6 +13,11 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: ReactNode, initialLanguage?: Language }> = ({ children, initialLanguage }) => {
   const getBrowserLanguage = (): Language => {
+    // 1. Check localStorage first
+    const saved = localStorage.getItem('aiknow_language') as Language;
+    if (saved && ['it', 'en', 'fr', 'es', 'de'].includes(saved)) return saved;
+
+    // 2. Check browser
     const browserLangs = navigator.languages || [navigator.language];
     for (const lang of browserLangs) {
         const code = lang.split('-')[0].toLowerCase();
@@ -23,19 +28,16 @@ export const LanguageProvider: React.FC<{ children: ReactNode, initialLanguage?:
     return 'it';
   };
 
-  const [language, setLanguage] = useState<Language>(initialLanguage || getBrowserLanguage());
+  const [language, setLanguageState] = useState<Language>(initialLanguage || getBrowserLanguage());
 
-  useEffect(() => {
-    if (initialLanguage) {
-      setLanguage(initialLanguage);
-    }
-  }, [initialLanguage]);
+  const setLanguage = (lang: Language) => {
+      setLanguageState(lang);
+      localStorage.setItem('aiknow_language', lang);
+  };
 
   const t = (key: string, params?: Record<string, string>) => {
-    // 1. Prova la lingua corrente
-    // 2. Se manca, prova l'Inglese (fallback universale)
-    // 3. Se manca anche l'Inglese, restituisci la chiave (estrema ratio)
-    let text = translations[language][key];
+    const currentTranslations = translations[language] || translations['en'];
+    let text = currentTranslations[key];
     
     if (text === undefined || text === key) {
         text = translations['en'][key] || key;

@@ -28,6 +28,14 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
+const businessPaths: Record<string, Language> = {
+    '/ristoranti': 'it',
+    '/restaurants': 'en',
+    '/restaurants-fr': 'fr',
+    '/restaurantes': 'es',
+    '/restaurants-de': 'de'
+};
+
 const languageToBusinessPath: Record<Language, string> = {
     it: '/ristoranti',
     en: '/restaurants',
@@ -121,6 +129,16 @@ const AppContent: React.FC = () => {
       setShowAuth(false);
       navigateTo('/');
   };
+
+  // Language auto-detection from URL
+  useEffect(() => {
+      if (businessPaths[currentPath]) {
+          const pathLang = businessPaths[currentPath];
+          if (language !== pathLang) {
+              setLanguage(pathLang);
+          }
+      }
+  }, [currentPath]);
 
   useEffect(() => {
     const resolveGoogleRedirect = async () => {
@@ -323,20 +341,8 @@ const AppContent: React.FC = () => {
   
   if (isInitializing || isAuthProcessing) return <LoadingScreen message="Verifica Accesso" subMessage={authStatus} />;
 
-  // Localized Business Routing Mapping (Inbound)
-  const businessPaths = {
-      '/ristoranti': 'it',
-      '/restaurants': 'en',
-      '/restaurants-fr': 'fr',
-      '/restaurantes': 'es',
-      '/restaurants-de': 'de'
-  };
-
-  if (Object.keys(businessPaths).includes(currentPath)) {
-      const pathLang = businessPaths[currentPath as keyof typeof businessPaths] as Language;
-      if (language !== pathLang) {
-          setTimeout(() => setLanguage(pathLang), 0);
-      }
+  // Localized Business Routing Render
+  if (businessPaths[currentPath]) {
       return <RestaurantBusinessView onBack={() => navigateTo('/')} onContact={() => {}} />;
   }
 
