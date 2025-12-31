@@ -173,10 +173,15 @@ export const suggestRestaurantPairing = async (menuSource: { type: 'images' | 't
             model,
             contents: { parts: [
                 ...(menuSource.type === 'images' ? (menuSource.data as string[]).map(img => ({ inlineData: { mimeType: "image/jpeg", data: cleanBase64(img) } })) : [{ text: menuSource.data as string }]),
-                { text: `Scegli i 3 migliori vini per accompagnare il piatto: ${dish}. Analizza la lista vini fornita. Rispondi in ${langName} solo JSON.` }
+                { text: `Scegli i migliori vini per accompagnare il piatto: ${dish}. Se la carta è ampia, seleziona 2 vini per ogni fascia di prezzo (Economica, Media, Alta). Se la carta è piccola, seleziona i 3 migliori in assoluto. Rispondi in ${langName} solo JSON.` }
             ]},
             config: {
-                systemInstruction: `Sommelier Digitale. Estrai i 3 abbinamenti perfetti dalla carta vini fornita. Per ogni vino calcola un matchScore da 0 a 100. Classifica il prezzo in 'Fascia Economica', 'Fascia Media' o 'Fascia Alta'. Rispondi esclusivamente in formato JSON (Array di oggetti).`,
+                systemInstruction: `Sommelier Digitale Professionista. Analizza la carta vini fornita per trovare l'abbinamento ideale con il piatto indicato. 
+                REGOLE DI SELEZIONE:
+                1. Estrai fino a 2 vini per ogni fascia di prezzo ('Fascia Economica', 'Fascia Media', 'Fascia Alta') se disponibili, per un totale di massimo 6 vini.
+                2. Se la lista è limitata, fornisci comunque almeno i 3 migliori abbinamenti totali.
+                3. Per ogni vino calcola un matchScore da 0 a 100 basato sulla coerenza organolettica.
+                4. Rispondi esclusivamente in formato JSON (Array di oggetti).`,
                 temperature: 0.1,
                 responseMimeType: "application/json",
                 responseSchema: {
