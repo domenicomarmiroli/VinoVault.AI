@@ -56,6 +56,7 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [showCopyFeedback, setShowCopyFeedback] = useState(false);
+  const [isDownloadingQR, setIsDownloadingQR] = useState(false);
   
   const wineFileInputRef = useRef<HTMLInputElement>(null);
   const foodFileInputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +69,27 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
   }, [restaurant]);
 
   const restaurantUrl = `https://www.aiknow.wine/?ref=${restaurant.slug}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(restaurantUrl)}`;
+
+  const handleDownloadQR = async () => {
+      setIsDownloadingQR(true);
+      try {
+          const response = await fetch(qrCodeUrl);
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `QR-AIKNOW-${restaurant.slug}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+      } catch (e) {
+          alert("Impossibile scaricare l'immagine. Prova a tenere premuto sul QR Code per salvarlo.");
+      } finally {
+          setIsDownloadingQR(false);
+      }
+  };
 
   const handleSave = async () => {
       setIsSaving(true);
@@ -161,8 +183,20 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                     <p className="text-xs text-gray-400 leading-relaxed max-w-xs mx-auto">Strumenti pronti all'uso per promuovere il tuo Sommelier IA digitale.</p>
                 </div>
 
-                <div className="bg-white p-4 rounded-[2rem] shadow-xl w-fit mx-auto border-4 border-emerald-500/20">
-                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(restaurantUrl)}`} className="w-44 h-44" alt="QR" />
+                <div className="flex flex-col items-center gap-4">
+                    <div className="bg-white p-4 rounded-[2rem] shadow-xl w-fit mx-auto border-4 border-emerald-500/20">
+                        <img src={qrCodeUrl} className="w-44 h-44" alt="QR" />
+                    </div>
+                    <button 
+                        onClick={handleDownloadQR}
+                        disabled={isDownloadingQR}
+                        className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-black text-[10px] uppercase tracking-widest border border-white/10 transition-all active:scale-95"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M7.5 12 12 16.5m0 0 4.5-4.5M12 16.5V3" />
+                        </svg>
+                        {isDownloadingQR ? 'Scaricamento...' : 'Scarica QR (PNG)'}
+                    </button>
                 </div>
                 
                 <div className="space-y-3">
