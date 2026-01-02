@@ -210,18 +210,23 @@ export const suggestRestaurantPairing = async (menuSource: { type: 'images' | 't
 export const analyzeRestaurantcompleteness = async (wineList: string, foodMenu: string, lang: Language = 'it'): Promise<RestaurantAnalysis> => {
     const model = "gemini-3-flash-preview";
     const langName = getLanguageName(lang);
-    const prompt = `Analisi strategica per ristorante in ${langName}. Carta: ${wineList}. Menu: ${foodMenu}.`;
+    const prompt = `Esegui un Audit Tecnico Professionale in ${langName}. 
+    CARTA VINI: ${wineList}
+    MENU PIATTI: ${foodMenu}`;
+    
     try {
         const response = await ai.models.generateContent({
             model,
             contents: prompt,
             config: {
+                systemInstruction: `Agisci come un Master Sommelier. Valuta la coerenza tra la carta vini e il menù piatti fornito. 
+                IMPORTANTE: Il campo 'score' DEVE essere un numero da 0.0 a 10.0 (NON usare mai valori sopra il 10).`,
                 temperature: 0.1,
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        score: { type: Type.NUMBER },
+                        score: { type: Type.NUMBER, description: "Punteggio da 0.0 a 10.0 basato sulla coerenza tecnica." },
                         summary: { type: Type.STRING },
                         strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
                         weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },

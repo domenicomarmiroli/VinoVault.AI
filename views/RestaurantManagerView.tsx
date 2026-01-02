@@ -256,7 +256,7 @@ const RestaurantManagerView: React.FC<RestaurantManagerViewProps> = ({ restauran
                             <p className="text-[10px] uppercase font-bold opacity-80 mt-1 tracking-widest">Aggiornato il {new Date(report.generatedAt).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right relative z-10">
-                            <span className="block text-5xl font-black">{report.score.toFixed(1)}/10</span>
+                            <span className="block text-5xl font-black">{(report.score > 10 ? report.score / 10 : report.score).toFixed(1)}/10</span>
                             <span className="text-[10px] uppercase font-bold opacity-80">Qualità Coerenza</span>
                         </div>
                     </div>
