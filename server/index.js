@@ -265,6 +265,13 @@ app.put('/api/history/:id', authenticateToken, async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
+app.delete('/api/history/:id', authenticateToken, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM history WHERE id = $1 AND user_id = $2', [req.params.id, req.user.userId]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Failed to delete history entry' }); }
+});
+
 app.get('/api/locations', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM locations WHERE user_id = $1', [req.user.userId]);

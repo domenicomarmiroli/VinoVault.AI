@@ -316,10 +316,18 @@ const AppContent: React.FC = () => {
     try { await authFetch(`/api/history/${id}`, { method: 'PUT', body: JSON.stringify({ rating, notes, location }) }); } catch (e) {}
   };
 
-  const handleDeleteHistoryEntry = (id: string) => {
+  const handleDeleteHistoryEntry = async (id: string) => {
     if(!confirm(t('confirm'))) return;
-    setHistory(prev => prev.filter(h => h.id !== id));
-    authFetch(`/api/history/${id}`, { method: 'DELETE' });
+    try {
+        const res = await authFetch(`/api/history/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            setHistory(prev => prev.filter(h => h.id !== id));
+        } else {
+            alert("Impossibile eliminare la degustazione dal server.");
+        }
+    } catch (e) {
+        alert("Errore di connessione durante l'eliminazione.");
+    }
   };
 
   const handleDelete = (id: string) => {
