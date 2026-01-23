@@ -148,6 +148,13 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
       }
   };
 
+  const getQualityColor = (score: number) => {
+      if (score >= 90) return 'border-emerald-500 text-emerald-600 bg-emerald-50';
+      if (score >= 80) return 'border-wine-500 text-wine-600 bg-wine-50';
+      if (score >= 70) return 'border-yellow-500 text-yellow-600 bg-yellow-50';
+      return 'border-gray-300 text-gray-500 bg-gray-50';
+  };
+
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden relative">
       {loading && (
@@ -207,11 +214,19 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
             <div className="space-y-4 animate-in slide-in-from-bottom duration-500">
                 <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                     <div className="flex justify-between items-start">
-                        <div>
+                        <div className="flex-1 min-w-0 pr-4">
                             <span className="text-xs font-bold text-gray-400 uppercase">{analysis.wineDetails?.type || 'VINO'}</span>
-                            <h2 className="text-2xl font-serif font-bold text-gray-900 leading-tight">{analysis.wineDetails?.name || 'Sconosciuto'}</h2>
-                            <p className="text-gray-600">{analysis.wineDetails?.producer || ''} • {analysis.wineDetails?.year || ''}</p>
+                            <h2 className="text-2xl font-serif font-bold text-gray-900 leading-tight truncate">{analysis.wineDetails?.name || 'Sconosciuto'}</h2>
+                            <p className="text-gray-600 truncate">{analysis.wineDetails?.producer || ''} • {analysis.wineDetails?.year || ''}</p>
                         </div>
+                        {analysis.qualityScore !== undefined && (
+                            <div className="flex flex-col items-center ml-2 shrink-0">
+                                <div className={`w-14 h-14 rounded-full flex items-center justify-center border-4 text-xl font-black shadow-sm ${getQualityColor(analysis.qualityScore)}`}>
+                                    {analysis.qualityScore}
+                                </div>
+                                <span className="text-[8px] font-black uppercase text-gray-400 mt-1 tracking-widest">Qualità</span>
+                            </div>
+                        )}
                     </div>
                     <p className="mt-3 text-sm text-gray-600 italic border-l-2 border-wine-300 pl-3">"{analysis.sommelierNotes}"</p>
                 </div>

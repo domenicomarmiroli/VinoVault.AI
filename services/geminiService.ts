@@ -123,7 +123,9 @@ export const analyzePurchase = async (input: { type: 'image' | 'url', data: stri
                 { text: `Prezzo offerto: €${inputPrice}. Mia cantina attuale: ${inventoryContext || 'vuota'}. Analizza se l'acquisto è sensato in ${langName}. Rispondi SOLO in JSON.` }
             ]},
             config: {
-                systemInstruction: `Agisci come un Broker di vini e Sommelier professionista. Analizza l'affare e la coerenza con la cantina esistente. Rispondi esclusivamente in formato JSON seguendo lo schema indicato.`,
+                systemInstruction: `Agisci come un Broker di vini e Sommelier professionista. Analizza l'affare e la coerenza con la cantina esistente.
+                IMPORTANTE: Il campo 'qualityScore' deve essere un numero da 0 a 100 che riflette ESCLUSIVAMENTE la qualità intrinseca del vino e del produttore, INDIPENDENTEMENTE DAL PREZZO o dall'offerta.
+                Rispondi esclusivamente in formato JSON seguendo lo schema indicato.`,
                 temperature: 0.1,
                 responseMimeType: "application/json",
                 responseSchema: {
@@ -157,7 +159,7 @@ export const analyzePurchase = async (input: { type: 'image' | 'url', data: stri
                             required: ["isRecommended", "reasoning"]
                         }
                     },
-                    required: ["wineDetails", "marketPriceEstimate", "dealRating", "sommelierNotes", "cellarFit"]
+                    required: ["wineDetails", "marketPriceEstimate", "dealRating", "sommelierNotes", "cellarFit", "qualityScore"]
                 }
             }
         });
