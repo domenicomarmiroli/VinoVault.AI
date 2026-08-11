@@ -37,6 +37,7 @@ export interface Wine {
   marketPrice: number; // Estimated current value
 
   imageUrl?: string;
+  qualityScore?: number;
 }
 
 export interface HistoryEntry {
