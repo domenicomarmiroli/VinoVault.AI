@@ -333,6 +333,14 @@ const AppContent: React.FC = () => {
 
   if (!isLoaded && !isOfflineMode) return <LoadingScreen message={t('loading')} />;
 
+  if (userRole === 'admin' && activeTab === 'admin') {
+    return (
+      <div className="h-full w-full bg-stone-50 overflow-y-auto">
+        <AdminView onLogout={handleLogout} token={token || ''} onExit={() => setActiveTab('inventory')} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full w-full md:max-w-md mx-auto bg-white shadow-2xl overflow-hidden md:border-x md:border-gray-200">
       <main className="flex-1 overflow-hidden relative">
@@ -344,7 +352,6 @@ const AppContent: React.FC = () => {
         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'analytics' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><AnalyticsView inventory={wines} history={history} onLogout={handleLogout} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} /></div>
         
         {managedRestaurant && activeTab === 'manage-restaurant' && <div className="absolute inset-0 z-20"><RestaurantManagerView restaurant={managedRestaurant} onUpdateRestaurant={handleUpdateManagedRestaurant} onLogout={handleLogout} /></div>}
-        {userRole === 'admin' && activeTab === 'admin' && <div className="absolute inset-0 z-20"><AdminView onLogout={handleLogout} token={token || ''} /></div>}
       </main>
       
       <nav className="bg-white border-t border-gray-200 flex justify-between px-1 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] overflow-x-auto no-scrollbar">
