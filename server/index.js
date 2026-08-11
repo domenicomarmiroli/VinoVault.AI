@@ -11,6 +11,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import Anthropic from '@anthropic-ai/sdk';
+import sharp from 'sharp';
 
 dotenv.config();
 
@@ -53,6 +54,21 @@ const extractText = (response) => {
 };
 
 const cleanBase64 = (base64) => base64.replace(/^data:(image\/(png|jpg|jpeg|webp)|application\/pdf);base64,/, '');
+
+const compressStoredImage = async (dataUri) => {
+    if (!dataUri || !dataUri.startsWith('data:image')) return dataUri;
+    try {
+        const buffer = Buffer.from(cleanBase64(dataUri), 'base64');
+        const output = await sharp(buffer)
+            .resize({ width: 500, height: 500, fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 65 })
+            .toBuffer();
+        return `data:image/jpeg;base64,${output.toString('base64')}`;
+    } catch (e) {
+        console.error('Image compression failed', e);
+        return dataUri;
+    }
+};
 
 app.use(cors());
 app.use(compression());
@@ -317,6 +333,7 @@ app.get('/api/wines', authenticateToken, async (req, res) => {
 app.post('/api/wines', authenticateToken, async (req, res) => {
     const wine = req.body;
     try {
+        if (wine.imageUrl) wine.imageUrl = await compressStoredImage(wine.imageUrl);
         await pool.query(
             `INSERT INTO wines (id, user_id, name, producer, year, type, region, grape, alcohol, purchase_date, price, quantity, location, storage_temp, storage_advice, serving_temp, serving_advice, food_pairings, image_url, drink_window, market_price)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
@@ -328,6 +345,7 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
 
 app.put('/api/wines/:id', authenticateToken, async (req, res) => {
     const updates = req.body;
+    if (updates.imageUrl) updates.imageUrl = await compressStoredImage(updates.imageUrl);
     const fields = Object.keys(updates).map((key, i) => `${key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)} = $${i + 1}`).join(', ');
     const values = Object.values(updates);
     try {
@@ -357,6 +375,7 @@ app.get('/api/history', authenticateToken, async (req, res) => {
 app.post('/api/history', authenticateToken, async (req, res) => {
     const h = req.body;
     try {
+        if (h.imageUrl) h.imageUrl = await compressStoredImage(h.imageUrl);
         await pool.query(
             `INSERT INTO history (id, user_id, wine_id, name, producer, year, type, price, image_url, consumed_date, rating, notes, location)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
@@ -408,6 +427,28 @@ app.get('/api/users', authenticateAdmin, async (req, res) => {
         const result = await pool.query(`SELECT u.id, u.email, u.role, u.is_premium, u.language, u.ai_usage_count, u.ref_restaurant_slug, COALESCE((SELECT SUM(quantity) FROM wines WHERE user_id = u.id), 0) as wine_count FROM users u ORDER BY created_at DESC`);
         res.json(result.rows);
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.post('/api/admin/recompress-images', authenticateAdmin, async (req, res) => {
+    try {
+        let winesProcessed = 0, historyProcessed = 0;
+        const wines = await pool.query(`SELECT id, image_url FROM wines WHERE image_url IS NOT NULL AND length(image_url) > 60000`);
+        for (const w of wines.rows) {
+            const compressed = await compressStoredImage(w.image_url);
+            await pool.query('UPDATE wines SET image_url = $1 WHERE id = $2', [compressed, w.id]);
+            winesProcessed++;
+        }
+        const history = await pool.query(`SELECT id, image_url FROM history WHERE image_url IS NOT NULL AND length(image_url) > 60000`);
+        for (const h of history.rows) {
+            const compressed = await compressStoredImage(h.image_url);
+            await pool.query('UPDATE history SET image_url = $1 WHERE id = $2', [compressed, h.id]);
+            historyProcessed++;
+        }
+        res.json({ success: true, winesProcessed, historyProcessed });
+    } catch (err) {
+        console.error('Recompress error:', err);
+        res.status(500).json({ error: 'Recompress failed' });
+    }
 });
 
 app.get('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
