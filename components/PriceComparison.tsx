@@ -117,10 +117,10 @@ const PriceComparison: React.FC<PriceComparisonProps> = ({ name, producer, year,
                         </div>
                         
                         {prices.map((price, idx) => (
-                            <a 
-                                key={idx} 
-                                href={getStoreSearchUrl(price.source)} 
-                                target="_blank" 
+                            <a
+                                key={idx}
+                                href={price.link || getStoreSearchUrl(price.source)}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="block bg-white border border-gray-200 rounded-xl p-3 hover:shadow-md transition-all active:scale-[0.99] group"
                             >
@@ -132,7 +132,7 @@ const PriceComparison: React.FC<PriceComparisonProps> = ({ name, producer, year,
                                         <div className="min-w-0">
                                             <p className="text-sm font-bold text-gray-900 truncate">{price.source}</p>
                                             <p className="text-[10px] text-indigo-600 font-medium group-hover:underline truncate">
-                                                Cerca "{price.source}" su Google
+                                                {price.link ? 'Vai all\'offerta' : `Cerca "${price.source}" su Google`}
                                             </p>
                                         </div>
                                     </div>
