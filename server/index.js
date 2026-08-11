@@ -356,6 +356,28 @@ app.post('/api/auth/google', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Google auth failed' }); }
 });
 
+app.post('/api/auth/register', async (req, res) => {
+    const { email, password, language, ref } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email e password richiesti' });
+    if (password.length < 6) return res.status(400).json({ error: 'La password deve avere almeno 6 caratteri' });
+    try {
+        const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+        if (existing.rows[0]) return res.status(400).json({ error: 'Email già registrata' });
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const userId = 'u_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        const result = await pool.query(
+            "INSERT INTO users (id, email, password, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, 'user', FALSE, $4, $5) RETURNING *",
+            [userId, email, hashedPassword, language || 'it', ref || null]
+        );
+        const user = result.rows[0];
+        const token = jwt.sign({ userId: user.id, email: user.email, role: user.role, isPremium: user.is_premium, language: user.language || 'it' }, JWT_SECRET, { expiresIn: '30d' });
+        res.json({ token, user: { id: user.id, email: user.email, role: user.role, is_premium: user.is_premium, language: user.language || 'it' } });
+    } catch (err) {
+        console.error('Register error:', err);
+        res.status(500).json({ error: 'Registrazione fallita' });
+    }
+});
+
 app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     try {
