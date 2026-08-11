@@ -9,7 +9,7 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic from '@anthropic-ai/sdk';
 
 dotenv.config();
 
@@ -22,26 +22,36 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_wine_key_change_me';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
 const cleanJson = (text) => {
-    if (!text) return "[]";
+    if (!text) return '{}';
     let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
     const firstBrace = cleaned.indexOf('{');
     const firstBracket = cleaned.indexOf('[');
     const lastBrace = cleaned.lastIndexOf('}');
     const lastBracket = cleaned.lastIndexOf(']');
-    let start = -1;
-    let end = -1;
-    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
-        start = firstBrace;
-        end = lastBrace;
-    } else if (firstBracket !== -1) {
-        start = firstBracket;
-        end = lastBracket;
-    }
-    if (start !== -1 && end !== -1) {
-        return cleaned.substring(start, end + 1);
-    }
+    let start = -1, end = -1;
+    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) { start = firstBrace; end = lastBrace; }
+    else if (firstBracket !== -1) { start = firstBracket; end = lastBracket; }
+    if (start !== -1 && end !== -1) return cleaned.substring(start, end + 1);
     return cleaned;
 };
+
+const anthropic = new Anthropic({ apiKey: process.env.API_KEY });
+const MODEL = 'claude-opus-4-8';
+
+const getLanguageName = (code) => {
+    switch(code) {
+        case 'en': return 'English'; case 'fr': return 'French';
+        case 'es': return 'Spanish'; case 'de': return 'German';
+        default: return 'Italian';
+    }
+};
+
+const extractText = (response) => {
+    const block = response.content.find(b => b.type === 'text');
+    return block ? block.text : '';
+};
+
+const cleanBase64 = (base64) => base64.replace(/^data:(image\/(png|jpg|jpeg|webp)|application\/pdf);base64,/, '');
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -68,8 +78,7 @@ const authenticateToken = (req, res, next) => {
   if (!token) return res.sendStatus(401);
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
+    req.user = user; next();
   });
 };
 
@@ -79,6 +88,129 @@ const authenticateAdmin = (req, res, next) => {
         else res.status(403).json({ error: 'Access denied' });
     });
 };
+
+// --- AI ENDPOINTS ---
+
+app.post('/api/ai/analyze-label', authenticateToken, async (req, res) => {
+    const { base64Image, lang = 'it' } = req.body;
+    const langName = getLanguageName(lang);
+    try {
+        const response = await anthropic.messages.create({
+            model: MODEL, max_tokens: 1024,
+            system: `Sei un sommelier professionista. Estrai dati tecnici dall'etichetta del vino e rispondi ESCLUSIVAMENTE in JSON valido in ${langName}. Nessun testo aggiuntivo, solo JSON.\nSchema JSON richiesto: {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "storageTemp": string, "storageAdvice": string, "servingTemp": string, "servingAdvice": string, "foodPairings": string[], "price": number, "drinkWindow": string, "marketPrice": number}`,
+            messages: [{ role: 'user', content: [
+                { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: cleanBase64(base64Image) } },
+                { type: 'text', text: `Analizza questa etichetta di vino in ${langName}. Rispondi solo in JSON.` }
+            ]}]
+        });
+        res.json(JSON.parse(cleanJson(extractText(response))));
+    } catch (err) { res.status(500).json({ error: err.message || 'Errore AI' }); }
+});
+
+app.post('/api/ai/suggest-pairing', authenticateToken, async (req, res) => {
+    const { menu, guests, inventory, style, lang = 'it' } = req.body;
+    const langName = getLanguageName(lang);
+    const inventoryList = inventory.map(w => `ID: ${w.id}, Nome: ${w.name} (${w.year}), Tipo: ${w.type}`).join('\n');
+    try {
+        const response = await anthropic.messages.create({
+            model: MODEL, max_tokens: 2048,
+            system: `Sei un sommelier esperto. Rispondi ESCLUSIVAMENTE in JSON valido in ${langName}. Solo array JSON.\nSchema: array di {"courseName": string, "dishName": string, "options": [{"wineId": string|null, "wineName": string, "reasoning": string, "type": "owned"|"purchase", "servingTemp": string, "servingAdvice": string}]}`,
+            messages: [{ role: 'user', content: `Menu: ${menu}. Ospiti: ${guests}. Inventario:\n${inventoryList}\nStile: ${style}. Rispondi SOLO con l'array JSON.` }]
+        });
+        res.json(JSON.parse(cleanJson(extractText(response) || '[]')));
+    } catch (err) { res.status(500).json({ error: err.message || 'Errore Sommelier' }); }
+});
+
+app.post('/api/ai/analyze-purchase', authenticateToken, async (req, res) => {
+    const { input, inputPrice, inventory, lang = 'it' } = req.body;
+    const langName = getLanguageName(lang);
+    const inventoryContext = inventory.map(w => `${w.quantity}x ${w.name} (${w.type})`).join(', ');
+    try {
+        const contentParts = [];
+        if (input.type === 'image') {
+            contentParts.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: cleanBase64(input.data) } });
+        } else {
+            contentParts.push({ type: 'text', text: input.data });
+        }
+        contentParts.push({ type: 'text', text: `Prezzo offerto: €${inputPrice}. Cantina attuale: ${inventoryContext || 'vuota'}. Analizza in ${langName}. Rispondi SOLO in JSON.` });
+        const response = await anthropic.messages.create({
+            model: MODEL, max_tokens: 2048,
+            system: `Agisci come Broker di vini e Sommelier professionista. Il campo 'qualityScore' è da 0 a 100 INDIPENDENTEMENTE DAL PREZZO.\nSchema JSON: {"wineDetails": {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "foodPairings": string[]}, "marketPriceEstimate": number, "isGoodDeal": boolean, "dealRating": "Excellent"|"Good"|"Fair"|"Bad", "qualityScore": number, "sommelierNotes": string, "cellarFit": {"isRecommended": boolean, "reasoning": string}}`,
+            messages: [{ role: 'user', content: contentParts }]
+        });
+        res.json(JSON.parse(cleanJson(extractText(response))));
+    } catch (err) { res.status(500).json({ error: err.message || 'Errore Shop Advisor' }); }
+});
+
+app.post('/api/ai/suggest-restaurant-pairing', authenticateToken, async (req, res) => {
+    const { menuSource, dish, lang = 'it' } = req.body;
+    const langName = getLanguageName(lang);
+    try {
+        const contentParts = [];
+        if (menuSource.type === 'images') {
+            for (const img of menuSource.data) {
+                contentParts.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: cleanBase64(img) } });
+            }
+        } else {
+            contentParts.push({ type: 'text', text: menuSource.data });
+        }
+        contentParts.push({ type: 'text', text: `Scegli i migliori vini per: ${dish}. Max 2 per fascia (Economica/Media/Alta) o 3 totali se carta piccola. Rispondi in ${langName} solo JSON.` });
+        const response = await anthropic.messages.create({
+            model: MODEL, max_tokens: 2048,
+            system: `Sommelier Digitale. Calcola matchScore 0-100 per ogni vino. Rispondi SOLO in JSON.\nSchema: [{"name": string, "producer": string, "year": string, "type": string, "price": number, "matchScore": number, "reasoning": string, "priceCategory": "Fascia Economica"|"Fascia Media"|"Fascia Alta"}]`,
+            messages: [{ role: 'user', content: contentParts }]
+        });
+        res.json(JSON.parse(cleanJson(extractText(response) || '[]')));
+    } catch (err) { res.status(500).json({ error: err.message || 'Errore analisi carta vini' }); }
+});
+
+app.post('/api/ai/analyze-restaurant', authenticateToken, async (req, res) => {
+    const { wineList, foodMenu, lang = 'it' } = req.body;
+    const langName = getLanguageName(lang);
+    try {
+        const response = await anthropic.messages.create({
+            model: MODEL, max_tokens: 3000,
+            system: `Master Sommelier. Il campo 'score' è da 0.0 a 10.0 MAX.\nSchema JSON: {"score": number, "summary": string, "strengths": string[], "weaknesses": string[], "courseDetails": [{"course": string, "feedback": string, "bestMatches": string[], "unsuitableWines": string[], "missingStyles": string[]}], "strategicAdvice": string}`,
+            messages: [{ role: 'user', content: `Audit Tecnico in ${langName}.\nCARTA VINI: ${wineList}\nMENU: ${foodMenu}` }]
+        });
+        const result = JSON.parse(cleanJson(extractText(response)));
+        res.json({ ...result, generatedAt: new Date().toISOString() });
+    } catch (err) { res.status(500).json({ error: 'Errore analisi professionale' }); }
+});
+
+app.post('/api/ai/extract-text', authenticateToken, async (req, res) => {
+    const { base64Data, mimeType } = req.body;
+    try {
+        const isImage = mimeType.startsWith('image/');
+        const contentParts = isImage
+            ? [
+                { type: 'image', source: { type: 'base64', media_type: mimeType, data: cleanBase64(base64Data) } },
+                { type: 'text', text: 'OCR PROFESSIONALE. Estrai il testo mantenendo struttura e prezzi.' }
+              ]
+            : [{ type: 'text', text: `Estrai il testo dal contenuto (${mimeType}): ${base64Data}` }];
+        const response = await anthropic.messages.create({
+            model: MODEL, max_tokens: 4096,
+            messages: [{ role: 'user', content: contentParts }]
+        });
+        res.json({ text: extractText(response) });
+    } catch (err) { res.status(500).json({ error: 'Errore lettura media' }); }
+});
+
+app.post('/api/ai/cellar-report', authenticateToken, async (req, res) => {
+    const { inventory, history, lang = 'it' } = req.body;
+    const langName = getLanguageName(lang);
+    const inventoryText = inventory.map(w => `- ${w.name} (${w.year}), ${w.producer}, ${w.type}`).join('\n');
+    try {
+        const response = await anthropic.messages.create({
+            model: MODEL, max_tokens: 2048,
+            system: `Sommelier Senior. Rispondi ESCLUSIVAMENTE in JSON valido in ${langName}.\nSchema: {"overallAssessment": string, "palateProfile": string, "gapAnalysis": string, "buyRecommendations": [{"wineName": string, "reason": string, "type": string}], "drinkNowStrategy": string}`,
+            messages: [{ role: 'user', content: `Analizza cantina in ${langName} solo JSON:\n${inventoryText}` }]
+        });
+        res.json(JSON.parse(cleanJson(extractText(response) || '{}')));
+    } catch (err) { res.status(500).json({ error: err.message || 'Errore report' }); }
+});
+
+// --- EXISTING ENDPOINTS ---
 
 app.get('/api/config', (req, res) => {
     res.json({ googleClientId: GOOGLE_CLIENT_ID || '' });
@@ -139,16 +271,13 @@ app.get('/api/users/me', authenticateToken, async (req, res) => {
 app.put('/api/managed-restaurant', authenticateToken, async (req, res) => {
     const { menu_context, food_menu, menu_analysis } = req.body;
     try {
-        const updates = [];
-        const values = [];
-        let idx = 1;
+        const updates = []; const values = []; let idx = 1;
         if (menu_context !== undefined) { updates.push(`menu_context = $${idx++}`); values.push(menu_context); }
         if (food_menu !== undefined) { updates.push(`food_menu = $${idx++}`); values.push(food_menu); }
         if (menu_analysis !== undefined) { updates.push(`menu_analysis = $${idx++}`); values.push(menu_analysis ? JSON.stringify(menu_analysis) : null); }
         if (updates.length === 0) return res.status(400).json({ error: 'No fields' });
         values.push(req.user.userId);
-        const query = `UPDATE restaurants SET ${updates.join(', ')} WHERE manager_id = $${idx} RETURNING *`;
-        const result = await pool.query(query, values);
+        const result = await pool.query(`UPDATE restaurants SET ${updates.join(', ')} WHERE manager_id = $${idx} RETURNING *`, values);
         if (result.rowCount === 0) return res.status(403).json({ error: 'Forbidden' });
         const fullResult = await pool.query(`SELECT r.*, (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count, (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage FROM restaurants r WHERE r.id = $1`, [result.rows[0].id]);
         const rest = fullResult.rows[0];
@@ -167,16 +296,12 @@ app.post('/api/users/track-ai', authenticateToken, async (req, res) => {
 app.get('/api/search-prices', authenticateToken, async (req, res) => {
     const { query } = req.query;
     try {
-        const anthropic = new Anthropic({ apiKey: process.env.API_KEY });
         const response = await anthropic.messages.create({
-            model: 'claude-opus-4-8',
-            max_tokens: 1024,
+            model: MODEL, max_tokens: 1024,
             system: 'Sei un esperto di prezzi vini. Rispondi ESCLUSIVAMENTE con un array JSON valido, nessun testo aggiuntivo.',
-            messages: [{ role: 'user', content: `Stima i prezzi di mercato per: ${query}. Rispondi SOLO con questo JSON: [{ "source": "Stima di mercato", "price": 12.34, "currency": "EUR", "link": "" }]` }]
+            messages: [{ role: 'user', content: `Stima i prezzi di mercato per: ${query}. Rispondi SOLO con: [{ "source": "Stima di mercato", "price": 12.34, "currency": "EUR", "link": "" }]` }]
         });
-        const textBlock = response.content.find(b => b.type === 'text');
-        const text = textBlock && textBlock.type === 'text' ? textBlock.text : '[]';
-        res.json(JSON.parse(cleanJson(text)));
+        res.json(JSON.parse(cleanJson(extractText(response))));
     } catch (err) { res.status(500).json({ error: 'Search failed' }); }
 });
 
@@ -301,7 +426,7 @@ app.post('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
         );
         res.json({ success: true });
     } catch (err) {
-        console.error("Admin Restaurant Save Error:", err);
+        console.error('Admin Restaurant Save Error:', err);
         res.status(500).json({ error: 'Save failed' });
     }
 });
@@ -344,8 +469,8 @@ const initDb = async () => {
         await client.query(`CREATE TABLE IF NOT EXISTS shares (id TEXT PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS food_menu TEXT;`);
         await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS menu_analysis JSONB;`);
-        console.log("DB Ready");
-    } catch (e) { console.error("DB Init Error", e); }
+        console.log('DB Ready');
+    } catch (e) { console.error('DB Init Error', e); }
     finally { client.release(); }
 };
 
