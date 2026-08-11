@@ -30,6 +30,7 @@ const getTypeColor = (type: WineType) => {
 const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onClose, onConsume, onUpdateWine, onDelete, isPremium }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Wine | null>(null);
+  const [isImageFullscreen, setIsImageFullscreen] = useState(false);
   const { t } = useLanguage();
 
   // Reset e inizializzazione sicura quando cambia il vino selezionato
@@ -40,6 +41,7 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
     } else {
       setFormData(null);
     }
+    setIsImageFullscreen(false);
   }, [wine]);
 
   // Se non c'è il vino o lo stato non è ancora pronto, non renderizzare nulla per evitare crash
@@ -85,7 +87,12 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
               <>
                 <img src={formData.imageUrl} alt={formData.name} className="w-full h-full object-cover blur-sm opacity-50 absolute inset-0" />
                 <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/30"></div>
-                <img src={formData.imageUrl} alt={formData.name} className="absolute inset-0 w-full h-full object-contain p-4 drop-shadow-xl" />
+                <img
+                  src={formData.imageUrl}
+                  alt={formData.name}
+                  onClick={() => setIsImageFullscreen(true)}
+                  className="absolute inset-0 w-full h-full object-contain p-4 drop-shadow-xl cursor-zoom-in active:opacity-80 transition-opacity"
+                />
               </>
            ) : (
              <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400"><WineIcon className="w-16 h-16" /></div>
@@ -214,7 +221,28 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
     </div>
   );
 
-  return createPortal(content, document.body);
+  const fullscreenImage = isImageFullscreen && formData.imageUrl ? (
+    <div
+      className="fixed inset-0 bg-black z-[400] flex items-center justify-center animate-in fade-in duration-150"
+      onClick={() => setIsImageFullscreen(false)}
+    >
+      <button
+        onClick={() => setIsImageFullscreen(false)}
+        className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 backdrop-blur-md z-10"
+        style={{ top: 'max(1rem, env(safe-area-inset-top))' }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+      <img
+        src={formData.imageUrl}
+        alt={formData.name}
+        onClick={(e) => e.stopPropagation()}
+        className="max-w-full max-h-full object-contain"
+      />
+    </div>
+  ) : null;
+
+  return createPortal(<>{content}{fullscreenImage}</>, document.body);
 };
 
 export default WineDetailModal;
