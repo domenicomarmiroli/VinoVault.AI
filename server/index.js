@@ -49,8 +49,8 @@ const getLanguageName = (code) => {
 };
 
 const getToneInstructions = (tone) => tone === 'sommelier'
-    ? "REGISTRO: SOMMELIER PROFESSIONISTA. Usa terminologia tecnica precisa (struttura, tannini, acidità, persistenza aromatica, note al naso e al palato, potenziale evolutivo, abbinamento per concordanza/contrasto). L'utente conosce già il vino: offri un'analisi approfondita e rigorosa, senza semplificazioni superflue."
-    : "REGISTRO: DIVULGATIVO E AMICHEVOLE. L'utente è un appassionato ma NON un esperto tecnico: evita gergo complesso (o spiegalo tra parentesi in modo semplicissimo), usa frasi brevi e dirette, dai consigli pratici e immediatamente utili (es. 'perfetto per una pizza margherita' invece di descrizioni astratte).";
+    ? "REGISTRO: SOMMELIER PROFESSIONISTA. Scrivi un'analisi lunga e densa, come faresti per un cliente esperto: usa terminologia tecnica precisa (struttura, tannini, acidità, persistenza aromatica, note al naso e al palato distinte, potenziale evolutivo, abbinamento per concordanza/contrasto, riferimenti a stile del produttore/denominazione). Ogni lista (punti di forza, punti deboli, ecc.) deve avere il MASSIMO numero di elementi richiesto dallo schema, con dettagli tecnici specifici e mai generici. Non semplificare: l'utente vuole profondità analitica."
+    : "REGISTRO: DIVULGATIVO E AMICHEVOLE. Scrivi frasi brevi e dirette per un appassionato NON esperto: evita gergo tecnico (o traducilo in parole semplicissime), dai consigli pratici e concreti (es. 'perfetto per una pizza margherita' invece di descrizioni astratte). Ogni lista può avere meno elementi, ma ognuno deve essere chiaro e immediatamente utile senza bisogno di conoscenze enologiche.";
 
 const extractText = (response) => {
     const block = response.content.find(b => b.type === 'text');
@@ -202,18 +202,22 @@ app.post('/api/ai/analyze-purchase', authenticateToken, async (req, res) => {
         }
         contentParts.push({ type: 'text', text: `Prezzo offerto: €${inputPrice}. Cantina attuale: ${inventoryContext || 'vuota'}. Analizza in ${langName}. Rispondi SOLO in JSON.` });
         const response = await anthropic.messages.create({
-            model: MODEL, max_tokens: 2048,
+            model: MODEL, max_tokens: 2048, temperature: 0,
             system: `Agisci come broker di vini esperto che valuta se un acquisto conviene, indipendentemente dal prezzo richiesto.
 ${getToneInstructions(tone)}
+IMPORTANTE: qualityScore, marketPriceEstimate e dealRating sono valutazioni OGGETTIVE basate solo sulle caratteristiche del vino (produttore, denominazione, annata, reputazione) e sul prezzo. Devono essere IDENTICHE indipendentemente dal registro linguistico richiesto sopra: cambia solo il modo di scrivere le spiegazioni testuali, mai i numeri o le valutazioni.
 Regole di valutazione:
 - qualityScore (0-100): valuta la QUALITÀ INTRINSECA del vino (produttore, denominazione, annata, reputazione) SENZA farti influenzare dal prezzo offerto. Guida: 90-100 eccellenza assoluta, 80-89 ottimo, 70-79 buono, 60-69 nella media, <60 modesto.
 - marketPriceEstimate: stima onesta e realistica del prezzo di mercato attuale in euro per quella bottiglia specifica.
 - dealRating: confronta inputPrice con marketPriceEstimate. "Excellent" se il prezzo offerto è nettamente sotto mercato, "Good" se leggermente sotto o in linea, "Fair" se leggermente sopra, "Bad" se nettamente sopra mercato.
-- sommelierNotes: 2-3 frasi su carattere del vino e occasioni di consumo ideali.
+- sommelierNotes: introduzione breve (1-2 frasi) sul carattere generale del vino.
+- strengths: 3-4 punti di forza SPECIFICI del vino (non generici), ognuno una frase breve autonoma.
+- weaknesses: 2-3 limiti o aspetti da considerare (es. non adatto a lungo invecchiamento, prezzo elevato per lo stile, annata non ottimale) — se il vino non ha reali punti deboli, indica cautele oggettive tipo "da consumare entro pochi anni".
+- bestOccasions: 2-4 occasioni/contesti di consumo concreti (es. "aperitivo estivo", "cena di pesce importante"), non abbinamenti cibo generici già coperti altrove.
 - cellarFit: valuta se questo vino colma una lacuna reale nella cantina attuale dell'utente (es. stile/tipologia mancante) o se è ridondante; motiva in 1-2 frasi concrete.
 
 Rispondi ESCLUSIVAMENTE con JSON valido in ${langName}, nessun testo aggiuntivo.
-Schema JSON: {"wineDetails": {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "foodPairings": string[]}, "marketPriceEstimate": number, "isGoodDeal": boolean, "dealRating": "Excellent"|"Good"|"Fair"|"Bad", "qualityScore": number, "sommelierNotes": string, "cellarFit": {"isRecommended": boolean, "reasoning": string}}`,
+Schema JSON: {"wineDetails": {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "foodPairings": string[]}, "marketPriceEstimate": number, "isGoodDeal": boolean, "dealRating": "Excellent"|"Good"|"Fair"|"Bad", "qualityScore": number, "sommelierNotes": string, "strengths": string[], "weaknesses": string[], "bestOccasions": string[], "cellarFit": {"isRecommended": boolean, "reasoning": string}}`,
             messages: [{ role: 'user', content: contentParts }]
         });
         const result = JSON.parse(cleanJson(extractText(response)));
@@ -236,9 +240,10 @@ app.post('/api/ai/suggest-restaurant-pairing', authenticateToken, async (req, re
         }
         contentParts.push({ type: 'text', text: `Scegli i migliori vini per: ${dish}. Max 2 per fascia (Economica/Media/Alta) o 3 totali se carta piccola. Rispondi in ${langName} solo JSON.` });
         const response = await anthropic.messages.create({
-            model: MODEL, max_tokens: 2048,
+            model: MODEL, max_tokens: 2048, temperature: 0,
             system: `Sei un sommelier digitale che consulta la carta vini di un ristorante per consigliare il miglior abbinamento con il piatto scelto dal cliente.
 ${getToneInstructions(tone)}
+IMPORTANTE: matchScore e priceCategory sono valutazioni OGGETTIVE, identiche indipendentemente dal registro linguistico richiesto: cambia solo lo stile delle spiegazioni testuali.
 Regole:
 - Leggi con attenzione i vini realmente presenti nella carta (nome, produttore, annata, prezzo se indicato): non inventare vini assenti dalla carta.
 - matchScore (0-100): quanto il vino si abbina bene al piatto specifico, considerando ingredienti, cottura, intensità e struttura del vino. Guida: 85-100 abbinamento eccellente, 70-84 buono, 50-69 accettabile, <50 sconsigliato.
@@ -258,7 +263,7 @@ app.post('/api/ai/analyze-restaurant', authenticateToken, async (req, res) => {
     const langName = getLanguageName(lang);
     try {
         const response = await anthropic.messages.create({
-            model: MODEL, max_tokens: 3000,
+            model: MODEL, max_tokens: 3000, temperature: 0,
             system: `Sei un Master Sommelier che esegue un audit tecnico professionale della carta vini di un ristorante, verificandone la coerenza con il menu cibo.
 Analisi da svolgere:
 - Copertura stilistica: la carta copre adeguatamente le tipologie necessarie per il menu (bianchi freschi, rossi strutturati, bollicine, vini da dessert, ecc.)?
