@@ -115,7 +115,10 @@ const PriceComparison: React.FC<PriceComparisonProps> = ({ name, producer, year,
                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Prezzi Rilevati</h3>
                             <span className="text-[9px] text-gray-400">Clicca per verificare</span>
                         </div>
-                        
+                        <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5">
+                            ⚠️ Prezzi indicativi trovati online: potrebbero non essere aggiornati. Verifica sempre il prezzo definitivo sul sito del negozio.
+                        </p>
+
                         {prices.map((price, idx) => (
                             <a
                                 key={idx}
