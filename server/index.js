@@ -411,12 +411,29 @@ app.get('/api/search-prices', authenticateToken, async (req, res) => {
     const { query } = req.query;
     try {
         const response = await anthropic.messages.create({
-            model: MODEL, max_tokens: 1024,
-            system: 'Sei un esperto di prezzi vini. Rispondi ESCLUSIVAMENTE con un array JSON valido, nessun testo aggiuntivo.',
-            messages: [{ role: 'user', content: `Stima i prezzi di mercato per: ${query}. Rispondi SOLO con: [{ "source": "Stima di mercato", "price": 12.34, "currency": "EUR", "link": "" }]` }]
+            model: MODEL, max_tokens: 1500,
+            tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 4 }],
+            system: `Sei un assistente che cerca prezzi REALI di vini su negozi online italiani ed europei (es. Tannico, Vino.com, Callmewine, Bernabei, Wineplatform, Xtrawine, Google Shopping) usando la ricerca web.
+Regole:
+- Cerca il vino esatto richiesto (nome, produttore, annata) e trova fino a 5 offerte REALI trovate nella ricerca, ordinate dal prezzo più basso al più alto.
+- NON INVENTARE prezzi o negozi: usa solo dati effettivamente trovati nei risultati di ricerca.
+- source: nome del negozio/sito reale.
+- price: prezzo numerico in euro come trovato (solo numero, senza simbolo).
+- link: URL diretto alla pagina del prodotto se disponibile nei risultati, altrimenti stringa vuota.
+- Se non trovi abbastanza risultati affidabili, restituisci un array più corto o vuoto piuttosto che inventare dati.
+
+Rispondi ESCLUSIVAMENTE con un array JSON valido, nessun testo aggiuntivo, nessuna spiegazione.
+Schema: [{"source": string, "price": number, "currency": "EUR", "link": string}]`,
+            messages: [{ role: 'user', content: `Cerca i prezzi attuali online per: ${query}` }]
         });
-        res.json(JSON.parse(cleanJson(extractText(response))));
-    } catch (err) { res.status(500).json({ error: 'Search failed' }); }
+        const textBlocks = response.content.filter(b => b.type === 'text');
+        const finalText = textBlocks.length > 0 ? textBlocks[textBlocks.length - 1].text : '[]';
+        const prices = JSON.parse(cleanJson(finalText) || '[]');
+        res.json(Array.isArray(prices) ? prices.slice(0, 5) : []);
+    } catch (err) {
+        console.error('Price search error:', err);
+        res.status(500).json({ error: 'Search failed' });
+    }
 });
 
 app.get('/api/wines', authenticateToken, async (req, res) => {
