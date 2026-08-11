@@ -87,7 +87,8 @@ const mapWineToFrontend = (w) => ({
     storageTemp: w.storage_temp || '', storageAdvice: w.storage_advice || '',
     servingTemp: w.serving_temp || '', servingAdvice: w.serving_advice || '',
     foodPairings: w.food_pairings || [], imageUrl: w.image_url,
-    drinkWindow: w.drink_window || '', marketPrice: parseFloat(w.market_price) || 0
+    drinkWindow: w.drink_window || '', marketPrice: parseFloat(w.market_price) || 0,
+    qualityScore: w.quality_score !== null && w.quality_score !== undefined ? parseInt(w.quality_score) : undefined
 });
 
 const authenticateToken = (req, res, next) => {
@@ -335,9 +336,9 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
     try {
         if (wine.imageUrl) wine.imageUrl = await compressStoredImage(wine.imageUrl);
         await pool.query(
-            `INSERT INTO wines (id, user_id, name, producer, year, type, region, grape, alcohol, purchase_date, price, quantity, location, storage_temp, storage_advice, serving_temp, serving_advice, food_pairings, image_url, drink_window, market_price)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
-            [wine.id, req.user.userId, wine.name, wine.producer, wine.year, wine.type, wine.region, wine.grape, wine.alcohol, wine.purchaseDate, wine.price, wine.quantity, wine.location, wine.storageTemp, wine.storageAdvice, wine.servingTemp, wine.servingAdvice, wine.foodPairings, wine.imageUrl, wine.drinkWindow, wine.marketPrice]
+            `INSERT INTO wines (id, user_id, name, producer, year, type, region, grape, alcohol, purchase_date, price, quantity, location, storage_temp, storage_advice, serving_temp, serving_advice, food_pairings, image_url, drink_window, market_price, quality_score)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
+            [wine.id, req.user.userId, wine.name, wine.producer, wine.year, wine.type, wine.region, wine.grape, wine.alcohol, wine.purchaseDate, wine.price, wine.quantity, wine.location, wine.storageTemp, wine.storageAdvice, wine.servingTemp, wine.servingAdvice, wine.foodPairings, wine.imageUrl, wine.drinkWindow, wine.marketPrice, wine.qualityScore ?? null]
         );
         res.status(201).json(wine);
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
@@ -512,6 +513,7 @@ const initDb = async () => {
         await client.query(`CREATE TABLE IF NOT EXISTS shares (id TEXT PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS food_menu TEXT;`);
         await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS menu_analysis JSONB;`);
+        await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS quality_score INTEGER;`);
         console.log('DB Ready');
     } catch (e) { console.error('DB Init Error', e); }
     finally { client.release(); }

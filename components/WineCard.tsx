@@ -19,6 +19,13 @@ const getTypeColor = (type: WineType) => {
   }
 };
 
+const getQualityColor = (score: number) => {
+  if (score >= 90) return 'border-emerald-500 text-emerald-600 bg-emerald-50';
+  if (score >= 80) return 'border-wine-500 text-wine-600 bg-wine-50';
+  if (score >= 70) return 'border-yellow-500 text-yellow-600 bg-yellow-50';
+  return 'border-gray-300 text-gray-500 bg-gray-50';
+};
+
 const WineCard: React.FC<WineCardProps> = ({ wine, onClick }) => {
   return (
     <div 
@@ -38,6 +45,12 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onClick }) => {
           {wine.quantity > 1 && (
             <div className="absolute bottom-0 left-0 right-0 bg-wine-800/80 text-white text-[10px] font-bold text-center py-0.5 backdrop-blur-sm shadow-sm">
                {wine.quantity} pz
+            </div>
+          )}
+          {/* Badge voto qualità (solo se presente, es. da Shop Advisor) */}
+          {wine.qualityScore !== undefined && (
+            <div className={`absolute top-1 right-1 w-7 h-7 rounded-full flex items-center justify-center border-2 text-[11px] font-black shadow-sm ${getQualityColor(wine.qualityScore)}`}>
+              {wine.qualityScore}
             </div>
           )}
         </div>
