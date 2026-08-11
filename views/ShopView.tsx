@@ -5,6 +5,7 @@ import { analyzePurchase } from '../services/geminiService';
 import { CameraIcon, LogoutIcon, ShopIcon, WineIcon, ExternalLinkIcon, ChefIcon } from '../components/Icons';
 import PriceComparison from '../components/PriceComparison';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
 import LoadingScreen from '../components/LoadingScreen';
 
 interface ShopViewProps {
@@ -56,6 +57,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
   const [analysis, setAnalysis] = useState<PurchaseAnalysis | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, language } = useLanguage();
+  const { analysisStyle } = useAnalysisStyle();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -80,7 +82,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
       setAnalysis(null);
       try {
           const input = mode === 'camera' ? { type: 'image' as const, data: image! } : { type: 'url' as const, data: linkUrl };
-          const result = await analyzePurchase(input, inputPrice, inventory, language);
+          const result = await analyzePurchase(input, inputPrice, inventory, language, analysisStyle);
           
           if (!result.wineDetails) {
               // Added missing 'year' property to satisfy the PurchaseAnalysis interface requirements
