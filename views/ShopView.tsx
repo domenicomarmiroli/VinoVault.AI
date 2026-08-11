@@ -234,6 +234,53 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                     <p className="mt-3 text-sm text-gray-600 italic border-l-2 border-wine-300 pl-3">"{analysis.sommelierNotes}"</p>
                 </div>
 
+                {((analysis.strengths?.length || 0) > 0 || (analysis.weaknesses?.length || 0) > 0) && (
+                    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                        {(analysis.strengths?.length || 0) > 0 && (
+                            <div>
+                                <h4 className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Punti di forza
+                                </h4>
+                                <ul className="space-y-1.5">
+                                    {analysis.strengths.map((s, i) => (
+                                        <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                                            <span className="text-emerald-500 font-bold mt-0.5">✓</span>
+                                            <span>{s}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        {(analysis.weaknesses?.length || 0) > 0 && (
+                            <div>
+                                <h4 className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Da considerare
+                                </h4>
+                                <ul className="space-y-1.5">
+                                    {analysis.weaknesses.map((w, i) => (
+                                        <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                                            <span className="text-amber-500 font-bold mt-0.5">!</span>
+                                            <span>{w}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        {(analysis.bestOccasions?.length || 0) > 0 && (
+                            <div>
+                                <h4 className="text-[10px] font-black text-wine-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-wine-500"></span> Occasioni consigliate
+                                </h4>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {analysis.bestOccasions.map((o, i) => (
+                                        <span key={i} className="text-xs font-medium text-wine-800 bg-wine-50 border border-wine-100 px-2.5 py-1 rounded-full">{o}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <div className={`p-5 rounded-xl border ${getDealColor(analysis.dealRating)}`}>
                     <div className="flex justify-between items-center mb-2">
                         <h3 className="font-bold uppercase tracking-wide text-sm flex items-center gap-2">{t('price')} <span className="bg-white/50 px-2 py-0.5 rounded text-xs border border-black/10">{getDealText(analysis.dealRating)}</span></h3>
