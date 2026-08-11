@@ -1,7 +1,7 @@
 import { Wine, PairingSuggestion, PurchaseAnalysis, RestaurantSuggestion, HistoryEntry, CellarReport, Language, RestaurantAnalysis } from "../types";
 
 const apiCall = async (endpoint: string, body: object) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('vinovault_token');
     const res = await fetch(`/api/ai/${endpoint}`, {
         method: 'POST',
         headers: {
