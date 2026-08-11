@@ -121,7 +121,8 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           foodPairings: analysis.wineDetails?.foodPairings || [],
           imageUrl: image || undefined,
           drinkWindow: `${new Date().getFullYear()}-${new Date().getFullYear() + 3}`,
-          marketPrice: safeMarketPrice
+          marketPrice: safeMarketPrice,
+          qualityScore: analysis.qualityScore
       };
       onAddToInventory(newWine);
       setImage(null);
