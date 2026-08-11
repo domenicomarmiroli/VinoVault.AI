@@ -156,6 +156,9 @@ export interface PurchaseAnalysis {
     dealRating: 'Excellent' | 'Good' | 'Fair' | 'Bad';
     qualityScore: number;
     sommelierNotes: string;
+    strengths: string[];
+    weaknesses: string[];
+    bestOccasions: string[];
     cellarFit: {
         isRecommended: boolean;
         reasoning: string;
