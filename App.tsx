@@ -25,6 +25,7 @@ import SharedPairingModal from './components/SharedPairingModal';
 import LoadingScreen from './components/LoadingScreen';
 import { WineIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon, ChefIcon, CogIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { AnalysisStyleProvider } from './contexts/AnalysisStyleContext';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
@@ -422,5 +423,5 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => <LanguageProvider><AppContent /></LanguageProvider>;
+const App: React.FC = () => <LanguageProvider><AnalysisStyleProvider><AppContent /></AnalysisStyleProvider></LanguageProvider>;
 export default App;

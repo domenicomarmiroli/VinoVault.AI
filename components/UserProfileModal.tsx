@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { UserIcon, LogoutIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
 import { Language } from '../types';
 
 interface UserProfileModalProps {
@@ -18,6 +19,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
   
   // Language Context
   const { language, setLanguage, t } = useLanguage();
+  const { analysisStyle, setAnalysisStyle } = useAnalysisStyle();
 
   // Password Change State
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -162,7 +164,33 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
             </div>
 
             <hr className="border-gray-100" />
-            
+
+            {/* Analysis Style Selector */}
+            <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Stile Analisi AI</label>
+                <div className="flex p-1 bg-gray-100 rounded-xl">
+                    <button
+                        onClick={() => setAnalysisStyle('pop')}
+                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${analysisStyle === 'pop' ? 'bg-white shadow-sm text-wine-700' : 'text-gray-500'}`}
+                    >
+                        Semplice
+                    </button>
+                    <button
+                        onClick={() => setAnalysisStyle('sommelier')}
+                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${analysisStyle === 'sommelier' ? 'bg-white shadow-sm text-wine-700' : 'text-gray-500'}`}
+                    >
+                        Sommelier
+                    </button>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1.5 leading-snug">
+                    {analysisStyle === 'sommelier'
+                        ? 'Linguaggio tecnico e analisi approfondita, per chi conosce già il vino.'
+                        : 'Linguaggio semplice e consigli pratici, pensato per chi non è un esperto.'}
+                </p>
+            </div>
+
+            <hr className="border-gray-100" />
+
             {/* Stats Section */}
             <div>
                 <div className="flex justify-between items-end mb-2">

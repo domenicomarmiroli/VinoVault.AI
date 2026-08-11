@@ -5,6 +5,7 @@ import { ChartBarIcon, LogoutIcon, WineIcon, ShoppingCartIcon, ReportIcon, Shiel
 import CellarReportModal from '../components/CellarReportModal';
 import { generateCellarReport } from '../services/geminiService';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
 
 interface AnalyticsViewProps {
   inventory: Wine[];
@@ -19,6 +20,7 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
   const [reportLoading, setReportLoading] = useState(false);
   const [cellarReport, setCellarReport] = useState<CellarReport | null>(null);
   const { t, language } = useLanguage();
+  const { analysisStyle } = useAnalysisStyle();
 
   const safeInventory = Array.isArray(inventory) ? inventory : [];
   const safeHistory = Array.isArray(history) ? history : [];
@@ -55,7 +57,7 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
 
       setReportLoading(true);
       try {
-          const report = await generateCellarReport(safeInventory, safeHistory, language);
+          const report = await generateCellarReport(safeInventory, safeHistory, language, analysisStyle);
           setCellarReport(report);
           onAiUsed();
       } catch (err: any) {

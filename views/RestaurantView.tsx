@@ -4,6 +4,7 @@ import { suggestRestaurantPairing } from '../services/geminiService';
 import { RestaurantSuggestion, HistoryEntry, Restaurant } from '../types';
 import { CameraIcon, LogoutIcon, RestaurantIcon, PlusIcon, HelpIcon } from '../components/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
 import LoadingScreen from '../components/LoadingScreen';
 
 interface RestaurantViewProps {
@@ -56,6 +57,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, language } = useLanguage();
+  const { analysisStyle } = useAnalysisStyle();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -94,7 +96,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
               source = { type: 'images', data: images };
           }
 
-          const results = await suggestRestaurantPairing(source, dish, language);
+          const results = await suggestRestaurantPairing(source, dish, language, analysisStyle);
           setSuggestions(results);
           onAiUsed();
       } catch (error: any) {

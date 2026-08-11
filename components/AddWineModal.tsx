@@ -5,6 +5,7 @@ import { Wine, WineType, Location } from '../types';
 import { analyzeWineLabel } from '../services/geminiService';
 import { CameraIcon, PlusIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
@@ -55,6 +56,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'upload' | 'verify'>('upload');
   const { t, language } = useLanguage();
+  const { analysisStyle } = useAnalysisStyle();
   
   const [formData, setFormData] = useState<Partial<Wine>>({
     name: '',
@@ -80,7 +82,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
         const compressedBase64 = await compressImage(file);
         setImagePreview(compressedBase64);
         try {
-            const analysis = await analyzeWineLabel(compressedBase64, language);
+            const analysis = await analyzeWineLabel(compressedBase64, language, analysisStyle);
             setFormData(prev => ({ ...prev, ...analysis, price: analysis.price || prev.price, quantity: 1, location: prev.location }));
             onAiUsed();
             setStep('verify');

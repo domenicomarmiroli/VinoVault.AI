@@ -48,6 +48,10 @@ const getLanguageName = (code) => {
     }
 };
 
+const getToneInstructions = (tone) => tone === 'sommelier'
+    ? "REGISTRO: SOMMELIER PROFESSIONISTA. Usa terminologia tecnica precisa (struttura, tannini, acidità, persistenza aromatica, note al naso e al palato, potenziale evolutivo, abbinamento per concordanza/contrasto). L'utente conosce già il vino: offri un'analisi approfondita e rigorosa, senza semplificazioni superflue."
+    : "REGISTRO: DIVULGATIVO E AMICHEVOLE. L'utente è un appassionato ma NON un esperto tecnico: evita gergo complesso (o spiegalo tra parentesi in modo semplicissimo), usa frasi brevi e dirette, dai consigli pratici e immediatamente utili (es. 'perfetto per una pizza margherita' invece di descrizioni astratte).";
+
 const extractText = (response) => {
     const block = response.content.find(b => b.type === 'text');
     return block ? block.text : '';
@@ -133,12 +137,23 @@ const authenticateAdmin = (req, res, next) => {
 // --- AI ENDPOINTS ---
 
 app.post('/api/ai/analyze-label', authenticateToken, async (req, res) => {
-    const { base64Image, lang = 'it' } = req.body;
+    const { base64Image, lang = 'it', tone = 'pop' } = req.body;
     const langName = getLanguageName(lang);
     try {
         const response = await anthropic.messages.create({
             model: MODEL, max_tokens: 1024,
-            system: `Sei un sommelier professionista. Estrai dati tecnici dall'etichetta del vino e rispondi ESCLUSIVAMENTE in JSON valido in ${langName}. Nessun testo aggiuntivo, solo JSON.\nSchema JSON richiesto: {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "storageTemp": string, "storageAdvice": string, "servingTemp": string, "servingAdvice": string, "foodPairings": string[], "price": number, "drinkWindow": string, "marketPrice": number}`,
+            system: `Sei un esperto di vino che analizza etichette da foto per un'app di gestione cantina. Leggi con attenzione ogni dettaglio visibile (nome, produttore, annata, denominazione/regione, vitigno, gradazione) e, se un dato non è leggibile, deducilo in modo plausibile dal contesto (tipologia di vino, denominazione, stile dell'etichetta) invece di lasciarlo vuoto quando possibile.
+${getToneInstructions(tone)}
+Linee guida per i campi:
+- alcohol: formato "13.5%" (usa il punto decimale)
+- foodPairings: 3-5 abbinamenti concreti e specifici (piatti reali, non categorie generiche)
+- drinkWindow: intervallo di anni realistico in base a tipologia e annata, es. "2025-2029"
+- storageAdvice / servingAdvice: massimo 2 frasi ciascuna, consigli pratici e immediatamente applicabili
+- price: se non stimabile dall'etichetta, usa 0
+- marketPrice: stima onesta del prezzo di mercato attuale in euro, basata su produttore/denominazione/annata
+
+Rispondi ESCLUSIVAMENTE con JSON valido in ${langName}, nessun testo aggiuntivo.
+Schema JSON richiesto: {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "storageTemp": string, "storageAdvice": string, "servingTemp": string, "servingAdvice": string, "foodPairings": string[], "price": number, "drinkWindow": string, "marketPrice": number}`,
             messages: [{ role: 'user', content: [
                 { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: cleanBase64(base64Image) } },
                 { type: 'text', text: `Analizza questa etichetta di vino in ${langName}. Rispondi solo in JSON.` }
@@ -149,21 +164,31 @@ app.post('/api/ai/analyze-label', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/ai/suggest-pairing', authenticateToken, async (req, res) => {
-    const { menu, guests, inventory, style, lang = 'it' } = req.body;
+    const { menu, guests, inventory, style, lang = 'it', tone = 'pop' } = req.body;
     const langName = getLanguageName(lang);
-    const inventoryList = inventory.map(w => `ID: ${w.id}, Nome: ${w.name} (${w.year}), Tipo: ${w.type}`).join('\n');
+    const inventoryList = inventory.map(w => `ID: ${w.id}, Nome: ${w.name} (${w.year}), Tipo: ${w.type}, Vitigno: ${w.grape || 'N/D'}`).join('\n');
     try {
         const response = await anthropic.messages.create({
             model: MODEL, max_tokens: 2048,
-            system: `Sei un sommelier esperto. Rispondi ESCLUSIVAMENTE in JSON valido in ${langName}. Solo array JSON.\nSchema: array di {"courseName": string, "dishName": string, "options": [{"wineId": string|null, "wineName": string, "reasoning": string, "type": "owned"|"purchase", "servingTemp": string, "servingAdvice": string}]}`,
-            messages: [{ role: 'user', content: `Menu: ${menu}. Ospiti: ${guests}. Inventario:\n${inventoryList}\nStile: ${style}. Rispondi SOLO con l'array JSON.` }]
+            system: `Sei un sommelier che consiglia abbinamenti cibo-vino per una cena, ragionando su ingredienti principali, metodo di cottura, intensità del piatto e struttura del vino (non solo sul tipo di carne/pesce).
+${getToneInstructions(tone)}
+Regole:
+- Per ogni portata del menu, proponi opzioni scegliendo PRIMA tra i vini disponibili in inventario (type:"owned", wineId valorizzato con l'ID esatto dell'inventario); se nessun vino in cantina è davvero adatto, proponi un vino da acquistare (type:"purchase", wineId: null, wineName con un'indicazione concreta es. "Un Vermentino di Sardegna").
+- Non forzare un abbinamento con l'inventario se la scelta è scadente: meglio suggerire un acquisto mirato.
+- reasoning: 1-2 frasi che spiegano PERCHÉ funziona quell'abbinamento con quel piatto specifico.
+- servingAdvice: consiglio pratico su temperatura/decantazione/bicchiere, massimo 1 frase.
+- Se "Stile" è "single", proponi una sola opzione ottimale per portata; se "multiple", proponi 2-3 opzioni con profili diversi.
+
+Rispondi ESCLUSIVAMENTE con un array JSON valido in ${langName}, nessun testo aggiuntivo.
+Schema: array di {"courseName": string, "dishName": string, "options": [{"wineId": string|null, "wineName": string, "reasoning": string, "type": "owned"|"purchase", "servingTemp": string, "servingAdvice": string}]}`,
+            messages: [{ role: 'user', content: `Menu: ${menu}. Ospiti: ${guests}. Inventario disponibile:\n${inventoryList || 'vuoto'}\nStile richiesto: ${style}. Rispondi SOLO con l'array JSON.` }]
         });
         res.json(JSON.parse(cleanJson(extractText(response) || '[]')));
     } catch (err) { res.status(500).json({ error: err.message || 'Errore Sommelier' }); }
 });
 
 app.post('/api/ai/analyze-purchase', authenticateToken, async (req, res) => {
-    const { input, inputPrice, inventory, lang = 'it' } = req.body;
+    const { input, inputPrice, inventory, lang = 'it', tone = 'pop' } = req.body;
     const langName = getLanguageName(lang);
     const inventoryContext = inventory.map(w => `${w.quantity}x ${w.name} (${w.type})`).join(', ');
     try {
@@ -178,7 +203,17 @@ app.post('/api/ai/analyze-purchase', authenticateToken, async (req, res) => {
         contentParts.push({ type: 'text', text: `Prezzo offerto: €${inputPrice}. Cantina attuale: ${inventoryContext || 'vuota'}. Analizza in ${langName}. Rispondi SOLO in JSON.` });
         const response = await anthropic.messages.create({
             model: MODEL, max_tokens: 2048,
-            system: `Agisci come Broker di vini e Sommelier professionista. Il campo 'qualityScore' è da 0 a 100 INDIPENDENTEMENTE DAL PREZZO.\nSchema JSON: {"wineDetails": {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "foodPairings": string[]}, "marketPriceEstimate": number, "isGoodDeal": boolean, "dealRating": "Excellent"|"Good"|"Fair"|"Bad", "qualityScore": number, "sommelierNotes": string, "cellarFit": {"isRecommended": boolean, "reasoning": string}}`,
+            system: `Agisci come broker di vini esperto che valuta se un acquisto conviene, indipendentemente dal prezzo richiesto.
+${getToneInstructions(tone)}
+Regole di valutazione:
+- qualityScore (0-100): valuta la QUALITÀ INTRINSECA del vino (produttore, denominazione, annata, reputazione) SENZA farti influenzare dal prezzo offerto. Guida: 90-100 eccellenza assoluta, 80-89 ottimo, 70-79 buono, 60-69 nella media, <60 modesto.
+- marketPriceEstimate: stima onesta e realistica del prezzo di mercato attuale in euro per quella bottiglia specifica.
+- dealRating: confronta inputPrice con marketPriceEstimate. "Excellent" se il prezzo offerto è nettamente sotto mercato, "Good" se leggermente sotto o in linea, "Fair" se leggermente sopra, "Bad" se nettamente sopra mercato.
+- sommelierNotes: 2-3 frasi su carattere del vino e occasioni di consumo ideali.
+- cellarFit: valuta se questo vino colma una lacuna reale nella cantina attuale dell'utente (es. stile/tipologia mancante) o se è ridondante; motiva in 1-2 frasi concrete.
+
+Rispondi ESCLUSIVAMENTE con JSON valido in ${langName}, nessun testo aggiuntivo.
+Schema JSON: {"wineDetails": {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "foodPairings": string[]}, "marketPriceEstimate": number, "isGoodDeal": boolean, "dealRating": "Excellent"|"Good"|"Fair"|"Bad", "qualityScore": number, "sommelierNotes": string, "cellarFit": {"isRecommended": boolean, "reasoning": string}}`,
             messages: [{ role: 'user', content: contentParts }]
         });
         const result = JSON.parse(cleanJson(extractText(response)));
@@ -188,7 +223,7 @@ app.post('/api/ai/analyze-purchase', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/ai/suggest-restaurant-pairing', authenticateToken, async (req, res) => {
-    const { menuSource, dish, lang = 'it' } = req.body;
+    const { menuSource, dish, lang = 'it', tone = 'pop' } = req.body;
     const langName = getLanguageName(lang);
     try {
         const contentParts = [];
@@ -202,7 +237,16 @@ app.post('/api/ai/suggest-restaurant-pairing', authenticateToken, async (req, re
         contentParts.push({ type: 'text', text: `Scegli i migliori vini per: ${dish}. Max 2 per fascia (Economica/Media/Alta) o 3 totali se carta piccola. Rispondi in ${langName} solo JSON.` });
         const response = await anthropic.messages.create({
             model: MODEL, max_tokens: 2048,
-            system: `Sommelier Digitale. Calcola matchScore 0-100 per ogni vino. Rispondi SOLO in JSON.\nSchema: [{"name": string, "producer": string, "year": string, "type": string, "price": number, "matchScore": number, "reasoning": string, "priceCategory": "Fascia Economica"|"Fascia Media"|"Fascia Alta"}]`,
+            system: `Sei un sommelier digitale che consulta la carta vini di un ristorante per consigliare il miglior abbinamento con il piatto scelto dal cliente.
+${getToneInstructions(tone)}
+Regole:
+- Leggi con attenzione i vini realmente presenti nella carta (nome, produttore, annata, prezzo se indicato): non inventare vini assenti dalla carta.
+- matchScore (0-100): quanto il vino si abbina bene al piatto specifico, considerando ingredienti, cottura, intensità e struttura del vino. Guida: 85-100 abbinamento eccellente, 70-84 buono, 50-69 accettabile, <50 sconsigliato.
+- reasoning: 1 frase concreta sul perché funziona (o non forzare abbinamenti deboli).
+- priceCategory: classifica in base al prezzo relativo rispetto agli altri vini della stessa carta.
+
+Rispondi ESCLUSIVAMENTE con un array JSON valido in ${langName}, nessun testo aggiuntivo.
+Schema: [{"name": string, "producer": string, "year": string, "type": string, "price": number, "matchScore": number, "reasoning": string, "priceCategory": "Fascia Economica"|"Fascia Media"|"Fascia Alta"}]`,
             messages: [{ role: 'user', content: contentParts }]
         });
         res.json(JSON.parse(cleanJson(extractText(response) || '[]')));
@@ -215,7 +259,16 @@ app.post('/api/ai/analyze-restaurant', authenticateToken, async (req, res) => {
     try {
         const response = await anthropic.messages.create({
             model: MODEL, max_tokens: 3000,
-            system: `Master Sommelier. Il campo 'score' è da 0.0 a 10.0 MAX.\nSchema JSON: {"score": number, "summary": string, "strengths": string[], "weaknesses": string[], "courseDetails": [{"course": string, "feedback": string, "bestMatches": string[], "unsuitableWines": string[], "missingStyles": string[]}], "strategicAdvice": string}`,
+            system: `Sei un Master Sommelier che esegue un audit tecnico professionale della carta vini di un ristorante, verificandone la coerenza con il menu cibo.
+Analisi da svolgere:
+- Copertura stilistica: la carta copre adeguatamente le tipologie necessarie per il menu (bianchi freschi, rossi strutturati, bollicine, vini da dessert, ecc.)?
+- Rapporto qualità/prezzo e ampiezza delle fasce di prezzo.
+- Per ogni portata del menu (courseDetails), identifica i vini della carta più adatti (bestMatches) e quelli palesemente inadatti (unsuitableWines), ed evidenzia stili di vino mancanti per quella portata (missingStyles).
+- score (0.0-10.0): valutazione complessiva rigorosa. Guida: 9-10 carta eccellente e ben calibrata, 7-8.9 buona con margini di miglioramento, 5-6.9 sufficiente ma con lacune evidenti, <5 carta inadeguata al menu.
+- strategicAdvice: 2-3 azioni concrete e prioritarie che il ristoratore dovrebbe fare per migliorare la carta.
+
+Rispondi ESCLUSIVAMENTE con JSON valido in ${langName}, nessun testo aggiuntivo.
+Schema JSON: {"score": number, "summary": string, "strengths": string[], "weaknesses": string[], "courseDetails": [{"course": string, "feedback": string, "bestMatches": string[], "unsuitableWines": string[], "missingStyles": string[]}], "strategicAdvice": string}`,
             messages: [{ role: 'user', content: `Audit Tecnico in ${langName}.\nCARTA VINI: ${wineList}\nMENU: ${foodMenu}` }]
         });
         const result = JSON.parse(cleanJson(extractText(response)));
@@ -242,14 +295,25 @@ app.post('/api/ai/extract-text', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/ai/cellar-report', authenticateToken, async (req, res) => {
-    const { inventory, history, lang = 'it' } = req.body;
+    const { inventory, history, lang = 'it', tone = 'pop' } = req.body;
     const langName = getLanguageName(lang);
-    const inventoryText = inventory.map(w => `- ${w.name} (${w.year}), ${w.producer}, ${w.type}`).join('\n');
+    const inventoryText = inventory.map(w => `- ${w.name} (${w.year}), ${w.producer}, ${w.type}, ${w.grape || 'vitigno N/D'}, regione: ${w.region || 'N/D'}`).join('\n');
+    const historyText = (history || []).slice(0, 30).map(h => `- ${h.name} (${h.year}), voto: ${h.rating || 'N/D'}`).join('\n');
     try {
         const response = await anthropic.messages.create({
             model: MODEL, max_tokens: 2048,
-            system: `Sommelier Senior. Rispondi ESCLUSIVAMENTE in JSON valido in ${langName}.\nSchema: {"overallAssessment": string, "palateProfile": string, "gapAnalysis": string, "buyRecommendations": [{"wineName": string, "reason": string, "type": string}], "drinkNowStrategy": string}`,
-            messages: [{ role: 'user', content: `Analizza cantina in ${langName} solo JSON:\n${inventoryText}` }]
+            system: `Sei un sommelier senior che analizza l'intera cantina di un utente per aiutarlo a capirla meglio e a migliorarla nel tempo.
+${getToneInstructions(tone)}
+Analisi da svolgere:
+- overallAssessment: panoramica onesta su equilibrio, varietà e livello qualitativo della cantina.
+- palateProfile: deduci le preferenze di gusto dell'utente osservando tipologie, regioni e vitigni ricorrenti (e i vini con voto alto nello storico, se disponibile).
+- gapAnalysis: quali tipologie/stili/fasce di prezzo mancano per avere una cantina più completa ed equilibrata.
+- buyRecommendations: 3-5 suggerimenti di acquisto CONCRETI (nomi di vini o categorie specifiche, non generiche) che colmano le lacune individuate.
+- drinkNowStrategy: quali vini della cantina andrebbero consumati prima (per finestra di beva) e come organizzare il consumo nei prossimi mesi.
+
+Rispondi ESCLUSIVAMENTE con JSON valido in ${langName}, nessun testo aggiuntivo.
+Schema: {"overallAssessment": string, "palateProfile": string, "gapAnalysis": string, "buyRecommendations": [{"wineName": string, "reason": string, "type": string}], "drinkNowStrategy": string}`,
+            messages: [{ role: 'user', content: `Analizza questa cantina in ${langName}, rispondi solo JSON.\nCANTINA:\n${inventoryText || 'vuota'}\nSTORICO DEGUSTAZIONI (se rilevante per i gusti):\n${historyText || 'nessuno'}` }]
         });
         res.json(JSON.parse(cleanJson(extractText(response) || '{}')));
     } catch (err) { res.status(500).json({ error: err.message || 'Errore report' }); }

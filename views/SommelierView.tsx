@@ -4,6 +4,7 @@ import { Wine, PairingSuggestion } from '../types';
 import { suggestPairing } from '../services/geminiService';
 import { ChefIcon, LogoutIcon, ThermometerIcon, ClockIcon, StarIcon, ShoppingCartIcon, WineIcon } from '../components/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
 import LoadingScreen from '../components/LoadingScreen';
 
 interface SommelierViewProps {
@@ -22,6 +23,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
   const [isSharing, setIsSharing] = useState(false);
   
   const { t, language } = useLanguage();
+  const { analysisStyle } = useAnalysisStyle();
 
   const handleSuggestion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +33,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
     setSuggestions([]);
     try {
       const availableInventory = inventory.filter(w => w.quantity > 0);
-      const results = await suggestPairing(menuText, 4, availableInventory, style, language);
+      const results = await suggestPairing(menuText, 4, availableInventory, style, language, analysisStyle);
       setSuggestions(results);
       onAiUsed(); 
     } catch (error: any) {
