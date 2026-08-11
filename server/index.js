@@ -55,6 +55,28 @@ const extractText = (response) => {
 
 const cleanBase64 = (base64) => base64.replace(/^data:(image\/(png|jpg|jpeg|webp)|application\/pdf);base64,/, '');
 
+const extractOgImage = async (pageUrl) => {
+    try {
+        const pageRes = await fetch(pageUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(8000) });
+        const html = await pageRes.text();
+        const match = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+            || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
+            || html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i);
+        if (!match) return null;
+        let imageUrl = match[1];
+        if (imageUrl.startsWith('//')) imageUrl = 'https:' + imageUrl;
+        else if (imageUrl.startsWith('/')) imageUrl = new URL(imageUrl, pageUrl).href;
+        const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(8000) });
+        const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+        if (!contentType.startsWith('image/')) return null;
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+        return `data:${contentType};base64,${buffer.toString('base64')}`;
+    } catch (e) {
+        console.error('OG image extraction failed', e.message);
+        return null;
+    }
+};
+
 const compressStoredImage = async (dataUri) => {
     if (!dataUri || !dataUri.startsWith('data:image')) return dataUri;
     try {
@@ -146,10 +168,12 @@ app.post('/api/ai/analyze-purchase', authenticateToken, async (req, res) => {
     const inventoryContext = inventory.map(w => `${w.quantity}x ${w.name} (${w.type})`).join(', ');
     try {
         const contentParts = [];
+        let extractedImageUrl = null;
         if (input.type === 'image') {
             contentParts.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: cleanBase64(input.data) } });
         } else {
             contentParts.push({ type: 'text', text: input.data });
+            extractedImageUrl = await extractOgImage(input.data);
         }
         contentParts.push({ type: 'text', text: `Prezzo offerto: €${inputPrice}. Cantina attuale: ${inventoryContext || 'vuota'}. Analizza in ${langName}. Rispondi SOLO in JSON.` });
         const response = await anthropic.messages.create({
@@ -157,7 +181,9 @@ app.post('/api/ai/analyze-purchase', authenticateToken, async (req, res) => {
             system: `Agisci come Broker di vini e Sommelier professionista. Il campo 'qualityScore' è da 0 a 100 INDIPENDENTEMENTE DAL PREZZO.\nSchema JSON: {"wineDetails": {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "foodPairings": string[]}, "marketPriceEstimate": number, "isGoodDeal": boolean, "dealRating": "Excellent"|"Good"|"Fair"|"Bad", "qualityScore": number, "sommelierNotes": string, "cellarFit": {"isRecommended": boolean, "reasoning": string}}`,
             messages: [{ role: 'user', content: contentParts }]
         });
-        res.json(JSON.parse(cleanJson(extractText(response))));
+        const result = JSON.parse(cleanJson(extractText(response)));
+        if (extractedImageUrl) result.imageUrl = await compressStoredImage(extractedImageUrl);
+        res.json(result);
     } catch (err) { res.status(500).json({ error: err.message || 'Errore Shop Advisor' }); }
 });
 

@@ -160,6 +160,7 @@ export interface PurchaseAnalysis {
         isRecommended: boolean;
         reasoning: string;
     };
+    imageUrl?: string;
 }
 
 export interface RestaurantSuggestion {
