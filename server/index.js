@@ -9,7 +9,7 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
-import { GoogleGenAI, Type } from "@google/genai";
+import Anthropic from "@anthropic-ai/sdk";
 
 dotenv.config();
 
@@ -21,19 +21,15 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_wine_key_change_me';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
-// Helper per pulizia JSON ultra-robusta
 const cleanJson = (text) => {
     if (!text) return "[]";
     let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    
     const firstBrace = cleaned.indexOf('{');
     const firstBracket = cleaned.indexOf('[');
     const lastBrace = cleaned.lastIndexOf('}');
     const lastBracket = cleaned.lastIndexOf(']');
-    
     let start = -1;
     let end = -1;
-    
     if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
         start = firstBrace;
         end = lastBrace;
@@ -41,45 +37,29 @@ const cleanJson = (text) => {
         start = firstBracket;
         end = lastBracket;
     }
-    
     if (start !== -1 && end !== -1) {
         return cleaned.substring(start, end + 1);
     }
     return cleaned;
 };
 
-// Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
-// --- DATABASE ---
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 const mapWineToFrontend = (w) => ({
-    id: w.id,
-    name: w.name,
-    producer: w.producer,
-    year: w.year,
-    type: w.type,
-    region: w.region,
-    grape: w.grape,
-    alcohol: w.alcohol,
-    purchaseDate: w.purchase_date,
-    price: parseFloat(w.price) || 0,
-    quantity: parseInt(w.quantity) || 0,
-    location: w.location,
-    storageTemp: w.storage_temp || '',
-    storageAdvice: w.storage_advice || '',
-    servingTemp: w.serving_temp || '',
-    servingAdvice: w.serving_advice || '',
-    foodPairings: w.food_pairings || [],
-    imageUrl: w.image_url,
-    drinkWindow: w.drink_window || '',
-    marketPrice: parseFloat(w.market_price) || 0
+    id: w.id, name: w.name, producer: w.producer, year: w.year, type: w.type,
+    region: w.region, grape: w.grape, alcohol: w.alcohol, purchaseDate: w.purchase_date,
+    price: parseFloat(w.price) || 0, quantity: parseInt(w.quantity) || 0, location: w.location,
+    storageTemp: w.storage_temp || '', storageAdvice: w.storage_advice || '',
+    servingTemp: w.serving_temp || '', servingAdvice: w.serving_advice || '',
+    foodPairings: w.food_pairings || [], imageUrl: w.image_url,
+    drinkWindow: w.drink_window || '', marketPrice: parseFloat(w.market_price) || 0
 });
 
 const authenticateToken = (req, res, next) => {
@@ -95,11 +75,8 @@ const authenticateToken = (req, res, next) => {
 
 const authenticateAdmin = (req, res, next) => {
     authenticateToken(req, res, () => {
-        if (req.user && req.user.role === 'admin') {
-            next();
-        } else {
-            res.status(403).json({ error: 'Access denied' });
-        }
+        if (req.user && req.user.role === 'admin') next();
+        else res.status(403).json({ error: 'Access denied' });
     });
 };
 
@@ -117,7 +94,7 @@ app.post('/api/auth/google', async (req, res) => {
         const ticket = await client.verifyIdToken({ idToken: token, audience: GOOGLE_CLIENT_ID });
         const payload = ticket.getPayload();
         if (!payload || !payload.email) return res.status(400).json({ error: 'Invalid payload' });
-        const { email, sub: googleId, email_verified } = payload;
+        const { email, sub: googleId } = payload;
         let result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
         let user = result.rows[0];
         if (!user) {
@@ -190,13 +167,16 @@ app.post('/api/users/track-ai', authenticateToken, async (req, res) => {
 app.get('/api/search-prices', authenticateToken, async (req, res) => {
     const { query } = req.query;
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: `Trova prezzi online per: ${query}. JSON: [{ "source": "Store", "price": 12.34, "currency": "EUR", "link": "URL" }]`,
-            config: { tools: [{ googleSearch: {} }], temperature: 0.1 }
+        const anthropic = new Anthropic({ apiKey: process.env.API_KEY });
+        const response = await anthropic.messages.create({
+            model: 'claude-opus-4-8',
+            max_tokens: 1024,
+            system: 'Sei un esperto di prezzi vini. Rispondi ESCLUSIVAMENTE con un array JSON valido, nessun testo aggiuntivo.',
+            messages: [{ role: 'user', content: `Stima i prezzi di mercato per: ${query}. Rispondi SOLO con questo JSON: [{ "source": "Stima di mercato", "price": 12.34, "currency": "EUR", "link": "" }]` }]
         });
-        res.json(JSON.parse(cleanJson(response.text)));
+        const textBlock = response.content.find(b => b.type === 'text');
+        const text = textBlock && textBlock.type === 'text' ? textBlock.text : '[]';
+        res.json(JSON.parse(cleanJson(text)));
     } catch (err) { res.status(500).json({ error: 'Search failed' }); }
 });
 
@@ -239,8 +219,10 @@ app.delete('/api/wines/:id', authenticateToken, async (req, res) => {
 app.get('/api/history', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM history WHERE user_id = $1 ORDER BY consumed_date DESC', [req.user.userId]);
-        res.json(result.rows.map(h => ({ 
-            id: h.id, wineId: h.wine_id, name: h.name, producer: h.producer, year: h.year, type: h.type, price: parseFloat(h.price) || 0, imageUrl: h.image_url, consumedDate: h.consumed_date, rating: h.rating || 0, notes: h.notes || '', location: h.location || 'Cantina'
+        res.json(result.rows.map(h => ({
+            id: h.id, wineId: h.wine_id, name: h.name, producer: h.producer, year: h.year, type: h.type,
+            price: parseFloat(h.price) || 0, imageUrl: h.image_url, consumedDate: h.consumed_date,
+            rating: h.rating || 0, notes: h.notes || '', location: h.location || 'Cantina'
         })));
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -318,9 +300,9 @@ app.post('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
             [restId, name, slug, menu_context, food_menu, manager_id || null, menu_analysis ? JSON.stringify(menu_analysis) : null]
         );
         res.json({ success: true });
-    } catch (err) { 
+    } catch (err) {
         console.error("Admin Restaurant Save Error:", err);
-        res.status(500).json({ error: 'Save failed' }); 
+        res.status(500).json({ error: 'Save failed' });
     }
 });
 
@@ -360,11 +342,8 @@ const initDb = async () => {
         await client.query(`CREATE TABLE IF NOT EXISTS locations (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL);`);
         await client.query(`CREATE TABLE IF NOT EXISTS restaurants (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, menu_context TEXT, food_menu TEXT, menu_analysis JSONB, manager_id TEXT REFERENCES users(id) ON DELETE SET NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         await client.query(`CREATE TABLE IF NOT EXISTS shares (id TEXT PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
-        
-        // Garantisci l'esistenza delle colonne per aggiornamenti DB esistenti
         await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS food_menu TEXT;`);
         await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS menu_analysis JSONB;`);
-        
         console.log("DB Ready");
     } catch (e) { console.error("DB Init Error", e); }
     finally { client.release(); }
