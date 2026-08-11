@@ -142,61 +142,17 @@ const AppContent: React.FC = () => {
   }, [currentPath]);
 
   useEffect(() => {
-    const resolveGoogleRedirect = async () => {
-        const hash = window.location.hash;
-        const search = window.location.search;
-        const paramsFromHash = new URLSearchParams(hash.substring(1));
-        const paramsFromSearch = new URLSearchParams(search);
-        const idToken = paramsFromHash.get('id_token') || paramsFromSearch.get('id_token');
-        const stateStr = paramsFromHash.get('state') || paramsFromSearch.get('state');
-
-        if (idToken) {
-            setAuthStatus('Ricezione credenziali Google...');
-            setIsAuthProcessing(true);
-            setIsInitializing(true);
-            try {
-                let refFromState = null;
-                if (stateStr) {
-                    try {
-                        const state = JSON.parse(decodeURIComponent(stateStr));
-                        if (state.ref) refFromState = state.ref;
-                        if (state.language) setLanguage(state.language);
-                    } catch (e) {}
-                }
-                setAuthStatus('Sincronizzazione server...');
-                const res = await fetch('/api/auth/google', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: idToken, language: language, ref: refFromState })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    setAuthStatus('Accesso effettuato!');
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    handleLogin(data.token, data.user.email);
-                } else {
-                    setAuthStatus('Errore: ' + (data.error || 'Accesso negato'));
-                    setTimeout(() => setIsInitializing(false), 3000);
-                }
-            } catch (err) {
-                setAuthStatus('Connessione fallita.');
-                setTimeout(() => setIsInitializing(false), 3000);
-            }
-        } else {
-            const savedToken = localStorage.getItem('vinovault_token');
-            if (savedToken) {
-                tokenRef.current = savedToken;
-                setToken(savedToken);
-                try {
-                    const payload = JSON.parse(atob(savedToken.split('.')[1]));
-                    if (payload.role) setUserRole(payload.role);
-                    if (payload.isPremium !== undefined) setUserPremium(payload.isPremium);
-                } catch(e) {}
-            }
-            setIsInitializing(false);
-        }
-    };
-    resolveGoogleRedirect();
+    const savedToken = localStorage.getItem('vinovault_token');
+    if (savedToken) {
+        tokenRef.current = savedToken;
+        setToken(savedToken);
+        try {
+            const payload = JSON.parse(atob(savedToken.split('.')[1]));
+            if (payload.role) setUserRole(payload.role);
+            if (payload.isPremium !== undefined) setUserPremium(payload.isPremium);
+        } catch(e) {}
+    }
+    setIsInitializing(false);
   }, []);
 
   useEffect(() => {
