@@ -7,6 +7,7 @@ import { extractTextFromMedia } from '../services/geminiService';
 interface AdminViewProps {
   onLogout: () => void;
   token: string;
+  onExit?: () => void;
 }
 
 const compressImage = (file: File): Promise<string> => {
@@ -50,7 +51,7 @@ const readFileAsBase64 = (file: File): Promise<string> => {
     });
 };
 
-const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
+const AdminView: React.FC<AdminViewProps> = ({ onLogout, token, onExit }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(false);
@@ -181,29 +182,44 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-stone-50 overflow-hidden">
-      <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
-        <div><h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2"><ShieldCheckIcon className="w-8 h-8 text-wine-600" filled />Admin Backoffice</h1></div>
-        <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2"><LogoutIcon className="w-6 h-6" /></button>
+    <div className="min-h-full flex flex-col bg-stone-50">
+      <div className="bg-white border-b border-gray-200 shadow-sm z-10">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 p-6 flex justify-between items-start">
+          <div className="flex items-center gap-3">
+            {onExit && (
+              <button onClick={onExit} className="text-gray-400 hover:text-wine-700 p-2 -ml-2" title="Torna all'app">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                </svg>
+              </button>
+            )}
+            <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2"><ShieldCheckIcon className="w-8 h-8 text-wine-600" filled />Admin Backoffice</h1>
+          </div>
+          <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2"><LogoutIcon className="w-6 h-6" /></button>
+        </div>
       </div>
 
-      <div className="px-6 py-4 bg-white border-b border-gray-100 flex gap-6 overflow-x-auto no-scrollbar">
-          <div className="flex-1 min-w-[140px] bg-wine-50 p-3 rounded-2xl border border-wine-100">
-              <span className="block text-[10px] font-black text-wine-600 uppercase tracking-widest mb-1">Bottiglie Totali</span>
-              <div className="flex items-center gap-2"><WineIcon className="w-5 h-5 text-wine-700" filled /><span className="text-2xl font-black text-wine-900">{totalBottlesGlobal.toLocaleString()}</span></div>
-          </div>
-          <div className="flex-1 min-w-[140px] bg-cyan-50 p-3 rounded-2xl border border-cyan-100">
-              <span className="block text-[10px] font-black text-cyan-600 uppercase tracking-widest mb-1">Interazioni AI</span>
-              <div className="flex items-center gap-2"><ChartBarIcon className="w-5 h-5 text-cyan-700" filled /><span className="text-2xl font-black text-cyan-900">{totalAiUsageGlobal.toLocaleString()}</span></div>
-          </div>
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex gap-6 overflow-x-auto no-scrollbar">
+            <div className="flex-1 min-w-[140px] md:max-w-[220px] bg-wine-50 p-3 rounded-2xl border border-wine-100">
+                <span className="block text-[10px] font-black text-wine-600 uppercase tracking-widest mb-1">Bottiglie Totali</span>
+                <div className="flex items-center gap-2"><WineIcon className="w-5 h-5 text-wine-700" filled /><span className="text-2xl font-black text-wine-900">{totalBottlesGlobal.toLocaleString()}</span></div>
+            </div>
+            <div className="flex-1 min-w-[140px] md:max-w-[220px] bg-cyan-50 p-3 rounded-2xl border border-cyan-100">
+                <span className="block text-[10px] font-black text-cyan-600 uppercase tracking-widest mb-1">Interazioni AI</span>
+                <div className="flex items-center gap-2"><ChartBarIcon className="w-5 h-5 text-cyan-700" filled /><span className="text-2xl font-black text-cyan-900">{totalAiUsageGlobal.toLocaleString()}</span></div>
+            </div>
+        </div>
       </div>
 
       <div className="flex border-b border-gray-200 bg-white">
-          <button onClick={() => setActiveTab('users')} className={`flex-1 py-3 font-bold text-sm ${activeTab === 'users' ? 'border-b-2 border-wine-600 text-wine-700' : 'text-gray-500'}`}>Utenti ({users.length})</button>
-          <button onClick={() => setActiveTab('restaurants')} className={`flex-1 py-3 font-bold text-sm ${activeTab === 'restaurants' ? 'border-b-2 border-wine-600 text-wine-700' : 'text-gray-500'}`}>Ristoranti ({restaurants.length})</button>
+          <div className="max-w-7xl mx-auto w-full flex">
+            <button onClick={() => setActiveTab('users')} className={`flex-1 md:flex-none md:px-8 py-3 font-bold text-sm ${activeTab === 'users' ? 'border-b-2 border-wine-600 text-wine-700' : 'text-gray-500'}`}>Utenti ({users.length})</button>
+            <button onClick={() => setActiveTab('restaurants')} className={`flex-1 md:flex-none md:px-8 py-3 font-bold text-sm ${activeTab === 'restaurants' ? 'border-b-2 border-wine-600 text-wine-700' : 'text-gray-500'}`}>Ristoranti ({restaurants.length})</button>
+          </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-6">
+      <div className="flex-1 p-4 md:p-6 pb-24 space-y-6 max-w-7xl mx-auto w-full">
          {activeTab === 'users' ? (
              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                  <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50"><h3 className="font-bold text-gray-700">Utenti Registrati</h3><button onClick={fetchData} className="text-wine-600 text-sm font-bold hover:underline">Aggiorna</button></div>
@@ -247,7 +263,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token }) => {
                          <button type="submit" className="w-full py-3 bg-wine-600 text-white font-bold rounded-lg hover:bg-wine-700 shadow-md">{editingRest?.id ? 'Aggiorna Ristorante' : 'Crea Ristorante'}</button>
                      </form>
                  </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                      {restaurants.map(r => (
                          <div key={r.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col">
                              <div className="flex justify-between items-start mb-2"><div><h4 className="font-bold text-gray-900">{r.name}</h4><p className="text-xs text-gray-500 font-mono">?ref={r.slug}</p></div><div className="flex gap-2"><button onClick={() => setEditingRest(r)} className="text-blue-600 hover:text-blue-800 text-xs font-bold bg-blue-50 px-2 py-1 rounded border border-blue-100">Modifica</button><button onClick={() => handleDeleteRestaurant(r.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-1 rounded border border-red-100"><TrashIcon className="w-4 h-4" /></button></div></div>
