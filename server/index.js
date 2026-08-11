@@ -36,7 +36,7 @@ const cleanJson = (text) => {
 };
 
 const anthropic = new Anthropic({ apiKey: process.env.API_KEY });
-const MODEL = 'claude-opus-4-8';
+const MODEL = 'claude-haiku-4-5';
 
 const getLanguageName = (code) => {
     switch(code) {
