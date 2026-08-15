@@ -28,6 +28,12 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
   const [passError, setPassError] = useState('');
   const [passSuccess, setPassSuccess] = useState('');
 
+  // Account Deletion State
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   // Fetch Profile Data on Open
   useEffect(() => {
     if (isOpen) {
@@ -38,6 +44,9 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
         setConfirmPassword('');
         setPassError('');
         setPassSuccess('');
+        setIsDeletingAccount(false);
+        setDeleteConfirmText('');
+        setDeleteError('');
     }
   }, [isOpen]);
 
@@ -117,6 +126,34 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
         }
     } catch (e) {
         setPassError("Connection error.");
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteError('');
+    if (deleteConfirmText.trim().toLowerCase() !== (userEmail || '').trim().toLowerCase()) {
+        setDeleteError("L'email non corrisponde.");
+        return;
+    }
+
+    setDeleteLoading(true);
+    const token = localStorage.getItem('vinovault_token');
+    try {
+        const res = await fetch('/api/users/me', {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            onLogout();
+            onClose();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            setDeleteError(err.error || "Eliminazione non riuscita.");
+        }
+    } catch (e) {
+        setDeleteError("Errore di connessione.");
+    } finally {
+        setDeleteLoading(false);
     }
   };
 
@@ -230,13 +267,72 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
                 )}
             </div>
 
-            <button 
+            <button
                 onClick={() => { onLogout(); onClose(); }}
                 className="w-full flex items-center justify-center gap-2 py-3 text-red-600 font-bold hover:bg-red-50 rounded-xl transition-colors"
             >
                 <LogoutIcon className="w-5 h-5" />
                 {t('logout')}
             </button>
+
+            <hr className="border-gray-100" />
+
+            {/* Eliminazione account — richiesta da App Store e Google Play */}
+            <div>
+                {!isDeletingAccount ? (
+                    <button
+                        onClick={() => setIsDeletingAccount(true)}
+                        className="w-full py-2.5 text-xs font-bold text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                        Elimina account
+                    </button>
+                ) : (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+                        <div>
+                            <h4 className="text-sm font-bold text-red-900">Eliminare definitivamente l'account?</h4>
+                            <p className="text-xs text-red-700/80 mt-1 leading-relaxed">
+                                Verranno cancellati per sempre i tuoi vini, le foto, lo storico delle degustazioni
+                                e le tue valutazioni. L'operazione non è reversibile.
+                            </p>
+                        </div>
+                        <div>
+                            <label className="block text-[11px] font-bold text-red-800 mb-1">
+                                Scrivi <span className="font-mono">{userEmail}</span> per confermare
+                            </label>
+                            <input
+                                type="text"
+                                value={deleteConfirmText}
+                                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                placeholder={userEmail || ''}
+                                autoComplete="off"
+                                className="w-full p-2 border border-red-300 rounded-lg text-sm bg-white"
+                            />
+                        </div>
+                        {deleteError && <p className="text-xs text-red-600 font-medium">{deleteError}</p>}
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => { setIsDeletingAccount(false); setDeleteConfirmText(''); setDeleteError(''); }}
+                                className="flex-1 py-2 text-xs font-bold text-gray-600 bg-white border border-gray-200 rounded-lg"
+                            >
+                                Annulla
+                            </button>
+                            <button
+                                onClick={handleDeleteAccount}
+                                disabled={deleteLoading}
+                                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 disabled:opacity-50"
+                            >
+                                {deleteLoading ? 'Elimino...' : 'Elimina definitivamente'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className="flex justify-center gap-4 text-[11px] text-gray-400 pt-1">
+                <a href="/privacy" className="hover:text-wine-700 hover:underline">Privacy</a>
+                <span>·</span>
+                <a href="/termini" className="hover:text-wine-700 hover:underline">Termini</a>
+            </div>
 
         </div>
       </div>

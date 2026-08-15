@@ -443,6 +443,25 @@ app.get('/api/users/me', authenticateToken, async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Fetch failed' }); }
 });
 
+// Cancellazione account da parte dell'utente.
+// Requisito obbligatorio Apple (App Store Review 5.1.1 v) e Google Play (Data deletion).
+// I dati collegati (vini, storico, posizioni) vengono eliminati in cascata dal database.
+app.delete('/api/users/me', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT role FROM users WHERE id = $1', [req.user.userId]);
+        const user = result.rows[0];
+        if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+        if (user.role === 'admin') {
+            return res.status(403).json({ error: "Gli account amministratore non possono essere eliminati dall'app. Contatta il supporto." });
+        }
+        await pool.query('DELETE FROM users WHERE id = $1', [req.user.userId]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Account deletion error:', err);
+        res.status(500).json({ error: "Eliminazione non riuscita" });
+    }
+});
+
 app.put('/api/managed-restaurant', authenticateToken, async (req, res) => {
     const { menu_context, food_menu, menu_analysis } = req.body;
     try {

@@ -18,6 +18,7 @@ import SommelierAnalysisGuide from './views/SommelierAnalysisGuide';
 import HistoryGuide from './views/HistoryGuide';
 import AllGuidesView from './views/AllGuidesView';
 import RestaurantBusinessView from './views/RestaurantBusinessView';
+import LegalView from './views/LegalView';
 import AuthForm from './components/AuthForm';
 import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
@@ -305,6 +306,10 @@ const AppContent: React.FC = () => {
   };
   
   if (isInitializing || isAuthProcessing) return <LoadingScreen message="Verifica Accesso" subMessage={authStatus} />;
+
+  // Pagine legali: raggiungibili sempre, anche senza login (richiesto dagli app store)
+  if (currentPath === '/privacy') return <LegalView page="privacy" onBack={() => navigateTo('/')} />;
+  if (currentPath === '/termini' || currentPath === '/terms') return <LegalView page="terms" onBack={() => navigateTo('/')} />;
 
   // Localized Business Routing Render
   if (businessPaths[currentPath]) {

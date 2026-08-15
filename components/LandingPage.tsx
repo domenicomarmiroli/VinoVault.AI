@@ -243,8 +243,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
           <div className="space-y-4">
             <h5 className="text-white font-bold text-sm uppercase tracking-widest">Legal</h5>
             <ul className="space-y-2 text-sm">
-                <li className="hover:text-wine-400 cursor-pointer">Privacy</li>
-                <li className="hover:text-wine-400 cursor-pointer">Terms</li>
+                <li><a href="/privacy" className="hover:text-wine-400">Privacy</a></li>
+                <li><a href="/termini" className="hover:text-wine-400">Termini</a></li>
             </ul>
           </div>
         </div>
