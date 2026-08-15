@@ -1,11 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Wine, HistoryEntry, WineType, CellarReport } from '../types';
 import { ChartBarIcon, LogoutIcon, WineIcon, ShoppingCartIcon, ReportIcon, ShieldCheckIcon } from '../components/Icons';
 import CellarReportModal from '../components/CellarReportModal';
-import { generateCellarReport } from '../services/geminiService';
+import { generateCellarReport, getSavedCellarReport } from '../services/geminiService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
+
+const REPORT_COOLDOWN_BOTTLES = 10;
 
 interface AnalyticsViewProps {
   inventory: Wine[];
@@ -19,8 +21,18 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [cellarReport, setCellarReport] = useState<CellarReport | null>(null);
+  const [savedHistoryCount, setSavedHistoryCount] = useState(0);
   const { t, language } = useLanguage();
   const { analysisStyle } = useAnalysisStyle();
+
+  useEffect(() => {
+      getSavedCellarReport().then(({ report, historyCount }) => {
+          if (report) {
+              setCellarReport(report);
+              setSavedHistoryCount(historyCount);
+          }
+      });
+  }, []);
 
   const safeInventory = Array.isArray(inventory) ? inventory : [];
   const safeHistory = Array.isArray(history) ? history : [];
@@ -48,17 +60,26 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
   const totalConsumedValue = safeHistory.reduce((acc, h) => acc + (Number(h.price) || 0), 0);
   const averageConsumedPrice = totalConsumedCount > 0 ? totalConsumedValue / totalConsumedCount : 0;
 
+  const bottlesSinceReport = safeHistory.length - savedHistoryCount;
+  const canRegenerate = !cellarReport || bottlesSinceReport >= REPORT_COOLDOWN_BOTTLES;
+
   const handleOpenReport = async () => {
       if (!isPremium) { alert("Premium Only"); return; }
+
+      // Report già salvato e non ancora sbloccato per la rigenerazione: mostra solo quello esistente, nessuna chiamata AI.
+      if (cellarReport && !canRegenerate) {
+          setIsReportOpen(true);
+          return;
+      }
+
       if (safeInventory.length < 3) { alert("Aggiungi più vini per permettere un'analisi accurata."); return; }
 
       setIsReportOpen(true);
-      if (cellarReport) return;
-
       setReportLoading(true);
       try {
           const report = await generateCellarReport(safeInventory, safeHistory, language, analysisStyle);
           setCellarReport(report);
+          setSavedHistoryCount(safeHistory.length);
           onAiUsed();
       } catch (err: any) {
           alert(`${t('error')}: ${err.message}`);
@@ -92,9 +113,18 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
       <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-6">
         
         {isPremium ? (
-            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 rounded-xl border border-purple-100 flex items-center justify-between shadow-sm">
-                <div><h3 className="font-bold text-purple-900 flex items-center gap-2"><ReportIcon className="w-5 h-5" filled /> {t('ai_analysis')}</h3></div>
-                <button onClick={handleOpenReport} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-purple-700 transition-colors">{t('generate_report')}</button>
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 rounded-xl border border-purple-100 shadow-sm">
+                <div className="flex items-center justify-between">
+                    <div><h3 className="font-bold text-purple-900 flex items-center gap-2"><ReportIcon className="w-5 h-5" filled /> {t('ai_analysis')}</h3></div>
+                    <button onClick={handleOpenReport} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-purple-700 transition-colors">
+                        {!cellarReport ? t('generate_report') : canRegenerate ? 'Aggiorna Report' : 'Vedi Report'}
+                    </button>
+                </div>
+                {cellarReport && !canRegenerate && (
+                    <p className="text-[11px] text-purple-700/70 mt-2">
+                        Nuova analisi disponibile tra {REPORT_COOLDOWN_BOTTLES - bottlesSinceReport} bottiglie bevute.
+                    </p>
+                )}
             </div>
         ) : (
              <div className="bg-gray-100 p-4 rounded-xl border border-gray-200 flex items-center justify-between opacity-80 relative overflow-hidden">
