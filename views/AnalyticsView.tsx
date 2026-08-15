@@ -168,7 +168,7 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
             </div>
         </div>
       </div>
-      <CellarReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} report={cellarReport} loading={reportLoading} />
+      <CellarReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} report={cellarReport} loading={reportLoading} inventory={safeInventory} history={safeHistory} />
     </div>
   );
 };

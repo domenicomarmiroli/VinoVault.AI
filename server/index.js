@@ -307,22 +307,25 @@ app.post('/api/ai/cellar-report', authenticateToken, async (req, res) => {
     const { inventory, history, lang = 'it', tone = 'pop' } = req.body;
     const langName = getLanguageName(lang);
     const inventoryText = inventory.map(w => `- ${w.name} (${w.year}), ${w.producer}, ${w.type}, ${w.grape || 'vitigno N/D'}, regione: ${w.region || 'N/D'}`).join('\n');
-    const historyText = (history || []).slice(0, 30).map(h => `- ${h.name} (${h.year}), voto: ${h.rating || 'N/D'}`).join('\n');
+    const historyText = (history || []).slice(0, 30).map(h => `- ${h.name} (${h.year}), ${h.type || 'tipo N/D'}, voto: ${h.rating || 'N/D'}/5${h.notes ? `, note personali: "${h.notes}"` : ''}`).join('\n');
     try {
         const response = await anthropic.messages.create({
             model: MODEL, max_tokens: 2048,
-            system: `Sei un sommelier senior che analizza l'intera cantina di un utente per aiutarlo a capirla meglio e a migliorarla nel tempo.
+            system: `Sei un sommelier senior che analizza l'intera cantina e lo storico delle degustazioni di un utente per aiutarlo a capire i propri gusti e a migliorare la cantina nel tempo.
 ${getToneInstructions(tone)}
 Analisi da svolgere:
-- overallAssessment: panoramica onesta su equilibrio, varietà e livello qualitativo della cantina.
-- palateProfile: deduci le preferenze di gusto dell'utente osservando tipologie, regioni e vitigni ricorrenti (e i vini con voto alto nello storico, se disponibile).
-- gapAnalysis: quali tipologie/stili/fasce di prezzo mancano per avere una cantina più completa ed equilibrata.
-- buyRecommendations: 3-5 suggerimenti di acquisto CONCRETI (nomi di vini o categorie specifiche, non generiche) che colmano le lacune individuate.
-- drinkNowStrategy: quali vini della cantina andrebbero consumati prima (per finestra di beva) e come organizzare il consumo nei prossimi mesi.
+- score (0-100): valutazione complessiva della cantina attuale, considerando equilibrio, varietà, livello qualitativo e ampiezza delle fasce di prezzo. Guida: 85-100 cantina eccellente ed equilibrata, 65-84 buona con margini di miglioramento, 40-64 sbilanciata o poco varia, <40 cantina appena avviata.
+- overallAssessment: panoramica onesta e sintetica (2-3 frasi) su equilibrio, varietà e livello qualitativo della cantina attuale.
+- palateTags: 3-6 tag BREVISSIMI (2-3 parole ciascuno, es. "Rossi Strutturati", "Toscana", "Vitigni Autoctoni") che riassumono il profilo di gusto dedotto da tipologie/regioni/vitigni ricorrenti in cantina E dai vini con voto alto nello storico (fondamentale: i voti e le note personali nello storico sono il segnale più forte delle preferenze reali dell'utente, usali attivamente).
+- palateProfile: 1-2 frasi che spiegano il profilo di gusto dedotto, citando se rilevante i vini più apprezzati nello storico.
+- gapTags: 2-5 tag BREVISSIMI (2-3 parole ciascuno, es. "Bollicine", "Bianchi Freschi", "Vini da Dessert") delle tipologie/stili/fasce di prezzo mancanti per una cantina più completa ed equilibrata.
+- gapAnalysis: 1-2 frasi che spiegano le lacune individuate.
+- buyRecommendations: 3-5 suggerimenti di acquisto CONCRETI (nomi di vini o categorie specifiche, non generiche) che colmano le lacune individuate E che siano coerenti con il profilo di gusto dedotto dallo storico.
+- drinkNowStrategy: 1-2 frasi su quali vini della cantina andrebbero consumati prima (per finestra di beva) e come organizzare il consumo nei prossimi mesi.
 
 Rispondi ESCLUSIVAMENTE con JSON valido in ${langName}, nessun testo aggiuntivo.
-Schema: {"overallAssessment": string, "palateProfile": string, "gapAnalysis": string, "buyRecommendations": [{"wineName": string, "reason": string, "type": string}], "drinkNowStrategy": string}`,
-            messages: [{ role: 'user', content: `Analizza questa cantina in ${langName}, rispondi solo JSON.\nCANTINA:\n${inventoryText || 'vuota'}\nSTORICO DEGUSTAZIONI (se rilevante per i gusti):\n${historyText || 'nessuno'}` }]
+Schema: {"score": number, "overallAssessment": string, "palateTags": string[], "palateProfile": string, "gapTags": string[], "gapAnalysis": string, "buyRecommendations": [{"wineName": string, "reason": string, "type": string}], "drinkNowStrategy": string}`,
+            messages: [{ role: 'user', content: `Analizza questa cantina e questo storico in ${langName}, rispondi solo JSON.\nCANTINA ATTUALE:\n${inventoryText || 'vuota'}\nSTORICO DEGUSTAZIONI CON VOTI E NOTE PERSONALI:\n${historyText || 'nessuno'}` }]
         });
         res.json(JSON.parse(cleanJson(extractText(response) || '{}')));
     } catch (err) { res.status(500).json({ error: err.message || 'Errore report' }); }
