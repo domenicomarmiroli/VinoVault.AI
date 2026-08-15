@@ -46,3 +46,12 @@ export const extractTextFromMedia = async (base64Data: string, mimeType: string)
 export const generateCellarReport = async (inventory: Wine[], history: HistoryEntry[], lang: Language = 'it', tone: AnalysisStyle = 'pop'): Promise<CellarReport> => {
     return apiCall('cellar-report', { inventory, history, lang, tone });
 };
+
+export const getSavedCellarReport = async (): Promise<{ report: CellarReport | null; historyCount: number }> => {
+    const token = localStorage.getItem('vinovault_token');
+    const res = await fetch('/api/cellar-report', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+    if (!res.ok) return { report: null, historyCount: 0 };
+    return res.json();
+};
