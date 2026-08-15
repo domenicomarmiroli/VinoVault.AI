@@ -136,12 +136,14 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
                 )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3 py-4 border-y border-gray-100 bg-gray-50/50 -mx-2 px-4 rounded-xl">
-                <div><span className="block text-[10px] text-gray-400 uppercase tracking-wider font-bold">{t('year')}</span>{isEditing ? <input type="text" value={formData.year} onChange={(e) => handleChange('year', e.target.value)} className="w-full bg-white border border-gray-300 rounded px-1 py-0.5 text-sm" /> : <span className="font-semibold text-gray-800">{formData.year}</span>}</div>
-                <div><span className="block text-[10px] text-gray-400 uppercase tracking-wider font-bold">{t('grape')}</span>{isEditing ? <input type="text" value={formData.grape} onChange={(e) => handleChange('grape', e.target.value)} className="w-full bg-white border border-gray-300 rounded px-1 py-0.5 text-sm" /> : <span className="font-semibold text-gray-800 truncate">{formData.grape || 'N/D'}</span>}</div>
-                <div><span className="block text-[10px] text-gray-400 uppercase tracking-wider font-bold">{t('region')}</span>{isEditing ? <input type="text" value={formData.region} onChange={(e) => handleChange('region', e.target.value)} className="w-full bg-white border border-gray-300 rounded px-1 py-0.5 text-sm" /> : <span className="font-semibold text-gray-800 truncate">{formData.region || 'N/D'}</span>}</div>
-                <div><span className="block text-[10px] text-gray-400 uppercase tracking-wider font-bold">{t('alcohol')}</span>{isEditing ? <input type="text" value={formData.alcohol} onChange={(e) => handleChange('alcohol', e.target.value)} className="w-full bg-white border border-gray-300 rounded px-1 py-0.5 text-sm" /> : <span className="font-semibold text-gray-800">{formData.alcohol || 'N/D'}</span>}</div>
-            </div>
+            {isEditing && (
+                <div className="grid grid-cols-2 gap-3 py-4 border-y border-gray-100 bg-gray-50/50 -mx-2 px-4 rounded-xl">
+                    <div><span className="block text-[10px] text-gray-400 uppercase tracking-wider font-bold">{t('year')}</span><input type="text" value={formData.year} onChange={(e) => handleChange('year', e.target.value)} className="w-full bg-white border border-gray-300 rounded px-1 py-0.5 text-sm" /></div>
+                    <div><span className="block text-[10px] text-gray-400 uppercase tracking-wider font-bold">{t('grape')}</span><input type="text" value={formData.grape} onChange={(e) => handleChange('grape', e.target.value)} className="w-full bg-white border border-gray-300 rounded px-1 py-0.5 text-sm" /></div>
+                    <div><span className="block text-[10px] text-gray-400 uppercase tracking-wider font-bold">{t('region')}</span><input type="text" value={formData.region} onChange={(e) => handleChange('region', e.target.value)} className="w-full bg-white border border-gray-300 rounded px-1 py-0.5 text-sm" /></div>
+                    <div><span className="block text-[10px] text-gray-400 uppercase tracking-wider font-bold">{t('alcohol')}</span><input type="text" value={formData.alcohol} onChange={(e) => handleChange('alcohol', e.target.value)} className="w-full bg-white border border-gray-300 rounded px-1 py-0.5 text-sm" /></div>
+                </div>
+            )}
 
             <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-3">
                  <h3 className="text-xs font-bold uppercase text-indigo-800 flex items-center gap-2"><ChartBarIcon className="w-4 h-4" filled /> Analytics</h3>
@@ -158,9 +160,7 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
                     type={formData.type}
                     alcohol={formData.alcohol}
                     year={formData.year}
-                    drinkWindow={formData.drinkWindow}
-                    foodPairings={formData.foodPairings}
-                    serving={formData.servingTemp ? `Consigliato servire a ${formData.servingTemp}` : undefined}
+                    region={formData.region}
                 />
             )}
 
