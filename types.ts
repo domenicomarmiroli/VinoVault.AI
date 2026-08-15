@@ -131,8 +131,11 @@ export interface CellarRecommendation {
 }
 
 export interface CellarReport {
+    score: number; // 0-100 salute complessiva della cantina
     overallAssessment: string;
+    palateTags: string[]; // 3-6 tag brevi sul profilo di gusto
     palateProfile: string;
+    gapTags: string[]; // 2-5 tag brevi sulle lacune stilistiche
     gapAnalysis: string;
     buyRecommendations: CellarRecommendation[];
     drinkNowStrategy: string;
