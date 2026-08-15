@@ -4,6 +4,7 @@ import { Wine, PurchaseAnalysis } from '../types';
 import { analyzePurchase } from '../services/geminiService';
 import { CameraIcon, LogoutIcon, ShopIcon, WineIcon, ExternalLinkIcon, ChefIcon } from '../components/Icons';
 import PriceComparison from '../components/PriceComparison';
+import WineStyleChart from '../components/WineStyleChart';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
 import LoadingScreen from '../components/LoadingScreen';
@@ -124,7 +125,8 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           imageUrl: image || analysis.imageUrl || undefined,
           drinkWindow: `${new Date().getFullYear()}-${new Date().getFullYear() + 3}`,
           marketPrice: safeMarketPrice,
-          qualityScore: analysis.qualityScore
+          qualityScore: analysis.qualityScore,
+          wineStyle: analysis.wineStyle
       };
       onAddToInventory(newWine);
       setImage(null);
@@ -280,6 +282,8 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                         )}
                     </div>
                 )}
+
+                <WineStyleChart style={analysis.wineStyle} />
 
                 <div className={`p-5 rounded-xl border ${getDealColor(analysis.dealRating)}`}>
                     <div className="flex justify-between items-center mb-2">
