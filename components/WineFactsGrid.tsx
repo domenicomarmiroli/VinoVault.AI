@@ -1,12 +1,13 @@
 
 import React from 'react';
-import { GrapeIcon, GlassIcon, PercentBottleIcon, BarrelIcon, BottlesIcon, CalendarCheckIcon, ClocheIcon, IceBucketIcon } from './Icons';
+import { GrapeIcon, GlassIcon, PercentBottleIcon, BarrelIcon, BottlesIcon, CalendarCheckIcon, ClocheIcon, IceBucketIcon, MapPinIcon } from './Icons';
 
 interface WineFactsGridProps {
   grape?: string;
   type?: string;
   alcohol?: string;
   year?: string;
+  region?: string;
   format?: string;
   drinkWindow?: string;
   foodPairings?: string[];
@@ -25,13 +26,14 @@ const Fact: React.FC<{ icon: React.ReactNode; label: string; value: string }> = 
   </div>
 );
 
-const WineFactsGrid: React.FC<WineFactsGridProps> = ({ grape, type, alcohol, year, format, drinkWindow, foodPairings, serving }) => {
+const WineFactsGrid: React.FC<WineFactsGridProps> = ({ grape, type, alcohol, year, region, format, drinkWindow, foodPairings, serving }) => {
   const facts: { icon: React.ReactNode; label: string; value: string }[] = [];
 
   if (grape) facts.push({ icon: <GrapeIcon className="w-4.5 h-4.5" />, label: 'Vitigno', value: grape });
   if (type) facts.push({ icon: <GlassIcon className="w-4.5 h-4.5" />, label: 'Colore', value: type });
   if (alcohol) facts.push({ icon: <PercentBottleIcon className="w-4.5 h-4.5" />, label: 'Gradazione', value: alcohol });
   if (year) facts.push({ icon: <BarrelIcon className="w-4.5 h-4.5" />, label: 'Annata', value: year });
+  if (region) facts.push({ icon: <MapPinIcon className="w-4.5 h-4.5" />, label: 'Regione', value: region });
   facts.push({ icon: <BottlesIcon className="w-4.5 h-4.5" />, label: 'Formato', value: format || 'Bottiglia 750 ml' });
   if (drinkWindow) facts.push({ icon: <CalendarCheckIcon className="w-4.5 h-4.5" />, label: 'Consumo ideale', value: drinkWindow });
   if (foodPairings && foodPairings.length > 0) facts.push({ icon: <ClocheIcon className="w-4.5 h-4.5" />, label: 'Abbinamento', value: foodPairings.slice(0, 3).join(', ') });
