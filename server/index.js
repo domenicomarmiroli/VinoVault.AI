@@ -303,9 +303,33 @@ app.post('/api/ai/extract-text', authenticateToken, async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Errore lettura media' }); }
 });
 
+const CELLAR_REPORT_COOLDOWN_BOTTLES = 10;
+
+app.get('/api/cellar-report', authenticateToken, async (req, res) => {
+    try {
+        const userResult = await pool.query('SELECT cellar_report, cellar_report_history_count FROM users WHERE id = $1', [req.user.userId]);
+        const user = userResult.rows[0];
+        if (!user || !user.cellar_report) return res.json({ report: null, historyCount: 0 });
+        const report = typeof user.cellar_report === 'string' ? JSON.parse(user.cellar_report) : user.cellar_report;
+        res.json({ report, historyCount: user.cellar_report_history_count || 0 });
+    } catch (err) { res.status(500).json({ error: 'Fetch failed' }); }
+});
+
 app.post('/api/ai/cellar-report', authenticateToken, async (req, res) => {
     const { inventory, history, lang = 'it', tone = 'pop' } = req.body;
     const langName = getLanguageName(lang);
+    const currentHistoryCount = (history || []).length;
+    try {
+        const userResult = await pool.query('SELECT cellar_report, cellar_report_history_count FROM users WHERE id = $1', [req.user.userId]);
+        const existingUser = userResult.rows[0];
+        if (existingUser && existingUser.cellar_report) {
+            const savedCount = existingUser.cellar_report_history_count || 0;
+            if (currentHistoryCount - savedCount < CELLAR_REPORT_COOLDOWN_BOTTLES) {
+                const cachedReport = typeof existingUser.cellar_report === 'string' ? JSON.parse(existingUser.cellar_report) : existingUser.cellar_report;
+                return res.json(cachedReport);
+            }
+        }
+    } catch (e) { console.error('Cellar report cache check failed', e); }
     const inventoryText = inventory.map(w => `- ${w.name} (${w.year}), ${w.producer}, ${w.type}, ${w.grape || 'vitigno N/D'}, regione: ${w.region || 'N/D'}`).join('\n');
     const historyText = (history || []).slice(0, 30).map(h => `- ${h.name} (${h.year}), ${h.type || 'tipo N/D'}, voto: ${h.rating || 'N/D'}/5${h.notes ? `, note personali: "${h.notes}"` : ''}`).join('\n');
     try {
@@ -327,7 +351,14 @@ Rispondi ESCLUSIVAMENTE con JSON valido in ${langName}, nessun testo aggiuntivo.
 Schema: {"score": number, "overallAssessment": string, "palateTags": string[], "palateProfile": string, "gapTags": string[], "gapAnalysis": string, "buyRecommendations": [{"wineName": string, "reason": string, "type": string}], "drinkNowStrategy": string}`,
             messages: [{ role: 'user', content: `Analizza questa cantina e questo storico in ${langName}, rispondi solo JSON.\nCANTINA ATTUALE:\n${inventoryText || 'vuota'}\nSTORICO DEGUSTAZIONI CON VOTI E NOTE PERSONALI:\n${historyText || 'nessuno'}` }]
         });
-        res.json(JSON.parse(cleanJson(extractText(response) || '{}')));
+        const report = JSON.parse(cleanJson(extractText(response) || '{}'));
+        try {
+            await pool.query(
+                'UPDATE users SET cellar_report = $1, cellar_report_history_count = $2, cellar_report_generated_at = NOW() WHERE id = $3',
+                [JSON.stringify(report), currentHistoryCount, req.user.userId]
+            );
+        } catch (e) { console.error('Cellar report save failed', e); }
+        res.json(report);
     } catch (err) { res.status(500).json({ error: err.message || 'Errore report' }); }
 });
 
@@ -398,9 +429,10 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/users/me', authenticateToken, async (req, res) => {
     try {
-        const userResult = await pool.query('SELECT id, email, role, is_premium, language, ai_usage_count FROM users WHERE id = $1', [req.user.userId]);
+        const userResult = await pool.query('SELECT id, email, role, is_premium, language, ai_usage_count, cellar_report, cellar_report_history_count FROM users WHERE id = $1', [req.user.userId]);
         const user = userResult.rows[0];
         if (!user) return res.status(404).json({ error: 'User not found' });
+        if (typeof user.cellar_report === 'string') try { user.cellar_report = JSON.parse(user.cellar_report); } catch(e) {}
         const restResult = await pool.query(`SELECT r.*, (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count, (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage FROM restaurants r WHERE r.manager_id = $1`, [user.id]);
         if (restResult.rows[0]) {
             const rest = restResult.rows[0];
@@ -657,6 +689,9 @@ const initDb = async () => {
         await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS menu_analysis JSONB;`);
         await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS quality_score INTEGER;`);
         await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS wine_style JSONB;`);
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cellar_report JSONB;`);
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cellar_report_history_count INTEGER DEFAULT 0;`);
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cellar_report_generated_at TIMESTAMP WITH TIME ZONE;`);
         console.log('DB Ready');
     } catch (e) { console.error('DB Init Error', e); }
     finally { client.release(); }
