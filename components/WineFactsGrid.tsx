@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { GrapeIcon, GlassIcon, PercentBottleIcon, BarrelIcon, BottlesIcon, CalendarCheckIcon, ClocheIcon, IceBucketIcon, MapPinIcon } from './Icons';
+import { GrapeIcon, GlassIcon, PercentBottleIcon, BarrelIcon, BottlesIcon, CalendarCheckIcon, ClocheIcon, IceBucketIcon, MapPinIcon, BoxIcon } from './Icons';
 
 interface WineFactsGridProps {
   grape?: string;
@@ -12,6 +12,7 @@ interface WineFactsGridProps {
   drinkWindow?: string;
   foodPairings?: string[];
   serving?: string;
+  storage?: string;
 }
 
 const Fact: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
@@ -26,7 +27,7 @@ const Fact: React.FC<{ icon: React.ReactNode; label: string; value: string }> = 
   </div>
 );
 
-const WineFactsGrid: React.FC<WineFactsGridProps> = ({ grape, type, alcohol, year, region, format, drinkWindow, foodPairings, serving }) => {
+const WineFactsGrid: React.FC<WineFactsGridProps> = ({ grape, type, alcohol, year, region, format, drinkWindow, foodPairings, serving, storage }) => {
   const facts: { icon: React.ReactNode; label: string; value: string }[] = [];
 
   if (grape) facts.push({ icon: <GrapeIcon className="w-4.5 h-4.5" />, label: 'Vitigno', value: grape });
@@ -36,8 +37,9 @@ const WineFactsGrid: React.FC<WineFactsGridProps> = ({ grape, type, alcohol, yea
   if (region) facts.push({ icon: <MapPinIcon className="w-4.5 h-4.5" />, label: 'Regione', value: region });
   facts.push({ icon: <BottlesIcon className="w-4.5 h-4.5" />, label: 'Formato', value: format || 'Bottiglia 750 ml' });
   if (drinkWindow) facts.push({ icon: <CalendarCheckIcon className="w-4.5 h-4.5" />, label: 'Consumo ideale', value: drinkWindow });
+  if (serving) facts.push({ icon: <IceBucketIcon className="w-4.5 h-4.5" />, label: 'Temp. Servizio', value: serving });
+  if (storage) facts.push({ icon: <BoxIcon className="w-4.5 h-4.5" />, label: 'Temp. Conservazione', value: storage });
   if (foodPairings && foodPairings.length > 0) facts.push({ icon: <ClocheIcon className="w-4.5 h-4.5" />, label: 'Abbinamento', value: foodPairings.slice(0, 3).join(', ') });
-  if (serving) facts.push({ icon: <IceBucketIcon className="w-4.5 h-4.5" />, label: 'Servizio', value: serving });
 
   if (facts.length === 0) return null;
 
