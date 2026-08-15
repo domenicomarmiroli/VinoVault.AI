@@ -6,6 +6,7 @@ import { ThermometerIcon, BoxIcon, WineIcon, StarIcon, ChartBarIcon, PencilIcon 
 import DrinkabilityBadge from './DrinkabilityBadge';
 import PriceComparison from './PriceComparison';
 import WineStyleChart from './WineStyleChart';
+import WineFactsGrid from './WineFactsGrid';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface WineDetailModalProps {
@@ -150,6 +151,18 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
                  </div>
                  {!isEditing && (<div className="mt-2 pt-2 border-t border-indigo-200/50"><PriceComparison name={formData.name} producer={formData.producer} year={formData.year} isPremium={isPremium} /></div>)}
             </div>
+
+            {!isEditing && (
+                <WineFactsGrid
+                    grape={formData.grape}
+                    type={formData.type}
+                    alcohol={formData.alcohol}
+                    year={formData.year}
+                    drinkWindow={formData.drinkWindow}
+                    foodPairings={formData.foodPairings}
+                    serving={formData.servingTemp ? `Consigliato servire a ${formData.servingTemp}` : undefined}
+                />
+            )}
 
             {!isEditing && <WineStyleChart style={formData.wineStyle} />}
 

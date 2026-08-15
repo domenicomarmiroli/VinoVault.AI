@@ -162,6 +162,8 @@ export interface PurchaseAnalysis {
         grape?: string;
         alcohol?: string;
         foodPairings?: string[];
+        drinkWindow?: string;
+        servingTemp?: string;
     };
     marketPriceEstimate: number;
     isGoodDeal: boolean;

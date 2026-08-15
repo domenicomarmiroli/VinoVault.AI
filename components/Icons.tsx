@@ -199,3 +199,73 @@ export const UserIcon = ({ className, filled }: { className?: string, filled?: b
       )}
     </svg>
 );
+
+export const GrapeIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 5.25a2.25 2.25 0 1 1 4.5 0" />
+    <circle cx="12" cy="8.25" r="2.1" />
+    <circle cx="8.4" cy="11.1" r="2.1" />
+    <circle cx="15.6" cy="11.1" r="2.1" />
+    <circle cx="6.3" cy="14.7" r="2.1" />
+    <circle cx="10.8" cy="14.7" r="2.1" />
+    <circle cx="17.7" cy="14.7" r="2.1" />
+    <circle cx="9" cy="18.3" r="2.1" />
+    <circle cx="14.4" cy="18.3" r="2.1" />
+  </svg>
+);
+
+export const GlassIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h10l-1.2 9.2a3.8 3.8 0 0 1-3.8 3.3v0a3.8 3.8 0 0 1-3.8-3.3L7 3Z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.5V20" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 20h7" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7.4 7.5h9.2" />
+  </svg>
+);
+
+export const PercentBottleIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10 2.5h4M10.5 2.5v3.2L8 8.6a2.5 2.5 0 0 0-.75 1.79V20a1.5 1.5 0 0 0 1.5 1.5h6.5A1.5 1.5 0 0 0 16.75 20v-9.6c0-.67-.27-1.32-.75-1.8L13.5 5.7V2.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 13.5h5M10.5 12v0M13.5 16v0" />
+  </svg>
+);
+
+export const BarrelIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7 5c-1 2-1.5 4.5-1.5 7S6 16.5 7 19h10c1-2.5 1.5-4.5 1.5-7S18 7 17 5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7 5c.8-1.2 2.6-2 5-2s4.2.8 5 2M7 19c.8 1.2 2.6 2 5 2s4.2-.8 5-2" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5.7 9h12.6M5.5 15h13" />
+  </svg>
+);
+
+export const BottlesIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 2.5h2M9.8 2.5v2.4l-1.7 2A2 2 0 0 0 7.6 8.3V20a1.3 1.3 0 0 0 1.3 1.3h2.2A1.3 1.3 0 0 0 12.4 20V8.3a2 2 0 0 0-.5-1.4l-1.7-2V2.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 6.5h1.6M15.25 6.5v1.9l-1.35 1.6a1.6 1.6 0 0 0-.4 1.05V20a1 1 0 0 0 1 1h1.8a1 1 0 0 0 1-1v-9a1.6 1.6 0 0 0-.4-1.05L15.5 8.4V6.5" />
+  </svg>
+);
+
+export const CalendarCheckIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <rect x="3.75" y="4.5" width="16.5" height="16" rx="2" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 3v3M16 3v3M3.75 9.5h16.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="m9 14 2 2 4-4" />
+  </svg>
+);
+
+export const ClocheIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 17.5a8 8 0 0 1 16 0" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 17.5h19M12 6.5v2.3M10.5 6h3" />
+  </svg>
+);
+
+export const IceBucketIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 8h11l-1.1 11.3a1.5 1.5 0 0 1-1.5 1.35H9.1a1.5 1.5 0 0 1-1.5-1.35L6.5 8Z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5.2 8h13.6" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5h6l-.7 3.2H9.7L9 4.5Z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 11v6M13.5 11v6" />
+  </svg>
+);
