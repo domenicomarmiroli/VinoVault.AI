@@ -5,6 +5,7 @@ import { analyzePurchase } from '../services/geminiService';
 import { CameraIcon, LogoutIcon, ShopIcon, WineIcon, ExternalLinkIcon, ChefIcon } from '../components/Icons';
 import PriceComparison from '../components/PriceComparison';
 import WineStyleChart from '../components/WineStyleChart';
+import WineFactsGrid from '../components/WineFactsGrid';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
 import LoadingScreen from '../components/LoadingScreen';
@@ -119,11 +120,11 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           location: 'Da posizionare',
           storageTemp: '12-16°C',
           storageAdvice: 'Da verificare',
-          servingTemp: '16-18°C',
+          servingTemp: analysis.wineDetails?.servingTemp || '16-18°C',
           servingAdvice: 'Aprire prima',
           foodPairings: analysis.wineDetails?.foodPairings || [],
           imageUrl: image || analysis.imageUrl || undefined,
-          drinkWindow: `${new Date().getFullYear()}-${new Date().getFullYear() + 3}`,
+          drinkWindow: analysis.wineDetails?.drinkWindow || `${new Date().getFullYear()}-${new Date().getFullYear() + 3}`,
           marketPrice: safeMarketPrice,
           qualityScore: analysis.qualityScore,
           wineStyle: analysis.wineStyle
@@ -235,6 +236,16 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                     </div>
                     <p className="mt-3 text-sm text-gray-600 italic border-l-2 border-wine-300 pl-3">"{analysis.sommelierNotes}"</p>
                 </div>
+
+                <WineFactsGrid
+                    grape={analysis.wineDetails?.grape}
+                    type={analysis.wineDetails?.type}
+                    alcohol={analysis.wineDetails?.alcohol}
+                    year={analysis.wineDetails?.year}
+                    drinkWindow={analysis.wineDetails?.drinkWindow}
+                    foodPairings={analysis.wineDetails?.foodPairings}
+                    serving={analysis.wineDetails?.servingTemp ? `Consigliato servire a ${analysis.wineDetails.servingTemp}` : undefined}
+                />
 
                 {((analysis.strengths?.length || 0) > 0 || (analysis.weaknesses?.length || 0) > 0) && (
                     <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 space-y-4">
