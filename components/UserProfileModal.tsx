@@ -165,25 +165,25 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
   const usagePercentage = Math.min((usageCount / monthlyLimit) * 100, 100);
 
   const content = (
-    <div className="fixed inset-0 bg-black/60 z-[250] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
-        
+    <div className="fixed inset-0 bg-black/60 z-[250] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+      <div className="bg-white w-full max-w-sm max-h-[90vh] rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col" onClick={(e) => e.stopPropagation()}>
+
         {/* Header */}
-        <div className="bg-gradient-to-br from-wine-700 to-wine-900 p-6 text-white flex flex-col items-center relative">
+        <div className="bg-gradient-to-br from-wine-700 to-wine-900 p-6 text-white flex flex-col items-center relative shrink-0">
              <button onClick={onClose} className="absolute top-4 right-4 text-white/70 hover:text-white">✕</button>
-             
+
              <div className="bg-white/10 p-4 rounded-full mb-3 backdrop-blur-sm">
                  <UserIcon className="w-10 h-10 text-white" filled />
              </div>
              <h2 className="font-serif font-bold text-lg">{userEmail}</h2>
-             
+
              <div className={`mt-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${isPremium ? 'bg-amber-400 text-amber-900 border-amber-300' : 'bg-gray-200 text-gray-600 border-gray-300'}`}>
                  {isPremium ? 'Premium' : 'Free Plan'}
              </div>
         </div>
 
-        <div className="p-6 space-y-6">
-            
+        <div className="p-6 space-y-6 overflow-y-auto">
+
             {/* Language Selector */}
             <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">{t('language')}</label>
