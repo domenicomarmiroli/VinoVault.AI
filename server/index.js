@@ -216,10 +216,12 @@ Regole di valutazione:
 - weaknesses: 2-3 limiti o aspetti da considerare (es. non adatto a lungo invecchiamento, prezzo elevato per lo stile, annata non ottimale) — se il vino non ha reali punti deboli, indica cautele oggettive tipo "da consumare entro pochi anni".
 - bestOccasions: 2-4 occasioni/contesti di consumo concreti (es. "aperitivo estivo", "cena di pesce importante"), non abbinamenti cibo generici già coperti altrove.
 - cellarFit: valuta se questo vino colma una lacuna reale nella cantina attuale dell'utente (es. stile/tipologia mancante) o se è ridondante; motiva in 1-2 frasi concrete.
+- wineDetails.drinkWindow: intervallo di anni realistico in base a tipologia e annata, es. "2025-2029".
+- wineDetails.servingTemp: temperatura di servizio consigliata, es. "16-18°C".
 - wineStyle: profilo sensoriale OGGETTIVO del vino, basato su tipologia/denominazione/vitigno/annata, identico indipendentemente dal registro linguistico. freshRich (1-6, 1=molto fresco, 6=molto ricco/opulento), sweetness/body/acidity/tannin/wood/persistence (1-5, 1=minimo, 5=massimo; per i bianchi il tannin sarà tipicamente 1). aromas: 4-6 descrittori aromatici brevi e concreti (es. "Mela", "Frutti rossi", "Vaniglia").
 
 Rispondi ESCLUSIVAMENTE con JSON valido in ${langName}, nessun testo aggiuntivo.
-Schema JSON: {"wineDetails": {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "foodPairings": string[]}, "marketPriceEstimate": number, "isGoodDeal": boolean, "dealRating": "Excellent"|"Good"|"Fair"|"Bad", "qualityScore": number, "sommelierNotes": string, "strengths": string[], "weaknesses": string[], "bestOccasions": string[], "cellarFit": {"isRecommended": boolean, "reasoning": string}, "wineStyle": {"freshRich": number, "sweetness": number, "body": number, "acidity": number, "tannin": number, "wood": number, "persistence": number, "aromas": string[]}}`,
+Schema JSON: {"wineDetails": {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "foodPairings": string[], "drinkWindow": string, "servingTemp": string}, "marketPriceEstimate": number, "isGoodDeal": boolean, "dealRating": "Excellent"|"Good"|"Fair"|"Bad", "qualityScore": number, "sommelierNotes": string, "strengths": string[], "weaknesses": string[], "bestOccasions": string[], "cellarFit": {"isRecommended": boolean, "reasoning": string}, "wineStyle": {"freshRich": number, "sweetness": number, "body": number, "acidity": number, "tannin": number, "wood": number, "persistence": number, "aromas": string[]}}`,
             messages: [{ role: 'user', content: contentParts }]
         });
         const result = JSON.parse(cleanJson(extractText(response)));
