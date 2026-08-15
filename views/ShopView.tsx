@@ -222,7 +222,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                     <div className="flex justify-between items-start">
                         <div className="flex-1 min-w-0 pr-4">
                             <span className="text-xs font-bold text-gray-400 uppercase">{analysis.wineDetails?.type || 'VINO'}</span>
-                            <h2 className="text-2xl font-serif font-bold text-gray-900 leading-tight truncate">{analysis.wineDetails?.name || 'Sconosciuto'}</h2>
+                            <h2 className="text-xl font-serif font-bold text-gray-900 leading-tight line-clamp-2">{analysis.wineDetails?.name || 'Sconosciuto'}</h2>
                             <p className="text-gray-600 truncate">{analysis.wineDetails?.producer || ''} • {analysis.wineDetails?.year || ''}</p>
                         </div>
                         {analysis.qualityScore !== undefined && (
