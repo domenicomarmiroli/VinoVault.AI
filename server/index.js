@@ -114,7 +114,8 @@ const mapWineToFrontend = (w) => ({
     servingTemp: w.serving_temp || '', servingAdvice: w.serving_advice || '',
     foodPairings: w.food_pairings || [], imageUrl: w.image_url,
     drinkWindow: w.drink_window || '', marketPrice: parseFloat(w.market_price) || 0,
-    qualityScore: w.quality_score !== null && w.quality_score !== undefined ? parseInt(w.quality_score) : undefined
+    qualityScore: w.quality_score !== null && w.quality_score !== undefined ? parseInt(w.quality_score) : undefined,
+    wineStyle: w.wine_style ? (typeof w.wine_style === 'string' ? JSON.parse(w.wine_style) : w.wine_style) : undefined
 });
 
 const authenticateToken = (req, res, next) => {
@@ -215,9 +216,10 @@ Regole di valutazione:
 - weaknesses: 2-3 limiti o aspetti da considerare (es. non adatto a lungo invecchiamento, prezzo elevato per lo stile, annata non ottimale) — se il vino non ha reali punti deboli, indica cautele oggettive tipo "da consumare entro pochi anni".
 - bestOccasions: 2-4 occasioni/contesti di consumo concreti (es. "aperitivo estivo", "cena di pesce importante"), non abbinamenti cibo generici già coperti altrove.
 - cellarFit: valuta se questo vino colma una lacuna reale nella cantina attuale dell'utente (es. stile/tipologia mancante) o se è ridondante; motiva in 1-2 frasi concrete.
+- wineStyle: profilo sensoriale OGGETTIVO del vino, basato su tipologia/denominazione/vitigno/annata, identico indipendentemente dal registro linguistico. freshRich (1-6, 1=molto fresco, 6=molto ricco/opulento), sweetness/body/acidity/tannin/wood/persistence (1-5, 1=minimo, 5=massimo; per i bianchi il tannin sarà tipicamente 1). aromas: 4-6 descrittori aromatici brevi e concreti (es. "Mela", "Frutti rossi", "Vaniglia").
 
 Rispondi ESCLUSIVAMENTE con JSON valido in ${langName}, nessun testo aggiuntivo.
-Schema JSON: {"wineDetails": {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "foodPairings": string[]}, "marketPriceEstimate": number, "isGoodDeal": boolean, "dealRating": "Excellent"|"Good"|"Fair"|"Bad", "qualityScore": number, "sommelierNotes": string, "strengths": string[], "weaknesses": string[], "bestOccasions": string[], "cellarFit": {"isRecommended": boolean, "reasoning": string}}`,
+Schema JSON: {"wineDetails": {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "foodPairings": string[]}, "marketPriceEstimate": number, "isGoodDeal": boolean, "dealRating": "Excellent"|"Good"|"Fair"|"Bad", "qualityScore": number, "sommelierNotes": string, "strengths": string[], "weaknesses": string[], "bestOccasions": string[], "cellarFit": {"isRecommended": boolean, "reasoning": string}, "wineStyle": {"freshRich": number, "sweetness": number, "body": number, "acidity": number, "tannin": number, "wood": number, "persistence": number, "aromas": string[]}}`,
             messages: [{ role: 'user', content: contentParts }]
         });
         const result = JSON.parse(cleanJson(extractText(response)));
@@ -470,9 +472,9 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
     try {
         if (wine.imageUrl) wine.imageUrl = await compressStoredImage(wine.imageUrl);
         await pool.query(
-            `INSERT INTO wines (id, user_id, name, producer, year, type, region, grape, alcohol, purchase_date, price, quantity, location, storage_temp, storage_advice, serving_temp, serving_advice, food_pairings, image_url, drink_window, market_price, quality_score)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
-            [wine.id, req.user.userId, wine.name, wine.producer, wine.year, wine.type, wine.region, wine.grape, wine.alcohol, wine.purchaseDate, wine.price, wine.quantity, wine.location, wine.storageTemp, wine.storageAdvice, wine.servingTemp, wine.servingAdvice, wine.foodPairings, wine.imageUrl, wine.drinkWindow, wine.marketPrice, wine.qualityScore ?? null]
+            `INSERT INTO wines (id, user_id, name, producer, year, type, region, grape, alcohol, purchase_date, price, quantity, location, storage_temp, storage_advice, serving_temp, serving_advice, food_pairings, image_url, drink_window, market_price, quality_score, wine_style)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
+            [wine.id, req.user.userId, wine.name, wine.producer, wine.year, wine.type, wine.region, wine.grape, wine.alcohol, wine.purchaseDate, wine.price, wine.quantity, wine.location, wine.storageTemp, wine.storageAdvice, wine.servingTemp, wine.servingAdvice, wine.foodPairings, wine.imageUrl, wine.drinkWindow, wine.marketPrice, wine.qualityScore ?? null, wine.wineStyle ? JSON.stringify(wine.wineStyle) : null]
         );
         res.status(201).json(wine);
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
@@ -481,6 +483,7 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
 app.put('/api/wines/:id', authenticateToken, async (req, res) => {
     const updates = req.body;
     if (updates.imageUrl) updates.imageUrl = await compressStoredImage(updates.imageUrl);
+    if (updates.wineStyle) updates.wineStyle = JSON.stringify(updates.wineStyle);
     const fields = Object.keys(updates).map((key, i) => `${key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)} = $${i + 1}`).join(', ');
     const values = Object.values(updates);
     try {
@@ -648,6 +651,7 @@ const initDb = async () => {
         await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS food_menu TEXT;`);
         await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS menu_analysis JSONB;`);
         await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS quality_score INTEGER;`);
+        await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS wine_style JSONB;`);
         console.log('DB Ready');
     } catch (e) { console.error('DB Init Error', e); }
     finally { client.release(); }
