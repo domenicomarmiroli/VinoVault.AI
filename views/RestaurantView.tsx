@@ -170,9 +170,9 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
         <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2 shrink-0"><LogoutIcon className="w-6 h-6" /></button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-32 space-y-6">
         {suggestions.length === 0 && (
-            <div className="space-y-4">
+            <div className="space-y-4 lg:max-w-2xl lg:mx-auto">
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                     <label className="block text-sm font-bold text-gray-700 mb-2">{t('what_eating')}</label>
                     <textarea 
@@ -217,7 +217,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
         )}
 
         {suggestions.length > 0 && (
-            <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+            <div className="space-y-6 lg:max-w-5xl lg:mx-auto animate-in slide-in-from-bottom duration-500">
                 <div className="flex justify-between items-center px-1">
                      <h2 className="text-xl font-serif font-bold text-gray-900">{t('best_pairings_title')}</h2>
                      <button onClick={() => setSuggestions([])} className="text-xs text-wine-600 font-black uppercase tracking-widest hover:underline">{t('new_search')}</button>
@@ -231,7 +231,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
                             <h3 className="font-black text-gray-400 uppercase text-[9px] tracking-[0.2em] mb-3 border-b border-gray-100 pb-1.5 ml-1">
                                 {catKey === 'default' ? 'Consigli' : catKey}
                             </h3>
-                            <div className="space-y-3">
+                            <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-3 md:items-start">
                                 {items.map((wine, idx) => {
                                     const safeScore = Number(wine.matchScore);
                                     const matchScore = isNaN(safeScore) ? 0 : safeScore;

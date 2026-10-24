@@ -107,8 +107,8 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-24">
-        <form onSubmit={handleSuggestion} className="bg-white rounded-xl shadow-sm p-4 border border-gray-200 mb-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24">
+        <form onSubmit={handleSuggestion} className="bg-white rounded-xl shadow-sm p-4 border border-gray-200 mb-6 lg:max-w-2xl lg:mx-auto">
             <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Menu</label>
                 <textarea 
@@ -161,7 +161,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
         </form>
 
         {suggestions.length > 0 && (
-            <div className="space-y-8 animate-in slide-in-from-bottom duration-500 pb-12">
+            <div className="space-y-8 lg:max-w-6xl lg:mx-auto animate-in slide-in-from-bottom duration-500 pb-12">
                 <div className="flex justify-between items-center border-l-4 border-wine-500 pl-3">
                     <h3 className="text-xl font-serif font-bold text-gray-800">Suggerimenti</h3>
                     <button 
@@ -184,7 +184,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                             {suggestion.options.map((option, optIdx) => {
                                 const ownedWine = option.type === 'owned' && option.wineId 
                                     ? getInventoryWine(option.wineId) 
