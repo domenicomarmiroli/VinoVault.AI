@@ -244,9 +244,9 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
         <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2"><LogoutIcon className="w-6 h-6" /></button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-24">
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24">
         {!analysis && (
-            <div className="space-y-6">
+            <div className="space-y-6 lg:max-w-2xl lg:mx-auto">
                 <div className="flex p-1 bg-gray-200 rounded-xl">
                     <button onClick={() => setMode('camera')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${mode === 'camera' ? 'bg-white shadow-sm text-wine-700' : 'text-gray-500 hover:text-gray-700'}`}>
                         <CameraIcon className="w-4 h-4" /> {t('photo_mode')}
@@ -280,7 +280,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
         )}
 
         {analysis && (
-            <div className="space-y-4 animate-in slide-in-from-bottom duration-500">
+            <div className="space-y-4 lg:space-y-6 lg:max-w-5xl lg:mx-auto animate-in slide-in-from-bottom duration-500">
                 <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                     <div className="flex justify-between items-start">
                         <div className="flex-1 min-w-0 pr-4">
@@ -313,15 +313,18 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                     <p className="mt-3 text-sm text-gray-600 italic border-l-2 border-wine-300 pl-3">"{analysis.sommelierNotes}"</p>
                 </div>
 
-                <WineFactsGrid
-                    grape={analysis.wineDetails?.grape}
-                    type={analysis.wineDetails?.type}
-                    alcohol={analysis.wineDetails?.alcohol}
-                    year={editedYear}
-                    drinkWindow={analysis.wineDetails?.drinkWindow}
-                    foodPairings={analysis.wineDetails?.foodPairings}
-                    serving={analysis.wineDetails?.servingTemp ? `Consigliato servire a ${analysis.wineDetails.servingTemp}` : undefined}
-                />
+                <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start space-y-4 lg:space-y-0">
+                    <WineFactsGrid
+                        grape={analysis.wineDetails?.grape}
+                        type={analysis.wineDetails?.type}
+                        alcohol={analysis.wineDetails?.alcohol}
+                        year={editedYear}
+                        drinkWindow={analysis.wineDetails?.drinkWindow}
+                        foodPairings={analysis.wineDetails?.foodPairings}
+                        serving={analysis.wineDetails?.servingTemp ? `Consigliato servire a ${analysis.wineDetails.servingTemp}` : undefined}
+                    />
+                    <WineStyleChart style={analysis.wineStyle} />
+                </div>
 
                 {((analysis.strengths?.length || 0) > 0 || (analysis.weaknesses?.length || 0) > 0) && (
                     <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 space-y-4">
@@ -369,8 +372,6 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                         )}
                     </div>
                 )}
-
-                <WineStyleChart style={analysis.wineStyle} />
 
                 <div className={`p-5 rounded-xl border ${getDealColor(analysis.dealRating)}`}>
                     <div className="flex justify-between items-center mb-2">
