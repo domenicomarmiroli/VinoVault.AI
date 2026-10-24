@@ -40,6 +40,8 @@ const cleanJson = (text) => {
 
 const anthropic = new Anthropic({ apiKey: process.env.API_KEY });
 const MODEL = 'claude-haiku-4-5';
+// Il report sommelier è limitato (1 ogni 10 bottiglie bevute), quindi può usare un modello più capace a sforzo ridotto.
+const CELLAR_REPORT_MODEL = 'claude-opus-5-5';
 
 const getLanguageName = (code) => {
     switch(code) {
@@ -337,27 +339,61 @@ app.post('/api/ai/cellar-report', authenticateToken, async (req, res) => {
             }
         }
     } catch (e) { console.error('Cellar report cache check failed', e); }
-    const inventoryText = inventory.map(w => `- ${w.name} (${w.year}), ${w.producer}, ${w.type}, ${w.grape || 'vitigno N/D'}, regione: ${w.region || 'N/D'}`).join('\n');
-    const historyText = (history || []).slice(0, 30).map(h => `- ${h.name} (${h.year}), ${h.type || 'tipo N/D'}, voto: ${h.rating || 'N/D'}/5${h.notes ? `, note personali: "${h.notes}"` : ''}`).join('\n');
+    const currentYear = new Date().getFullYear();
+    const inventoryText = (inventory || []).filter(w => Number(w.quantity) > 0).map(w => [
+        w.name, w.producer || '-', w.year || '-', w.type || '-', w.grape || '-', w.region || '-',
+        `${w.quantity}bt`, w.price ? `pagato €${w.price}` : '-', w.marketPrice ? `mercato €${w.marketPrice}` : '-',
+        w.qualityScore ? `qualità ${w.qualityScore}/100` : '-', w.drinkWindow ? `beva ${w.drinkWindow}` : '-'
+    ].join(' | ')).join('\n');
+    const historyText = [...(history || [])]
+        .sort((a, b) => new Date(b.consumedDate).getTime() - new Date(a.consumedDate).getTime())
+        .slice(0, 60)
+        .map(h => [
+            (h.consumedDate || '').slice(0, 10), h.name, h.producer || '-', h.year || '-', h.type || '-',
+            h.rating ? `voto ${h.rating}/5` : 'non votato', h.price ? `€${h.price}` : '-',
+            h.location ? `dove: ${h.location}` : '', h.notes ? `note: "${h.notes}"` : ''
+        ].filter(Boolean).join(' | ')).join('\n');
     try {
-        const response = await anthropic.messages.create({
-            model: MODEL, max_tokens: 2048,
-            system: `Sei un sommelier senior che analizza l'intera cantina e lo storico delle degustazioni di un utente per aiutarlo a capire i propri gusti e a migliorare la cantina nel tempo.
-${getToneInstructions(tone)}
-Analisi da svolgere:
-- score (0-100): valutazione complessiva della cantina attuale, considerando equilibrio, varietà, livello qualitativo e ampiezza delle fasce di prezzo. Guida: 85-100 cantina eccellente ed equilibrata, 65-84 buona con margini di miglioramento, 40-64 sbilanciata o poco varia, <40 cantina appena avviata.
-- overallAssessment: panoramica onesta e sintetica (2-3 frasi) su equilibrio, varietà e livello qualitativo della cantina attuale.
-- palateTags: 3-6 tag BREVISSIMI (2-3 parole ciascuno, es. "Rossi Strutturati", "Toscana", "Vitigni Autoctoni") che riassumono il profilo di gusto dedotto da tipologie/regioni/vitigni ricorrenti in cantina E dai vini con voto alto nello storico (fondamentale: i voti e le note personali nello storico sono il segnale più forte delle preferenze reali dell'utente, usali attivamente).
-- palateProfile: 1-2 frasi che spiegano il profilo di gusto dedotto, citando se rilevante i vini più apprezzati nello storico.
-- gapTags: 2-5 tag BREVISSIMI (2-3 parole ciascuno, es. "Bollicine", "Bianchi Freschi", "Vini da Dessert") delle tipologie/stili/fasce di prezzo mancanti per una cantina più completa ed equilibrata.
-- gapAnalysis: 1-2 frasi che spiegano le lacune individuate.
-- buyRecommendations: 3-5 suggerimenti di acquisto CONCRETI (nomi di vini o categorie specifiche, non generiche) che colmano le lacune individuate E che siano coerenti con il profilo di gusto dedotto dallo storico.
-- drinkNowStrategy: 1-2 frasi su quali vini della cantina andrebbero consumati prima (per finestra di beva) e come organizzare il consumo nei prossimi mesi.
+        const requestBody = {
+            max_tokens: 4096,
+            system: `Sei un Master Sommelier che offre a un appassionato una consulenza personale sulla sua cantina domestica. Ricevi l'inventario attuale e lo storico delle bottiglie bevute (con voti 1-5, note personali e luoghi). Il tuo compito è restituire un report preciso, personale e utile, non generico.
 
-Rispondi ESCLUSIVAMENTE con JSON valido in ${langName}, nessun testo aggiuntivo.
-Schema: {"score": number, "overallAssessment": string, "palateTags": string[], "palateProfile": string, "gapTags": string[], "gapAnalysis": string, "buyRecommendations": [{"wineName": string, "reason": string, "type": string}], "drinkNowStrategy": string}`,
-            messages: [{ role: 'user', content: `Analizza questa cantina e questo storico in ${langName}, rispondi solo JSON.\nCANTINA ATTUALE:\n${inventoryText || 'vuota'}\nSTORICO DEGUSTAZIONI CON VOTI E NOTE PERSONALI:\n${historyText || 'nessuno'}` }]
-        });
+${getToneInstructions(tone)}
+
+Come ragionare:
+- Lo storico è il segnale più affidabile dei gusti reali: i vini votati 4-5 e le note personali indicano cosa ama, quelli votati 1-2 cosa evitare. Pesali più della semplice composizione della cantina.
+- Confronta ciò che l'utente ama bere con ciò che ha in cantina: le discrepanze sono il cuore dei consigli.
+- Sii specifico: cita vini, produttori, vitigni e numeri reali presi dai dati. Mai frasi che andrebbero bene per chiunque.
+- L'anno corrente è ${currentYear}: usalo per giudicare le finestre di beva.
+- I numeri (score e scoreBreakdown) sono valutazioni oggettive e non cambiano con il registro linguistico richiesto.
+
+Campi da produrre:
+- headline: una frase brevissima (max 8 parole) che fotografa il tipo di appassionato, es. "Esploratore di bianchi aromatici del Nord".
+- score (0-100): salute complessiva della cantina. 85-100 eccellente ed equilibrata, 65-84 buona con margini, 40-64 sbilanciata, <40 appena avviata.
+- scoreBreakdown: cinque punteggi 0-100 che spiegano lo score: variety (varietà di tipologie, regioni, vitigni), quality (livello qualitativo medio), balance (equilibrio tra stili e fasce di prezzo), readiness (quante bottiglie sono nella finestra giusta, poche oltre il picco), value (rapporto qualità/prezzo pagato).
+- overallAssessment: 2-3 frasi oneste su punti di forza e squilibri, con dati concreti (es. percentuali, conteggi).
+- strengths: 2-3 punti di forza specifici della cantina, frasi brevi.
+- palateTags: 3-6 tag brevissimi (2-3 parole) sul profilo di gusto.
+- palateProfile: 2 frasi sul profilo di gusto, citando i vini più apprezzati dello storico.
+- gapTags: 2-5 tag brevissimi su stili, tipologie o fasce mancanti.
+- gapAnalysis: 1-2 frasi sulle lacune rispetto ai gusti dell'utente.
+- buyRecommendations: 4 consigli d'acquisto concreti (etichetta o denominazione + produttore quando possibile), coerenti con i gusti e che colmino le lacune. Per ciascuno: wineName, type (tipologia), priceRange (es. "15-25€"), reason (1 frase che collega il consiglio ai gusti o a un vino amato).
+- drinkNowPicks: fino a 4 nomi ESATTI di vini presenti in cantina da aprire per primi (finestra in chiusura o oltre il picco).
+- drinkNowStrategy: 1-2 frasi su come organizzare le prossime aperture.
+
+Rispondi ESCLUSIVAMENTE con un oggetto JSON valido, testi in ${langName}, senza markdown né testo aggiuntivo, con questo schema:
+{"headline": string, "score": number, "scoreBreakdown": {"variety": number, "quality": number, "balance": number, "readiness": number, "value": number}, "overallAssessment": string, "strengths": string[], "palateTags": string[], "palateProfile": string, "gapTags": string[], "gapAnalysis": string, "buyRecommendations": [{"wineName": string, "type": string, "priceRange": string, "reason": string}], "drinkNowPicks": string[], "drinkNowStrategy": string}`,
+            messages: [{ role: 'user', content: `<cantina formato="nome | produttore | annata | tipologia | vitigno | regione | quantità | prezzo pagato | valore di mercato | qualità | finestra di beva">\n${inventoryText || 'vuota'}\n</cantina>\n\n<storico formato="data | nome | produttore | annata | tipologia | voto | prezzo | luogo | note" ordine="dal più recente">\n${historyText || 'nessuna bottiglia bevuta'}\n</storico>\n\nGenera il report in ${langName}.` }]
+        };
+        let response;
+        try {
+            response = await anthropic.messages.create({ ...requestBody, model: CELLAR_REPORT_MODEL, output_config: { effort: 'low' } });
+        } catch (primaryErr) {
+            // Se il modello principale non è disponibile per questa chiave API, il report non deve rompersi.
+            console.error(`Cellar report: ${CELLAR_REPORT_MODEL} non disponibile, uso ${MODEL}`, primaryErr?.status, primaryErr?.message);
+            response = await anthropic.messages.create({ ...requestBody, model: MODEL });
+        }
+        if (response.stop_reason === 'refusal') return res.status(422).json({ error: 'Analisi non disponibile al momento, riprova più tardi.' });
         const report = JSON.parse(cleanJson(extractText(response) || '{}'));
         try {
             await pool.query(

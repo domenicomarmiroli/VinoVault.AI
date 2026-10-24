@@ -149,10 +149,15 @@ export interface CellarRecommendation {
     wineName: string;
     reason: string;
     type: string;
+    priceRange?: string;
 }
 
 export interface CellarReport {
+    headline?: string;
     score: number; // 0-100 salute complessiva della cantina
+    scoreBreakdown?: { variety?: number; quality?: number; balance?: number; readiness?: number; value?: number };
+    strengths?: string[];
+    drinkNowPicks?: string[];
     overallAssessment: string;
     palateTags: string[]; // 3-6 tag brevi sul profilo di gusto
     palateProfile: string;
