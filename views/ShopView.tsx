@@ -57,9 +57,12 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
   const [price, setPrice] = useState<number | ''>('');
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<PurchaseAnalysis | null>(null);
+  const [editedYear, setEditedYear] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, language } = useLanguage();
   const { analysisStyle } = useAnalysisStyle();
+
+  const years = Array.from({ length: 81 }, (_, i) => (new Date().getFullYear() + 1) - i);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -92,7 +95,8 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
           }
           
           setAnalysis(result);
-          onAiUsed(); 
+          setEditedYear(result.wineDetails?.year && result.wineDetails.year !== 'N/A' ? result.wineDetails.year : '');
+          onAiUsed();
       } catch (error: any) {
           alert(`${t('error')}: ${error.message}`);
       } finally {
@@ -102,14 +106,18 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
 
   const handleBuy = () => {
       if (!analysis) return;
+      if (!editedYear) {
+          alert(t('year_required') || 'Inserisci l\'annata del vino prima di aggiungerlo in cantina.');
+          return;
+      }
       const today = new Date().toISOString().split('T')[0];
       const safeMarketPrice = Number(analysis.marketPriceEstimate) || Number(price) || 0;
-      
+
       const newWine: Wine = {
           id: '',
           name: analysis.wineDetails?.name || 'Nuovo Acquisto',
           producer: analysis.wineDetails?.producer || 'Sconosciuto',
-          year: analysis.wineDetails?.year || 'N/A',
+          year: editedYear,
           type: analysis.wineDetails?.type as any || 'Rosso',
           region: analysis.wineDetails?.region || '',
           grape: analysis.wineDetails?.grape || '',
@@ -134,6 +142,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
       setLinkUrl('');
       setPrice('');
       setAnalysis(null);
+      setEditedYear('');
   };
 
   const getDealColor = (rating: string) => {
@@ -223,7 +232,20 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                         <div className="flex-1 min-w-0 pr-4">
                             <span className="text-xs font-bold text-gray-400 uppercase">{analysis.wineDetails?.type || 'VINO'}</span>
                             <h2 className="text-xl font-serif font-bold text-gray-900 leading-tight line-clamp-2">{analysis.wineDetails?.name || 'Sconosciuto'}</h2>
-                            <p className="text-gray-600 truncate">{analysis.wineDetails?.producer || ''} • {analysis.wineDetails?.year || ''}</p>
+                            <p className="text-gray-600 truncate flex items-center gap-1">
+                                <span>{analysis.wineDetails?.producer || ''} •</span>
+                                <select
+                                    value={editedYear}
+                                    onChange={e => setEditedYear(e.target.value)}
+                                    className={`text-sm border rounded px-1 py-0.5 bg-white ${!editedYear ? 'border-amber-400 ring-1 ring-amber-200 text-amber-700' : 'border-gray-300'}`}
+                                >
+                                    <option value="">{t('year')}...</option>
+                                    {years.map(y => (<option key={y} value={y.toString()}>{y}</option>))}
+                                </select>
+                            </p>
+                            {!editedYear && (
+                                <span className="block text-[10px] text-amber-600 font-bold mt-0.5">Annata non rilevata, inseriscila tu</span>
+                            )}
                         </div>
                         {analysis.qualityScore !== undefined && (
                             <div className="flex flex-col items-center ml-2 shrink-0">
@@ -241,7 +263,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                     grape={analysis.wineDetails?.grape}
                     type={analysis.wineDetails?.type}
                     alcohol={analysis.wineDetails?.alcohol}
-                    year={analysis.wineDetails?.year}
+                    year={editedYear}
                     drinkWindow={analysis.wineDetails?.drinkWindow}
                     foodPairings={analysis.wineDetails?.foodPairings}
                     serving={analysis.wineDetails?.servingTemp ? `Consigliato servire a ${analysis.wineDetails.servingTemp}` : undefined}
@@ -308,7 +330,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                         </div>
                     </div>
                      <div className="bg-white/50 rounded-xl p-2">
-                        <PriceComparison name={analysis.wineDetails?.name || ''} producer={analysis.wineDetails?.producer || ''} year={analysis.wineDetails?.year || ''} isPremium={isPremium} />
+                        <PriceComparison name={analysis.wineDetails?.name || ''} producer={analysis.wineDetails?.producer || ''} year={editedYear} isPremium={isPremium} />
                     </div>
                 </div>
 
@@ -318,8 +340,8 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                 </div>
 
                 <div className="flex gap-3 pt-2">
-                    <button onClick={() => { setAnalysis(null); setImage(null); setLinkUrl(''); setPrice(''); }} className="flex-1 py-3 text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl font-medium">{t('new_analysis')}</button>
-                    <button onClick={handleBuy} className="flex-1 py-3 bg-wine-700 text-white hover:bg-wine-800 rounded-xl font-bold shadow-lg shadow-wine-200">{t('buy_add')}</button>
+                    <button onClick={() => { setAnalysis(null); setImage(null); setLinkUrl(''); setPrice(''); setEditedYear(''); }} className="flex-1 py-3 text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl font-medium">{t('new_analysis')}</button>
+                    <button onClick={handleBuy} disabled={!editedYear} className="flex-1 py-3 bg-wine-700 text-white hover:bg-wine-800 rounded-xl font-bold shadow-lg shadow-wine-200 disabled:opacity-50 disabled:cursor-not-allowed">{t('buy_add')}</button>
                 </div>
             </div>
         )}

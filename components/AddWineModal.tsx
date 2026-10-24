@@ -120,7 +120,9 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
       foodPairings: formData.foodPairings || [],
       imageUrl: imagePreview || undefined,
       drinkWindow: formData.drinkWindow || `${new Date().getFullYear()}-${new Date().getFullYear() + 3}`,
-      marketPrice: formData.marketPrice || formData.price || 0
+      marketPrice: formData.marketPrice || formData.price || 0,
+      qualityScore: formData.qualityScore,
+      wineStyle: formData.wineStyle
     };
     onAdd(newWine);
     handleClose();
@@ -153,7 +155,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
             </div>
           ) : step === 'upload' ? (
             <div className="space-y-4 pt-4">
-              <button 
+              <button
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full border-2 border-dashed border-wine-300 rounded-xl p-8 flex flex-col items-center justify-center hover:bg-wine-50 transition-colors group bg-white"
               >
@@ -162,7 +164,9 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
                 <span className="text-sm text-wine-500 mt-1">{t('upload_desc')}</span>
               </button>
               <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
-              <button onClick={() => setStep('verify')} className="w-full py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors">{t('manual_insert')}</button>
+              <p className="text-xs text-gray-400 text-center px-4 leading-relaxed">
+                L'analisi AI dell'etichetta è il primo passo: serve a calcolare punteggio, abbinamenti e finestra di consumo del vino. Se un dato non è leggibile (es. l'annata) potrai comunque inserirlo a mano nel passaggio successivo.
+              </p>
             </div>
           ) : (
             <form id="add-wine-form" onSubmit={handleSubmit} className="space-y-4">
@@ -172,7 +176,13 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
                   <div><label className="block text-xs font-medium text-gray-500 mb-1">{t('producer')}</label><input required type="text" value={formData.producer} onChange={e => setFormData({...formData, producer: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg bg-white" /></div>
               </div>
               <div className="grid grid-cols-3 gap-4">
-                  <div><label className="block text-xs font-medium text-gray-500 mb-1">{t('year')}</label><select value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg bg-white"><option value="">N/A</option>{years.map(y => (<option key={y} value={y.toString()}>{y}</option>))}</select></div>
+                  <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">
+                          {t('year')} <span className="text-red-500">*</span>
+                          {!formData.year && <span className="block text-[10px] text-amber-600 font-bold normal-case">Non rilevata, inseriscila tu</span>}
+                      </label>
+                      <select required value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} className={`w-full p-3 border rounded-lg bg-white ${!formData.year ? 'border-amber-400 ring-1 ring-amber-200' : 'border-gray-300'}`}><option value="">{t('year')}...</option>{years.map(y => (<option key={y} value={y.toString()}>{y}</option>))}</select>
+                  </div>
                   <div className="col-span-2"><label className="block text-xs font-medium text-gray-500 mb-1">{t('type')}</label><select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as WineType})} className="w-full p-3 border border-gray-300 rounded-lg bg-white">{Object.values(WineType).map(t => <option key={t} value={t}>{t}</option>)}</select></div>
               </div>
               <div className="grid grid-cols-2 gap-4">

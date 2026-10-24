@@ -142,8 +142,8 @@ app.post('/api/ai/analyze-label', authenticateToken, async (req, res) => {
     const langName = getLanguageName(lang);
     try {
         const response = await anthropic.messages.create({
-            model: MODEL, max_tokens: 1024,
-            system: `Sei un esperto di vino che analizza etichette da foto per un'app di gestione cantina. Leggi con attenzione ogni dettaglio visibile (nome, produttore, annata, denominazione/regione, vitigno, gradazione) e, se un dato non è leggibile, deducilo in modo plausibile dal contesto (tipologia di vino, denominazione, stile dell'etichetta) invece di lasciarlo vuoto quando possibile.
+            model: MODEL, max_tokens: 1536, temperature: 0,
+            system: `Sei un esperto di vino che analizza etichette da foto per un'app di gestione cantina. Leggi con attenzione ogni dettaglio visibile (nome, produttore, annata, denominazione/regione, vitigno, gradazione) e, se un dato non è leggibile, deducilo in modo plausibile dal contesto (tipologia di vino, denominazione, stile dell'etichetta) invece di lasciarlo vuoto quando possibile. Se l'annata non è davvero leggibile né deducibile con ragionevole certezza, lascia il campo "year" vuoto: lo inserirà l'utente a mano.
 ${getToneInstructions(tone)}
 Linee guida per i campi:
 - alcohol: formato "13.5%" (usa il punto decimale)
@@ -152,9 +152,11 @@ Linee guida per i campi:
 - storageAdvice / servingAdvice: massimo 2 frasi ciascuna, consigli pratici e immediatamente applicabili
 - price: se non stimabile dall'etichetta, usa 0
 - marketPrice: stima onesta del prezzo di mercato attuale in euro, basata su produttore/denominazione/annata
+- qualityScore (0-100): valuta la QUALITÀ INTRINSECA del vino (produttore, denominazione, annata, reputazione), IDENTICO indipendentemente dal registro linguistico richiesto sopra. Guida: 90-100 eccellenza assoluta, 80-89 ottimo, 70-79 buono, 60-69 nella media, <60 modesto.
+- wineStyle: profilo sensoriale OGGETTIVO del vino, identico indipendentemente dal registro linguistico. freshRich (1-6, 1=molto fresco, 6=molto ricco/opulento), sweetness/body/acidity/tannin/wood/persistence (1-5, 1=minimo, 5=massimo; per i bianchi il tannin sarà tipicamente 1). aromas: 4-6 descrittori aromatici brevi e concreti (es. "Mela", "Frutti rossi", "Vaniglia").
 
 Rispondi ESCLUSIVAMENTE con JSON valido in ${langName}, nessun testo aggiuntivo.
-Schema JSON richiesto: {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "storageTemp": string, "storageAdvice": string, "servingTemp": string, "servingAdvice": string, "foodPairings": string[], "price": number, "drinkWindow": string, "marketPrice": number}`,
+Schema JSON richiesto: {"name": string, "producer": string, "year": string, "type": string, "region": string, "grape": string, "alcohol": string, "storageTemp": string, "storageAdvice": string, "servingTemp": string, "servingAdvice": string, "foodPairings": string[], "price": number, "drinkWindow": string, "marketPrice": number, "qualityScore": number, "wineStyle": {"freshRich": number, "sweetness": number, "body": number, "acidity": number, "tannin": number, "wood": number, "persistence": number, "aromas": string[]}}`,
             messages: [{ role: 'user', content: [
                 { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: cleanBase64(base64Image) } },
                 { type: 'text', text: `Analizza questa etichetta di vino in ${langName}. Rispondi solo in JSON.` }
