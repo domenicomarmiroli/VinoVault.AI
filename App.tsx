@@ -367,10 +367,9 @@ const AppContent: React.FC = () => {
       {/* Navigazione laterale: tablet in orizzontale e desktop (da md in su), a scomparsa */}
       <nav className={`hidden md:flex md:flex-col shrink-0 border-r border-gray-200 bg-white overflow-hidden transition-all duration-200 ${sidebarCollapsed ? 'md:w-[72px]' : 'md:w-56 lg:w-64'}`}>
         {/* Header con logo: sempre visibile, non scorre con il menu */}
-        <div className={`flex items-center h-16 shrink-0 border-b border-gray-100 ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'}`}>
+        <div className={`flex items-center shrink-0 border-b border-gray-100 py-3 ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'}`}>
           <div className="flex items-center gap-2 min-w-0">
-            <Logo className="w-8 h-8" showText={false} />
-            {!sidebarCollapsed && <span className="font-serif font-bold text-wine-900 text-base leading-tight truncate">AIKNOWINE</span>}
+            {sidebarCollapsed ? <Logo className="w-8 h-8" showText={false} /> : <Logo className="w-8 h-8" />}
           </div>
           {!sidebarCollapsed && (
             <button onClick={() => setSidebarCollapsed(true)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 shrink-0" title="Comprimi menu" aria-label="Comprimi menu">

@@ -1,20 +1,22 @@
 
 import React from 'react';
-import { Wine, WineType } from '../types';
+import { Wine } from '../types';
 import DrinkabilityBadge from './DrinkabilityBadge';
 import { MapPinIcon } from './Icons';
+import { classifyWineType } from '../services/wineTypeClassifier';
 
 interface WineCardProps {
   wine: Wine;
   onClick: (wine: Wine) => void;
 }
 
-const getTypeColor = (type: WineType) => {
-  switch (type) {
-    case WineType.RED: return 'bg-red-100 text-red-800 border-red-200';
-    case WineType.WHITE: return 'bg-yellow-50 text-yellow-800 border-yellow-200';
-    case WineType.ROSE: return 'bg-pink-100 text-pink-800 border-pink-200';
-    case WineType.SPARKLING: return 'bg-amber-100 text-amber-800 border-amber-200';
+const getTypeColor = (type?: string) => {
+  switch (classifyWineType(type)) {
+    case 'red': return 'bg-red-100 text-red-800 border-red-200';
+    case 'white': return 'bg-[#FAF6E8] text-[#8a7536] border-[#E8DCB0]';
+    case 'rose': return 'bg-pink-100 text-pink-800 border-pink-200';
+    case 'sparkling': return 'bg-amber-100 text-amber-800 border-amber-200';
+    case 'dessert': return 'bg-orange-100 text-orange-800 border-orange-200';
     default: return 'bg-gray-100 text-gray-800 border-gray-200';
   }
 };

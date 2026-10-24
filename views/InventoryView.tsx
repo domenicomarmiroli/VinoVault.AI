@@ -10,6 +10,7 @@ import UserProfileModal from '../components/UserProfileModal';
 import { PlusIcon, CogIcon, UserIcon, HelpIcon } from '../components/Icons';
 import { Logo } from '../components/Logo';
 import { useLanguage } from '../contexts/LanguageContext';
+import { classifyWineType, wineTypeMatchesFilter } from '../services/wineTypeClassifier';
 
 interface InventoryViewProps {
   wines: Wine[];
@@ -82,9 +83,9 @@ const InventoryView: React.FC<InventoryViewProps> = ({
     let matchesFilter = true;
     if (activeFilter !== 'all') {
         if (activeFilter === 'still') {
-            matchesFilter = w.type !== WineType.SPARKLING;
+            matchesFilter = classifyWineType(w.type) !== 'sparkling';
         } else {
-            matchesFilter = w.type === activeFilter;
+            matchesFilter = wineTypeMatchesFilter(w.type, activeFilter);
         }
     }
 

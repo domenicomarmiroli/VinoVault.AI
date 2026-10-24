@@ -8,6 +8,7 @@ import PriceComparison from './PriceComparison';
 import WineStyleChart from './WineStyleChart';
 import WineFactsGrid from './WineFactsGrid';
 import { useLanguage } from '../contexts/LanguageContext';
+import { classifyWineType } from '../services/wineTypeClassifier';
 
 interface WineDetailModalProps {
   wine: Wine | null;
@@ -19,12 +20,13 @@ interface WineDetailModalProps {
   isPremium: boolean;
 }
 
-const getTypeColor = (type: WineType) => {
-  switch (type) {
-    case WineType.RED: return 'bg-red-50 text-red-700 border-red-100';
-    case WineType.WHITE: return 'bg-yellow-50 text-yellow-700 border-yellow-100';
-    case WineType.ROSE: return 'bg-pink-50 text-pink-700 border-pink-100';
-    case WineType.SPARKLING: return 'bg-amber-50 text-amber-700 border-amber-100';
+const getTypeColor = (type?: string) => {
+  switch (classifyWineType(type)) {
+    case 'red': return 'bg-red-50 text-red-700 border-red-100';
+    case 'white': return 'bg-[#FBF8EE] text-[#8a7536] border-[#EDE2BE]';
+    case 'rose': return 'bg-pink-50 text-pink-700 border-pink-100';
+    case 'sparkling': return 'bg-amber-50 text-amber-700 border-amber-100';
+    case 'dessert': return 'bg-orange-50 text-orange-700 border-orange-100';
     default: return 'bg-gray-50 text-gray-700 border-gray-100';
   }
 };

@@ -6,6 +6,7 @@ import CellarReportModal from '../components/CellarReportModal';
 import { generateCellarReport, getSavedCellarReport } from '../services/geminiService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
+import { classifyWineType } from '../services/wineTypeClassifier';
 
 const REPORT_COOLDOWN_BOTTLES = 10;
 
@@ -90,13 +91,13 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
   };
 
   const getTypeColor = (type: string) => {
-     switch(type) {
-         case WineType.RED: return 'bg-red-800';        
-         case WineType.WHITE: return 'bg-yellow-300';   
-         case WineType.SPARKLING: return 'bg-cyan-400'; 
-         case WineType.ROSE: return 'bg-pink-400';      
-         case WineType.DESSERT: return 'bg-orange-400'; 
-         default: return 'bg-slate-300';                
+     switch (classifyWineType(type)) {
+         case 'red': return 'bg-red-800';
+         case 'white': return 'bg-[#E8DCB0]';
+         case 'sparkling': return 'bg-cyan-400';
+         case 'rose': return 'bg-pink-400';
+         case 'dessert': return 'bg-orange-400';
+         default: return 'bg-slate-300';
      }
   };
 
