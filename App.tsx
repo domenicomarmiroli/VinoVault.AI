@@ -24,6 +24,7 @@ import RateWineModal from './components/RateWineModal';
 import LandingPage from './components/LandingPage'; 
 import SharedPairingModal from './components/SharedPairingModal';
 import LoadingScreen from './components/LoadingScreen';
+import InstallPwaPrompt from './components/InstallPwaPrompt';
 import { WineIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon, ChefIcon, CogIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { AnalysisStyleProvider } from './contexts/AnalysisStyleContext';
@@ -391,5 +392,5 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => <LanguageProvider><AnalysisStyleProvider><AppContent /></AnalysisStyleProvider></LanguageProvider>;
+const App: React.FC = () => <LanguageProvider><AnalysisStyleProvider><AppContent /><InstallPwaPrompt /></AnalysisStyleProvider></LanguageProvider>;
 export default App;
