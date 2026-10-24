@@ -238,6 +238,11 @@ const AppContent: React.FC = () => {
      } catch (e) { alert("Errore Salvataggio"); }
   };
 
+  const handleWinesRevalued = (updates: { id: string; marketPrice: number }[]) => {
+      const map = new Map(updates.map(u => [u.id, u.marketPrice]));
+      setWines(prev => prev.map(w => map.has(w.id) ? { ...w, marketPrice: map.get(w.id)! } : w));
+  };
+
   const handleUpdateWine = async (updatedWine: Wine) => {
       setWines(prev => prev.map(w => w.id === updatedWine.id ? updatedWine : w));
       try {
@@ -416,7 +421,7 @@ const AppContent: React.FC = () => {
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'shop' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><ShopView inventory={wines} onLogout={handleLogout} onAddToInventory={handleAddWine} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} /></div>
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'sommelier' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><SommelierView inventory={wines} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onConsume={handleConsume} /></div>
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'restaurant' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><RestaurantView onLogout={handleLogout} onAddToHistory={handleAddToHistory} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onClearRestaurant={() => { setRestaurantData(null); window.history.replaceState({}, '', '/'); }} restaurantData={restaurantData} /></div>
-          <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><HistoryView wines={wines} history={history} onClearHistory={() => setHistory([])} onLogout={handleLogout} onUpdateHistoryEntry={handleUpdateHistoryEntry} onDeleteHistoryEntry={handleDeleteHistoryEntry} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} /></div>
+          <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><HistoryView wines={wines} history={history} onClearHistory={() => setHistory([])} onLogout={handleLogout} onUpdateHistoryEntry={handleUpdateHistoryEntry} onDeleteHistoryEntry={handleDeleteHistoryEntry} onWinesRevalued={handleWinesRevalued} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} /></div>
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'analytics' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><AnalyticsView inventory={wines} history={history} onLogout={handleLogout} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} /></div>
 
           {managedRestaurant && activeTab === 'manage-restaurant' && <div className="absolute inset-0 z-20"><RestaurantManagerView restaurant={managedRestaurant} onUpdateRestaurant={handleUpdateManagedRestaurant} onLogout={handleLogout} /></div>}

@@ -117,11 +117,32 @@ export interface User {
 }
 
 export interface OnlinePrice {
-    source: string; 
+    source: string;
     price: number;
     currency: string;
     link: string;
     thumbnail?: string;
+}
+
+export interface CellarValueSnapshot {
+    totalValue: number;
+    bottleCount: number;
+    date: string;
+}
+
+export interface CellarValueHistory {
+    snapshots: CellarValueSnapshot[];
+    lastRevaluationAt: string | null;
+    nextAvailableAt: string | null;
+    canRevalue: boolean;
+}
+
+export interface CellarRevaluationResult {
+    wines: { id: string; marketPrice: number }[];
+    totalValue: number;
+    bottleCount: number;
+    revaluedAt: string;
+    nextAvailableAt: string;
 }
 
 export interface CellarRecommendation {

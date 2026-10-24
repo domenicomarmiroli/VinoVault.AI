@@ -12,6 +12,7 @@ import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import Anthropic from '@anthropic-ai/sdk';
 import sharp from 'sharp';
+import { randomUUID } from 'crypto';
 
 dotenv.config();
 
@@ -561,6 +562,83 @@ app.delete('/api/wines/:id', authenticateToken, async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
+const REVALUATION_COOLDOWN_DAYS = 30;
+
+app.get('/api/cellar-value-history', authenticateToken, async (req, res) => {
+    try {
+        const snapshots = await pool.query('SELECT total_value, bottle_count, created_at FROM cellar_value_snapshots WHERE user_id = $1 ORDER BY created_at ASC', [req.user.userId]);
+        const userResult = await pool.query('SELECT last_revaluation_at FROM users WHERE id = $1', [req.user.userId]);
+        const lastAt = userResult.rows[0]?.last_revaluation_at || null;
+        let nextAvailableAt = null;
+        let canRevalue = true;
+        if (lastAt) {
+            const next = new Date(lastAt);
+            next.setDate(next.getDate() + REVALUATION_COOLDOWN_DAYS);
+            nextAvailableAt = next.toISOString();
+            canRevalue = new Date() >= next;
+        }
+        res.json({
+            snapshots: snapshots.rows.map(s => ({ totalValue: parseFloat(s.total_value) || 0, bottleCount: s.bottle_count, date: s.created_at })),
+            lastRevaluationAt: lastAt,
+            nextAvailableAt,
+            canRevalue
+        });
+    } catch (err) { res.status(500).json({ error: err.message || 'Errore caricamento storico valore cantina' }); }
+});
+
+app.post('/api/wines/revalue', authenticateToken, async (req, res) => {
+    try {
+        const userResult = await pool.query('SELECT last_revaluation_at FROM users WHERE id = $1', [req.user.userId]);
+        const lastAt = userResult.rows[0]?.last_revaluation_at;
+        const now = new Date();
+        if (lastAt) {
+            const next = new Date(lastAt);
+            next.setDate(next.getDate() + REVALUATION_COOLDOWN_DAYS);
+            if (now < next) {
+                return res.status(429).json({ error: 'Puoi ricalcolare il valore della cantina una volta al mese.', nextAvailableAt: next.toISOString() });
+            }
+        }
+
+        const winesResult = await pool.query('SELECT id, name, producer, year, type, region, grape, quantity, market_price FROM wines WHERE user_id = $1 AND quantity > 0', [req.user.userId]);
+        const wines = winesResult.rows;
+        if (wines.length === 0) return res.status(400).json({ error: 'La cantina è vuota: aggiungi qualche vino prima di ricalcolare il valore.' });
+
+        const list = wines.map(w => `${w.id}|${w.name || ''}|${w.producer || ''}|${w.year || ''}|${w.region || ''}|${w.grape || ''}`).join('\n');
+        const response = await anthropic.messages.create({
+            model: MODEL, max_tokens: 4096, temperature: 0,
+            system: `Sei un esperto di mercato enologico. Riceverai un elenco di vini nel formato "id|nome|produttore|annata|regione|vitigno", uno per riga. Per OGNUNO, stima il prezzo di mercato ATTUALE e realistico in euro per una singola bottiglia, basandoti su produttore, denominazione, annata e reputazione. Rispondi ESCLUSIVAMENTE con un array JSON valido, nessun testo aggiuntivo, un elemento per ogni id ricevuto (stesso id, non alterarlo). Schema: [{"id": string, "marketPrice": number}]`,
+            messages: [{ role: 'user', content: `Elenco vini:\n${list}` }]
+        });
+        const updates = JSON.parse(cleanJson(extractText(response)));
+        const updateMap = new Map((Array.isArray(updates) ? updates : []).map(u => [String(u.id), Number(u.marketPrice) || 0]));
+
+        const updatedWines = [];
+        for (const w of wines) {
+            const newPrice = updateMap.get(w.id);
+            const finalPrice = (newPrice && newPrice > 0) ? newPrice : (parseFloat(w.market_price) || 0);
+            if (newPrice && newPrice > 0) {
+                await pool.query('UPDATE wines SET market_price = $1 WHERE id = $2 AND user_id = $3', [newPrice, w.id, req.user.userId]);
+            }
+            updatedWines.push({ id: w.id, marketPrice: finalPrice });
+        }
+
+        const totalValue = wines.reduce((sum, w) => {
+            const matched = updatedWines.find(u => u.id === w.id);
+            return sum + (matched ? matched.marketPrice : 0) * Number(w.quantity || 0);
+        }, 0);
+        const bottleCount = wines.reduce((sum, w) => sum + Number(w.quantity || 0), 0);
+
+        const snapshotId = randomUUID();
+        await pool.query('INSERT INTO cellar_value_snapshots (id, user_id, total_value, bottle_count) VALUES ($1, $2, $3, $4)', [snapshotId, req.user.userId, totalValue, bottleCount]);
+        await pool.query('UPDATE users SET last_revaluation_at = NOW() WHERE id = $1', [req.user.userId]);
+
+        const nextAvailableAt = new Date(now);
+        nextAvailableAt.setDate(nextAvailableAt.getDate() + REVALUATION_COOLDOWN_DAYS);
+
+        res.json({ wines: updatedWines, totalValue, bottleCount, revaluedAt: now.toISOString(), nextAvailableAt: nextAvailableAt.toISOString() });
+    } catch (err) { res.status(500).json({ error: err.message || 'Errore nel ricalcolo del valore della cantina' }); }
+});
+
 app.get('/api/history', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM history WHERE user_id = $1 ORDER BY consumed_date DESC', [req.user.userId]);
@@ -710,6 +788,8 @@ const initDb = async () => {
         await client.query(`CREATE TABLE IF NOT EXISTS locations (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL);`);
         await client.query(`CREATE TABLE IF NOT EXISTS restaurants (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, menu_context TEXT, food_menu TEXT, menu_analysis JSONB, manager_id TEXT REFERENCES users(id) ON DELETE SET NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
         await client.query(`CREATE TABLE IF NOT EXISTS shares (id TEXT PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
+        await client.query(`CREATE TABLE IF NOT EXISTS cellar_value_snapshots (id TEXT PRIMARY KEY, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, total_value DECIMAL, bottle_count INTEGER, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);`);
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_revaluation_at TIMESTAMP WITH TIME ZONE;`);
         await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS food_menu TEXT;`);
         await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS menu_analysis JSONB;`);
         await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS quality_score INTEGER;`);

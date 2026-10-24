@@ -5,6 +5,8 @@ import { WineIcon, ClockIcon, LogoutIcon, StarIcon, PencilIcon, UserIcon, MapPin
 import RateWineModal from '../components/RateWineModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import AnalysisView from './AnalysisView';
+import HistoryDashboard from '../components/HistoryDashboard';
+import { wineTypeMatchesFilter } from '../services/wineTypeClassifier';
 
 interface HistoryViewProps {
   wines: Wine[];
@@ -13,6 +15,7 @@ interface HistoryViewProps {
   onLogout: () => void;
   onUpdateHistoryEntry: (id: string, rating: number, notes: string, location?: string) => void;
   onDeleteHistoryEntry: (id: string) => void;
+  onWinesRevalued: (updates: { id: string; marketPrice: number }[]) => void;
   isPremium: boolean;
   onAiUsed: () => void;
 }
@@ -20,8 +23,9 @@ interface HistoryViewProps {
 type SortOption = 'date_desc' | 'date_asc' | 'rating_desc' | 'rating_asc';
 type FilterType = 'all' | WineType;
 
-const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistory, onLogout, onUpdateHistoryEntry, onDeleteHistoryEntry, isPremium, onAiUsed }) => {
+const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistory, onLogout, onUpdateHistoryEntry, onDeleteHistoryEntry, onWinesRevalued, isPremium, onAiUsed }) => {
   const [viewMode, setViewMode] = useState<'diary' | 'analysis'>('diary');
+  const [mobileTab, setMobileTab] = useState<'diary' | 'stats'>('diary');
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -43,7 +47,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
           (h.notes && h.notes.toLowerCase().includes(searchTerm.toLowerCase()));
       let matchesFilter = true;
       if (activeFilter !== 'all') {
-          matchesFilter = h.type === activeFilter;
+          matchesFilter = wineTypeMatchesFilter(h.type, activeFilter);
       }
       return matchesSearch && matchesFilter;
   }).sort((a, b) => {
@@ -104,16 +108,28 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
                 <button key={f.label} onClick={() => setActiveFilter(f.value)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === f.value ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>{f.label}</button>
             ))}
         </div>
+
+        <div className="flex md:hidden p-1 bg-gray-100 rounded-xl mt-1 mb-1">
+            <button onClick={() => setMobileTab('diary')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${mobileTab === 'diary' ? 'bg-white shadow-sm text-wine-700' : 'text-gray-500'}`}>Diario</button>
+            <button onClick={() => setMobileTab('stats')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${mobileTab === 'stats' ? 'bg-white shadow-sm text-wine-700' : 'text-gray-500'}`}>Statistiche</button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-24">
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24">
+       <div className="lg:max-w-7xl lg:mx-auto space-y-8">
+        <div className={mobileTab === 'stats' ? 'block' : 'hidden md:block'}>
+            <HistoryDashboard history={history} wines={wines} onWinesRevalued={onWinesRevalued} onAiUsed={onAiUsed} />
+        </div>
+
+        <div className={mobileTab === 'diary' ? 'block' : 'hidden md:block'}>
+        <h2 className="hidden md:block font-serif font-bold text-xl text-gray-900 mb-4">{t('history_diary_title')}</h2>
         {filteredHistory.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
             <WineIcon className="w-12 h-12 mx-auto mb-4 opacity-20" />
             <p>{t('history_empty')}</p>
           </div>
         ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-4 md:items-start">
                 {filteredHistory.map((entry) => (
                     <div key={entry.id} onClick={() => setSelectedEntry(entry)} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-3 cursor-pointer hover:shadow-md transition-all relative group">
                          <div className="absolute top-4 right-4 text-gray-300 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><PencilIcon className="w-4 h-4" /></div>
@@ -153,6 +169,8 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
                 ))}
             </div>
         )}
+        </div>
+       </div>
       </div>
 
       <RateWineModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} onSave={onUpdateHistoryEntry} onDelete={onDeleteHistoryEntry} isPremium={isPremium} />
