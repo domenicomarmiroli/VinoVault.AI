@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { HistoryEntry, Wine, CellarValueHistory } from '../types';
 import { getCellarValueHistory, revalueCellar } from '../services/cellarValueService';
 import { classifyWineType } from '../services/wineTypeClassifier';
+import { useCountUp, StatTile, Donut } from './DashboardWidgets';
 
 interface HistoryDashboardProps {
   history: HistoryEntry[];
@@ -11,39 +12,6 @@ interface HistoryDashboardProps {
 }
 
 const MONTHS_IT = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-
-const useCountUp = (target: number, duration = 1200) => {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    let raf = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const p = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setValue(target * eased);
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-  return value;
-};
-
-const StatTile: React.FC<{ label: string; value: number; prefix?: string; suffix?: string; decimals?: number; accent: string; delay: number }> = ({ label, value, prefix = '', suffix = '', decimals = 0, accent, delay }) => {
-  const animated = useCountUp(value);
-  return (
-    <div
-      className="relative overflow-hidden bg-white rounded-2xl border border-gray-100 shadow-sm p-4 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both hover:shadow-md hover:-translate-y-0.5 transition-all"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className={`absolute -right-6 -top-6 w-20 h-20 rounded-full opacity-15 ${accent}`} />
-      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</p>
-      <p className="text-2xl md:text-3xl font-black text-gray-900 mt-1 tabular-nums">
-        {prefix}{animated.toLocaleString('it-IT', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}{suffix}
-      </p>
-    </div>
-  );
-};
 
 const HistoryDashboard: React.FC<HistoryDashboardProps> = ({ history, wines, onWinesRevalued, onAiUsed }) => {
   const [mounted, setMounted] = useState(false);
@@ -139,11 +107,6 @@ const HistoryDashboard: React.FC<HistoryDashboardProps> = ({ history, wines, onW
 
   const gain = stats.cellarValue - stats.cellarCost;
   const gainPct = stats.cellarCost > 0 ? (gain / stats.cellarCost) * 100 : 0;
-
-  const typeColors: Record<string, string> = { red: '#991b1b', white: '#E8DCB0', rose: '#f472b6', sparkling: '#f59e0b', dessert: '#fb923c', other: '#cbd5e1' };
-  const typeLabels: Record<string, string> = { red: 'Rossi', white: 'Bianchi', rose: 'Rosati', sparkling: 'Bollicine', dessert: 'Dolci', other: 'Altro' };
-  const totalTyped = Object.values(stats.typeSplit).reduce((a, b) => a + b, 0) || 1;
-  let donutOffset = 0;
 
   return (
     <div className="space-y-5">
@@ -289,31 +252,7 @@ const HistoryDashboard: React.FC<HistoryDashboardProps> = ({ history, wines, onW
         {/* Donut tipologie bevute */}
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: '200ms' }}>
           <h3 className="font-serif font-bold text-lg text-gray-900 mb-3">Cosa bevi</h3>
-          <div className="flex items-center gap-5">
-            <svg viewBox="0 0 42 42" className="w-28 h-28 -rotate-90 shrink-0">
-              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#f1f5f9" strokeWidth="6" />
-              {Object.entries(stats.typeSplit).filter(([, c]) => c > 0).map(([k, c]) => {
-                const pct = (c / totalTyped) * 100;
-                const el = (
-                  <circle key={k} cx="21" cy="21" r="15.9" fill="none" stroke={typeColors[k]} strokeWidth="6"
-                    strokeDasharray={`${mounted ? pct : 0} ${100 - (mounted ? pct : 0)}`} strokeDashoffset={-donutOffset}
-                    style={{ transition: 'stroke-dasharray 1.2s ease-out' }} />
-                );
-                donutOffset += pct;
-                return el;
-              })}
-            </svg>
-            <div className="space-y-1.5 text-sm">
-              {Object.entries(stats.typeSplit).filter(([, c]) => c > 0).map(([k, c]) => (
-                <div key={k} className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full border border-black/5" style={{ background: typeColors[k] }} />
-                  <span className="text-gray-600">{typeLabels[k]}</span>
-                  <span className="font-bold text-gray-900">{Math.round((c / totalTyped) * 100)}%</span>
-                </div>
-              ))}
-              {history.length === 0 && <p className="text-xs text-gray-400">Nessuna bevuta registrata.</p>}
-            </div>
-          </div>
+          <Donut data={stats.typeSplit} mounted={mounted} />
         </div>
 
         {/* Highlights */}

@@ -58,6 +58,22 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
       return 0;
   });
 
+  const groupedHistory: { key: string; label: string | null; entries: HistoryEntry[]; spent: number }[] = [];
+  const groupByMonth = sortOrder === 'date_desc' || sortOrder === 'date_asc';
+  filteredHistory.forEach(entry => {
+      const d = new Date(entry.consumedDate);
+      const valid = !isNaN(d.getTime());
+      const key = !groupByMonth ? 'all' : valid ? `${d.getFullYear()}-${d.getMonth()}` : 'unknown';
+      let group = groupedHistory.find(g => g.key === key);
+      if (!group) {
+          const label = !groupByMonth ? null : valid ? d.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' }) : 'Data sconosciuta';
+          group = { key, label, entries: [], spent: 0 };
+          groupedHistory.push(group);
+      }
+      group.entries.push(entry);
+      group.spent += Number(entry.price) || 0;
+  });
+
   if (viewMode === 'analysis') {
       return (
           <div className="h-full flex flex-col bg-slate-50">
@@ -116,7 +132,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24">
-       <div className="lg:max-w-7xl lg:mx-auto space-y-8">
+       <div className="space-y-8">
         <div className={mobileTab === 'stats' ? 'block' : 'hidden md:block'}>
             <HistoryDashboard history={history} wines={wines} onWinesRevalued={onWinesRevalued} onAiUsed={onAiUsed} />
         </div>
@@ -129,8 +145,20 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
             <p>{t('history_empty')}</p>
           </div>
         ) : (
+          <div className="space-y-8">
+            {groupedHistory.map(group => (
+              <section key={group.key}>
+                {group.label && (
+                  <div className="flex items-baseline justify-between gap-3 mb-3 pb-2 border-b border-gray-200">
+                    <h3 className="font-serif font-bold text-lg text-gray-900 capitalize">{group.label}</h3>
+                    <span className="text-xs text-gray-500 shrink-0">
+                      <span className="font-bold text-gray-800">{group.entries.length}</span> {group.entries.length === 1 ? 'bottiglia' : 'bottiglie'}
+                      {group.spent > 0 && <> · <span className="font-bold text-gray-800">€{group.spent.toFixed(0)}</span></>}
+                    </span>
+                  </div>
+                )}
             <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-4 md:items-start">
-                {filteredHistory.map((entry) => (
+                {group.entries.map((entry) => (
                     <div key={entry.id} onClick={() => setSelectedEntry(entry)} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-3 cursor-pointer hover:shadow-md transition-all relative group">
                          <div className="absolute top-4 right-4 text-gray-300 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><PencilIcon className="w-4 h-4" /></div>
                          
@@ -168,6 +196,9 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
                     </div>
                 ))}
             </div>
+              </section>
+            ))}
+          </div>
         )}
         </div>
        </div>

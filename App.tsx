@@ -372,24 +372,11 @@ const AppContent: React.FC = () => {
       {/* Navigazione laterale: tablet in orizzontale e desktop (da md in su), a scomparsa */}
       <nav className={`hidden md:flex md:flex-col shrink-0 border-r border-gray-200 bg-white overflow-hidden transition-all duration-200 ${sidebarCollapsed ? 'md:w-[72px]' : 'md:w-56 lg:w-64'}`}>
         {/* Header con logo: sempre visibile, non scorre con il menu */}
-        <div className={`shrink-0 border-b border-gray-100 py-3 ${sidebarCollapsed ? 'px-2' : 'px-3'}`}>
-          {!sidebarCollapsed && (
-            <div className="flex justify-end mb-1">
-              <button onClick={() => setSidebarCollapsed(true)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 shrink-0" title="Comprimi menu" aria-label="Comprimi menu">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7M19 19l-7-7 7-7" /></svg>
-              </button>
-            </div>
-          )}
+        <div className={`shrink-0 border-b border-gray-100 py-4 ${sidebarCollapsed ? 'px-2' : 'px-3'}`}>
           <div className={`flex items-center gap-2 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
             {sidebarCollapsed ? <Logo className="w-8 h-8" showText={false} /> : <Logo className="w-8 h-8" />}
           </div>
         </div>
-
-        {sidebarCollapsed && (
-          <button onClick={() => setSidebarCollapsed(false)} className="mx-auto my-2 p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 shrink-0" title="Espandi menu" aria-label="Espandi menu">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
-          </button>
-        )}
 
         <div className="flex-1 overflow-y-auto py-3 px-3">
           <div className="flex flex-col gap-1">
@@ -411,6 +398,17 @@ const AppContent: React.FC = () => {
                 {!sidebarCollapsed && 'Admin'}
               </button>
             )}
+            <button
+              onClick={() => setSidebarCollapsed(v => !v)}
+              title={sidebarCollapsed ? 'Espandi menu' : 'Comprimi menu'}
+              aria-label={sidebarCollapsed ? 'Espandi menu' : 'Comprimi menu'}
+              className={`mt-2 flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all ${sidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 shrink-0">
+                <path strokeLinecap="round" strokeLinejoin="round" d={sidebarCollapsed ? 'M13 5l7 7-7 7M5 5l7 7-7 7' : 'M11 19l-7-7 7-7M19 19l-7-7 7-7'} />
+              </svg>
+              {!sidebarCollapsed && 'Comprimi menu'}
+            </button>
           </div>
         </div>
       </nav>
