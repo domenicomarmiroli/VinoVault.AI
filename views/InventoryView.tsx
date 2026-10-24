@@ -101,11 +101,12 @@ const InventoryView: React.FC<InventoryViewProps> = ({
 
   return (
     <div className="relative h-full flex flex-col bg-gray-50">
-      <div className="bg-white px-4 pt-3 pb-2 sticky top-0 z-10 shadow-sm">
+      <div className="bg-white px-4 md:px-6 pt-3 md:pt-5 pb-2 md:pb-4 sticky top-0 z-10 shadow-sm">
         <div className="flex justify-between items-center mb-2">
-          <div className="transform scale-90 origin-left">
+          <div className="transform scale-90 origin-left md:hidden">
              <Logo className="w-10 h-10" />
           </div>
+          <h1 className="hidden md:block text-2xl font-serif font-bold text-gray-900">{t('nav_cellar')}</h1>
 
           <div className="flex gap-1.5">
              <button 
@@ -131,26 +132,26 @@ const InventoryView: React.FC<InventoryViewProps> = ({
           </div>
         </div>
         
-        <div className="flex gap-2 mb-3 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg justify-around">
-            <div className="text-center">
-                <span className="block font-bold text-gray-900 text-base">{totalBottles}</span>
+        <div className="flex gap-2 mb-3 text-xs text-gray-500 bg-gray-50 p-2 md:p-3 rounded-lg justify-around md:justify-start md:gap-8">
+            <div className="text-center md:text-left">
+                <span className="block font-bold text-gray-900 text-base md:text-xl">{totalBottles}</span>
                 {t('bottles')}
             </div>
-            <div className="w-px bg-gray-200"></div>
-            <div className="text-center">
-                <span className="block font-bold text-gray-900 text-base">{wines.filter(w => w.quantity > 0).length}</span>
+            <div className="w-px bg-gray-200 md:hidden"></div>
+            <div className="text-center md:text-left">
+                <span className="block font-bold text-gray-900 text-base md:text-xl">{wines.filter(w => w.quantity > 0).length}</span>
                 {t('labels')}
             </div>
-            <div className="w-px bg-gray-200"></div>
-            <div className="text-center">
-                <span className="block font-bold text-gray-900 text-base">€{totalValue.toFixed(0)}</span>
+            <div className="w-px bg-gray-200 md:hidden"></div>
+            <div className="text-center md:text-left">
+                <span className="block font-bold text-gray-900 text-base md:text-xl">€{totalValue.toFixed(0)}</span>
                 {t('value')}
             </div>
         </div>
 
-        <div className="flex gap-2 mb-2">
-             <input 
-                type="text" 
+        <div className="flex gap-2 mb-2 md:max-w-xl">
+             <input
+                type="text"
                 placeholder={t('search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -159,7 +160,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
             <select
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
-                className="bg-gray-100 border-none rounded-xl py-2 px-2 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none max-w-[100px] truncate"
+                className="bg-gray-100 border-none rounded-xl py-2 px-2 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none max-w-[100px] md:max-w-[160px] truncate"
             >
                 <option value="all">{t('location')}</option>
                 {locations.map(loc => (
@@ -168,7 +169,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
             </select>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4">
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
             <button onClick={() => setActiveFilter('all')} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === 'all' ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>{t('filter_all')}</button>
             <button onClick={() => setActiveFilter(WineType.RED)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.RED ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>{t('filter_red')}</button>
             <button onClick={() => setActiveFilter(WineType.WHITE)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === WineType.WHITE ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200'}`}>{t('filter_white')}</button>
@@ -176,26 +177,28 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-32">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-32">
         {filteredWines.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
             <p>{t('no_wines')}</p>
           </div>
         ) : (
-          filteredWines.map(wine => (
-            <WineCard 
-              key={wine.id} 
-              wine={wine} 
-              onClick={(w) => setSelectedWine(w)}
-            />
-          ))
+          <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-4 md:items-start">
+            {filteredWines.map(wine => (
+              <WineCard
+                key={wine.id}
+                wine={wine}
+                onClick={(w) => setSelectedWine(w)}
+              />
+            ))}
+          </div>
         )}
       </div>
 
       {/* Floating Action Button (FAB) for adding wine */}
-      <button 
+      <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-24 right-6 z-30 bg-wine-600 text-white w-14 h-14 rounded-full shadow-xl shadow-wine-900/20 flex items-center justify-center hover:bg-wine-700 transition-transform active:scale-95"
+        className="fixed bottom-24 md:bottom-8 right-6 md:right-8 z-30 bg-wine-600 text-white w-14 h-14 rounded-full shadow-xl shadow-wine-900/20 flex items-center justify-center hover:bg-wine-700 transition-transform active:scale-95"
         aria-label={t('add_wine')}
       >
         <PlusIcon className="w-8 h-8" />

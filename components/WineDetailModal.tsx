@@ -80,11 +80,22 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
       }
   };
 
+  const analyticsCard = (
+      <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-3">
+           <h3 className="text-xs font-bold uppercase text-indigo-800 flex items-center gap-2"><ChartBarIcon className="w-4 h-4" filled /> Analytics</h3>
+           <div className="flex justify-between items-center gap-4">
+               <div className="flex-1"><span className="block text-[10px] text-indigo-400 uppercase font-bold">{t('drink_window')}</span>{isEditing ? <input type="text" value={formData.drinkWindow} onChange={(e) => handleChange('drinkWindow', e.target.value)} className="w-full bg-white border border-indigo-200 rounded px-1 py-0.5 text-sm mt-1" /> : <div className="flex items-center gap-2 mt-0.5"><span className="text-sm font-bold text-indigo-900">{formData.drinkWindow || 'N/A'}</span><DrinkabilityBadge drinkWindow={formData.drinkWindow} /></div>}</div>
+               <div className="text-right flex-1"><span className="block text-[10px] text-indigo-400 uppercase font-bold">{t('estimated_value')}</span>{isEditing ? <input type="number" value={formData.marketPrice || formData.price} onChange={(e) => handleChange('marketPrice', parseFloat(e.target.value))} className="w-full bg-white border border-indigo-200 rounded px-1 py-0.5 text-sm mt-1 text-right" /> : <span className="text-lg font-bold text-indigo-900">€{formData.marketPrice?.toFixed(0) || formData.price}</span>}</div>
+           </div>
+           {!isEditing && (<div className="mt-2 pt-2 border-t border-indigo-200/50"><PriceComparison name={formData.name} producer={formData.producer} year={formData.year} isPremium={isPremium} /></div>)}
+      </div>
+  );
+
   const content = (
     <div className="fixed inset-0 bg-black/70 z-[300] flex items-end md:items-center justify-center animate-in fade-in duration-200 backdrop-blur-sm">
-      <div className="bg-white w-full h-[100dvh] md:h-auto md:max-h-[85vh] md:max-w-2xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
-        
-        <div className="relative h-48 md:h-56 bg-gray-100 flex-shrink-0">
+      <div className="bg-white w-full h-[100dvh] md:h-auto md:max-h-[85vh] md:max-w-2xl lg:max-w-4xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
+
+        <div className="relative h-48 md:h-56 lg:h-64 bg-gray-100 flex-shrink-0">
            {formData.imageUrl ? (
               <>
                 <img src={formData.imageUrl} alt={formData.name} className="w-full h-full object-cover blur-sm opacity-50 absolute inset-0" />
@@ -146,28 +157,25 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
             )}
 
             {!isEditing && (
-                <WineFactsGrid
-                    grape={formData.grape}
-                    type={formData.type}
-                    alcohol={formData.alcohol}
-                    year={formData.year}
-                    region={formData.region}
-                    serving={formData.servingTemp}
-                    storage={formData.storageTemp}
-                    foodPairings={formData.foodPairings}
-                />
+                <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start space-y-5 lg:space-y-0">
+                    <div className="space-y-5">
+                        <WineFactsGrid
+                            grape={formData.grape}
+                            type={formData.type}
+                            alcohol={formData.alcohol}
+                            year={formData.year}
+                            region={formData.region}
+                            serving={formData.servingTemp}
+                            storage={formData.storageTemp}
+                            foodPairings={formData.foodPairings}
+                        />
+                        <WineStyleChart style={formData.wineStyle} />
+                    </div>
+                    {analyticsCard}
+                </div>
             )}
 
-            {!isEditing && <WineStyleChart style={formData.wineStyle} />}
-
-            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-3">
-                 <h3 className="text-xs font-bold uppercase text-indigo-800 flex items-center gap-2"><ChartBarIcon className="w-4 h-4" filled /> Analytics</h3>
-                 <div className="flex justify-between items-center gap-4">
-                     <div className="flex-1"><span className="block text-[10px] text-indigo-400 uppercase font-bold">{t('drink_window')}</span>{isEditing ? <input type="text" value={formData.drinkWindow} onChange={(e) => handleChange('drinkWindow', e.target.value)} className="w-full bg-white border border-indigo-200 rounded px-1 py-0.5 text-sm mt-1" /> : <div className="flex items-center gap-2 mt-0.5"><span className="text-sm font-bold text-indigo-900">{formData.drinkWindow || 'N/A'}</span><DrinkabilityBadge drinkWindow={formData.drinkWindow} /></div>}</div>
-                     <div className="text-right flex-1"><span className="block text-[10px] text-indigo-400 uppercase font-bold">{t('estimated_value')}</span>{isEditing ? <input type="number" value={formData.marketPrice || formData.price} onChange={(e) => handleChange('marketPrice', parseFloat(e.target.value))} className="w-full bg-white border border-indigo-200 rounded px-1 py-0.5 text-sm mt-1 text-right" /> : <span className="text-lg font-bold text-indigo-900">€{formData.marketPrice?.toFixed(0) || formData.price}</span>}</div>
-                 </div>
-                 {!isEditing && (<div className="mt-2 pt-2 border-t border-indigo-200/50"><PriceComparison name={formData.name} producer={formData.producer} year={formData.year} isPremium={isPremium} /></div>)}
-            </div>
+            {isEditing && analyticsCard}
 
             {isEditing && (
                 <div className="space-y-3">

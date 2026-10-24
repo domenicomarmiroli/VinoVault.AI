@@ -25,6 +25,7 @@ import LandingPage from './components/LandingPage';
 import SharedPairingModal from './components/SharedPairingModal';
 import LoadingScreen from './components/LoadingScreen';
 import InstallPwaPrompt from './components/InstallPwaPrompt';
+import { Logo } from './components/Logo';
 import { WineIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon, ChefIcon, CogIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { AnalysisStyleProvider } from './contexts/AnalysisStyleContext';
@@ -347,47 +348,79 @@ const AppContent: React.FC = () => {
     );
   }
 
+  const navItems = [
+    { id: 'inventory', icon: WineIcon, label: t('nav_cellar') },
+    { id: 'shop', icon: ShopIcon, label: t('nav_shop') },
+    { id: 'sommelier', icon: ChefIcon, label: t('nav_sommelier') },
+    { id: 'restaurant', icon: RestaurantIcon, label: t('nav_restaurant') },
+    { id: 'analytics', icon: ChartBarIcon, label: t('nav_data') },
+    { id: 'history', icon: HistoryIcon, label: t('nav_history') }
+  ] as const;
+
   return (
-    <div className="flex flex-col h-full w-full md:max-w-md mx-auto bg-white shadow-2xl overflow-hidden md:border-x md:border-gray-200">
-      <main className="flex-1 overflow-hidden relative">
-        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'inventory' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><InventoryView wines={wines} locations={locations} onAddWine={handleAddWine} onUpdateWine={handleUpdateWine} onConsume={handleConsume} onDelete={handleDelete} onAddLocation={handleAddLocation} onDeleteLocation={handleDeleteLocation} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} /></div>
-        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'shop' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><ShopView inventory={wines} onLogout={handleLogout} onAddToInventory={handleAddWine} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} /></div>
-        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'sommelier' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><SommelierView inventory={wines} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onConsume={handleConsume} /></div>
-        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'restaurant' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><RestaurantView onLogout={handleLogout} onAddToHistory={handleAddToHistory} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onClearRestaurant={() => { setRestaurantData(null); window.history.replaceState({}, '', '/'); }} restaurantData={restaurantData} /></div>
-        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><HistoryView wines={wines} history={history} onClearHistory={() => setHistory([])} onLogout={handleLogout} onUpdateHistoryEntry={handleUpdateHistoryEntry} onDeleteHistoryEntry={handleDeleteHistoryEntry} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} /></div>
-        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'analytics' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><AnalyticsView inventory={wines} history={history} onLogout={handleLogout} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} /></div>
-        
-        {managedRestaurant && activeTab === 'manage-restaurant' && <div className="absolute inset-0 z-20"><RestaurantManagerView restaurant={managedRestaurant} onUpdateRestaurant={handleUpdateManagedRestaurant} onLogout={handleLogout} /></div>}
-      </main>
-      
-      <nav className="bg-white border-t border-gray-200 flex justify-between px-1 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] overflow-x-auto no-scrollbar">
-        {[
-          { id: 'inventory', icon: WineIcon, label: t('nav_cellar') },
-          { id: 'shop', icon: ShopIcon, label: t('nav_shop') },
-          { id: 'sommelier', icon: ChefIcon, label: t('nav_sommelier') },
-          { id: 'restaurant', icon: RestaurantIcon, label: t('nav_restaurant') },
-          { id: 'analytics', icon: ChartBarIcon, label: t('nav_data') },
-          { id: 'history', icon: HistoryIcon, label: t('nav_history') }
-        ].map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.2rem] ${activeTab === tab.id ? 'text-wine-700' : 'text-gray-400'}`}>
-            <tab.icon className="w-5 h-5 mb-1" filled={activeTab === tab.id} />
-            <span className="text-[7px] font-bold uppercase tracking-wider">{tab.label}</span>
-          </button>
-        ))}
-        {managedRestaurant && (
-          <button onClick={() => setActiveTab('manage-restaurant')} className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.2rem] ${activeTab === 'manage-restaurant' ? 'text-emerald-700' : 'text-gray-400'}`}>
-            <RestaurantIcon className="w-5 h-5 mb-1" filled={activeTab === 'manage-restaurant'} />
-            <span className="text-[7px] font-bold uppercase tracking-wider">Locale</span>
-          </button>
-        )}
-        {userRole === 'admin' && (
-          <button onClick={() => setActiveTab('admin')} className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.2rem] ${activeTab === 'admin' ? 'text-wine-700' : 'text-gray-400'}`}>
-            <ShieldCheckIcon className="w-5 h-5" filled={activeTab === 'admin'} />
-            <span className="text-[7px] font-bold uppercase tracking-wider">Admin</span>
-          </button>
-        )}
+    <div className="flex flex-col md:flex-row h-full w-full bg-stone-50 overflow-hidden">
+      {/* Navigazione laterale: tablet in orizzontale e desktop (da md in su) */}
+      <nav className="hidden md:flex md:flex-col md:w-56 lg:w-64 shrink-0 border-r border-gray-200 bg-white py-6 px-3 overflow-y-auto">
+        <div className="px-3 mb-6 flex items-center gap-2">
+          <Logo className="w-9 h-9" />
+          <span className="font-serif font-bold text-wine-900 text-lg leading-tight">AIKNOWINE</span>
+        </div>
+        <div className="flex flex-col gap-1">
+          {navItems.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all text-left ${activeTab === tab.id ? 'bg-wine-50 text-wine-700' : 'text-gray-500 hover:bg-gray-50'}`}>
+              <tab.icon className="w-5 h-5 shrink-0" filled={activeTab === tab.id} />
+              {tab.label}
+            </button>
+          ))}
+          {managedRestaurant && (
+            <button onClick={() => setActiveTab('manage-restaurant')} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all text-left ${activeTab === 'manage-restaurant' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-gray-50'}`}>
+              <RestaurantIcon className="w-5 h-5 shrink-0" filled={activeTab === 'manage-restaurant'} />
+              Locale
+            </button>
+          )}
+          {userRole === 'admin' && (
+            <button onClick={() => setActiveTab('admin')} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all text-left ${activeTab === 'admin' ? 'bg-wine-50 text-wine-700' : 'text-gray-500 hover:bg-gray-50'}`}>
+              <ShieldCheckIcon className="w-5 h-5 shrink-0" filled={activeTab === 'admin'} />
+              Admin
+            </button>
+          )}
+        </div>
       </nav>
-      <RateWineModal entry={ratingModalEntry} onClose={() => setRatingModalEntry(null)} onSave={handleUpdateHistoryEntry} onDelete={handleDeleteHistoryEntry} isPremium={userPremium} />
+
+      <div className="flex flex-col flex-1 min-w-0 h-full bg-white overflow-hidden">
+        <main className="flex-1 overflow-hidden relative">
+          <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'inventory' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><InventoryView wines={wines} locations={locations} onAddWine={handleAddWine} onUpdateWine={handleUpdateWine} onConsume={handleConsume} onDelete={handleDelete} onAddLocation={handleAddLocation} onDeleteLocation={handleDeleteLocation} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} /></div>
+          <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'shop' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><ShopView inventory={wines} onLogout={handleLogout} onAddToInventory={handleAddWine} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} /></div>
+          <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'sommelier' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><SommelierView inventory={wines} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onConsume={handleConsume} /></div>
+          <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'restaurant' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><RestaurantView onLogout={handleLogout} onAddToHistory={handleAddToHistory} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onClearRestaurant={() => { setRestaurantData(null); window.history.replaceState({}, '', '/'); }} restaurantData={restaurantData} /></div>
+          <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><HistoryView wines={wines} history={history} onClearHistory={() => setHistory([])} onLogout={handleLogout} onUpdateHistoryEntry={handleUpdateHistoryEntry} onDeleteHistoryEntry={handleDeleteHistoryEntry} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} /></div>
+          <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'analytics' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><AnalyticsView inventory={wines} history={history} onLogout={handleLogout} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} /></div>
+
+          {managedRestaurant && activeTab === 'manage-restaurant' && <div className="absolute inset-0 z-20"><RestaurantManagerView restaurant={managedRestaurant} onUpdateRestaurant={handleUpdateManagedRestaurant} onLogout={handleLogout} /></div>}
+        </main>
+
+        <nav className="md:hidden bg-white border-t border-gray-200 flex justify-between px-1 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] overflow-x-auto no-scrollbar">
+          {navItems.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.2rem] ${activeTab === tab.id ? 'text-wine-700' : 'text-gray-400'}`}>
+              <tab.icon className="w-5 h-5 mb-1" filled={activeTab === tab.id} />
+              <span className="text-[7px] font-bold uppercase tracking-wider">{tab.label}</span>
+            </button>
+          ))}
+          {managedRestaurant && (
+            <button onClick={() => setActiveTab('manage-restaurant')} className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.2rem] ${activeTab === 'manage-restaurant' ? 'text-emerald-700' : 'text-gray-400'}`}>
+              <RestaurantIcon className="w-5 h-5 mb-1" filled={activeTab === 'manage-restaurant'} />
+              <span className="text-[7px] font-bold uppercase tracking-wider">Locale</span>
+            </button>
+          )}
+          {userRole === 'admin' && (
+            <button onClick={() => setActiveTab('admin')} className={`flex flex-col items-center p-2 rounded-xl transition-all min-w-[3.2rem] ${activeTab === 'admin' ? 'text-wine-700' : 'text-gray-400'}`}>
+              <ShieldCheckIcon className="w-5 h-5" filled={activeTab === 'admin'} />
+              <span className="text-[7px] font-bold uppercase tracking-wider">Admin</span>
+            </button>
+          )}
+        </nav>
+        <RateWineModal entry={ratingModalEntry} onClose={() => setRatingModalEntry(null)} onSave={handleUpdateHistoryEntry} onDelete={handleDeleteHistoryEntry} isPremium={userPremium} />
+      </div>
     </div>
   );
 };

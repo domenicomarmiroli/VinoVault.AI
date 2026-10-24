@@ -28,12 +28,12 @@ const getQualityColor = (score: number) => {
 
 const WineCard: React.FC<WineCardProps> = ({ wine, onClick }) => {
   return (
-    <div 
+    <div
         onClick={() => onClick(wine)}
-        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all active:scale-[0.98] cursor-pointer flex h-30"
+        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all active:scale-[0.98] cursor-pointer flex h-30 md:h-auto md:flex-col"
     >
-        {/* Immagine a Sinistra */}
-        <div className="w-24 bg-gray-100 flex-shrink-0 relative overflow-hidden">
+        {/* Immagine: a sinistra su mobile, in alto su tablet/desktop */}
+        <div className="w-24 md:w-full h-auto md:h-40 bg-gray-100 flex-shrink-0 relative overflow-hidden">
           {wine.imageUrl ? (
             <img src={wine.imageUrl} alt={wine.name} className="w-full h-full object-cover" />
           ) : (
@@ -54,9 +54,9 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onClick }) => {
             </div>
           )}
         </div>
-        
-        {/* Info a Destra */}
-        <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
+
+        {/* Info */}
+        <div className="flex-1 p-3 md:p-4 flex flex-col justify-between min-w-0">
           <div>
               <div className="flex justify-between items-start mb-1">
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${getTypeColor(wine.type)}`}>
@@ -69,10 +69,24 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onClick }) => {
                    </span>
                 </div>
               </div>
-              <h3 className="text-base font-bold text-gray-900 truncate leading-tight mb-0.5">{wine.name}</h3>
-              <p className="text-xs text-gray-600 truncate">{wine.producer}</p>
+              <h3 className="text-base md:text-lg font-bold text-gray-900 truncate leading-tight mb-0.5">{wine.name}</h3>
+              <p className="text-xs md:text-sm text-gray-600 truncate">{wine.producer}</p>
+
+              {/* Dati extra visibili solo con più spazio (tablet/desktop) */}
+              <div className="hidden md:flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[11px] text-gray-500">
+                  {wine.grape && <span className="truncate">{wine.grape}</span>}
+                  {wine.alcohol && <span className="whitespace-nowrap">{wine.alcohol}</span>}
+                  {wine.drinkWindow && <span className="whitespace-nowrap">Bevi: {wine.drinkWindow}</span>}
+              </div>
+              {wine.foodPairings && wine.foodPairings.length > 0 && (
+                <div className="hidden md:flex flex-wrap gap-1 mt-2">
+                    {wine.foodPairings.slice(0, 2).map((p, i) => (
+                        <span key={i} className="text-[10px] font-medium text-wine-700 bg-wine-50 border border-wine-100 px-1.5 py-0.5 rounded-full truncate max-w-[120px]">{p}</span>
+                    ))}
+                </div>
+              )}
           </div>
-          
+
           <div className="flex justify-between items-end mt-2">
              <div className="flex flex-col gap-1 min-w-0 flex-1 mr-2">
                 <div className="text-xs text-gray-500 truncate">
