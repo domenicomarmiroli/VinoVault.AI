@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Wine, PurchaseAnalysis } from '../types';
-import { analyzePurchase } from '../services/geminiService';
+import { analyzePurchase, analyzeWineLabel } from '../services/geminiService';
 import { CameraIcon, LogoutIcon, ShopIcon, WineIcon, ExternalLinkIcon, ChefIcon } from '../components/Icons';
 import PriceComparison from '../components/PriceComparison';
 import WineStyleChart from '../components/WineStyleChart';
@@ -58,6 +58,8 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<PurchaseAnalysis | null>(null);
   const [editedYear, setEditedYear] = useState('');
+  const [yearPromptVisible, setYearPromptVisible] = useState(false);
+  const [pendingYear, setPendingYear] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, language } = useLanguage();
   const { analysisStyle } = useAnalysisStyle();
@@ -76,24 +78,19 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
       }
   };
 
-  const handleAnalyze = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (mode === 'camera' && !image) return;
-      if (mode === 'link' && !linkUrl) return;
-      if (!price) { alert(t('error')); return; }
-
+  const runFullAnalysis = async (knownYear?: string) => {
       const inputPrice = Number(price);
       setLoading(true);
       setAnalysis(null);
       try {
           const input = mode === 'camera' ? { type: 'image' as const, data: image! } : { type: 'url' as const, data: linkUrl };
-          const result = await analyzePurchase(input, inputPrice, inventory, language, analysisStyle);
-          
+          const result = await analyzePurchase(input, inputPrice, inventory, language, analysisStyle, knownYear);
+
           if (!result.wineDetails) {
               // Added missing 'year' property to satisfy the PurchaseAnalysis interface requirements
               result.wineDetails = { name: 'Unknown', producer: 'Unknown', year: 'N/A', type: 'Rosso' as any };
           }
-          
+
           setAnalysis(result);
           setEditedYear(result.wineDetails?.year && result.wineDetails.year !== 'N/A' ? result.wineDetails.year : '');
           onAiUsed();
@@ -102,6 +99,41 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
       } finally {
           setLoading(false);
       }
+  };
+
+  const handleAnalyze = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (mode === 'camera' && !image) return;
+      if (mode === 'link' && !linkUrl) return;
+      if (!price) { alert(t('error')); return; }
+
+      // Solo in modalità foto possiamo leggere l'annata dall'etichetta prima
+      // della valutazione completa: se non è leggibile, la chiediamo subito.
+      if (mode === 'camera') {
+          setLoading(true);
+          try {
+              const quickScan = await analyzeWineLabel(image!, language, analysisStyle);
+              setLoading(false);
+              if (!quickScan.year) {
+                  setPendingYear('');
+                  setYearPromptVisible(true);
+                  return;
+              }
+              await runFullAnalysis(quickScan.year);
+          } catch (error: any) {
+              setLoading(false);
+              alert(`${t('error')}: ${error.message}`);
+          }
+          return;
+      }
+
+      await runFullAnalysis();
+  };
+
+  const confirmPendingYear = async () => {
+      if (!pendingYear) return;
+      setYearPromptVisible(false);
+      await runFullAnalysis(pendingYear);
   };
 
   const handleBuy = () => {
@@ -173,10 +205,32 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden relative">
       {loading && (
-        <LoadingScreen 
-          message={t('ai_analyzing')} 
-          subMessage={t('loading_shop')} 
+        <LoadingScreen
+          message={t('ai_analyzing')}
+          subMessage={t('loading_shop')}
         />
+      )}
+
+      {yearPromptVisible && (
+        <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-sm animate-in slide-in-from-bottom duration-300">
+            <p className="text-sm font-bold text-amber-700 mb-1">Annata non rilevata</p>
+            <p className="text-sm text-gray-600 mb-4">Non riesco a leggere l'annata dall'etichetta. Indicala per completare la valutazione.</p>
+            <select
+              value={pendingYear}
+              onChange={e => setPendingYear(e.target.value)}
+              className="w-full p-3 border border-amber-400 ring-1 ring-amber-200 rounded-lg bg-white mb-4"
+              autoFocus
+            >
+              <option value="">{t('year')}...</option>
+              {years.map(y => (<option key={y} value={y.toString()}>{y}</option>))}
+            </select>
+            <div className="flex gap-3">
+              <button onClick={() => setYearPromptVisible(false)} className="flex-1 py-3 text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl font-medium">{t('cancel')}</button>
+              <button onClick={confirmPendingYear} disabled={!pendingYear} className="flex-1 py-3 bg-wine-700 text-white hover:bg-wine-800 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed">Continua</button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">

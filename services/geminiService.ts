@@ -26,8 +26,8 @@ export const suggestPairing = async (menu: string, guests: number, inventory: Wi
     return apiCall('suggest-pairing', { menu, guests, inventory, style, lang, tone });
 };
 
-export const analyzePurchase = async (input: { type: 'image' | 'url', data: string }, inputPrice: number, inventory: Wine[], lang: Language = 'it', tone: AnalysisStyle = 'pop'): Promise<PurchaseAnalysis> => {
-    return apiCall('analyze-purchase', { input, inputPrice, inventory, lang, tone });
+export const analyzePurchase = async (input: { type: 'image' | 'url', data: string }, inputPrice: number, inventory: Wine[], lang: Language = 'it', tone: AnalysisStyle = 'pop', knownYear?: string): Promise<PurchaseAnalysis> => {
+    return apiCall('analyze-purchase', { input, inputPrice, inventory, lang, tone, knownYear });
 };
 
 export const suggestRestaurantPairing = async (menuSource: { type: 'images' | 'text', data: string[] | string }, dish: string, lang: Language = 'it', tone: AnalysisStyle = 'pop'): Promise<RestaurantSuggestion[]> => {

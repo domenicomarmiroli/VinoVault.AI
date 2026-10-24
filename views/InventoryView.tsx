@@ -201,12 +201,13 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         <PlusIcon className="w-8 h-8" />
       </button>
 
-      <AddWineModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <AddWineModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         onAdd={onAddWine}
         locations={locations}
-        onAiUsed={onAiUsed} 
+        inventory={wines}
+        onAiUsed={onAiUsed}
       />
 
       <LocationManagerModal 

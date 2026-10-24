@@ -191,7 +191,7 @@ Schema: array di {"courseName": string, "dishName": string, "options": [{"wineId
 });
 
 app.post('/api/ai/analyze-purchase', authenticateToken, async (req, res) => {
-    const { input, inputPrice, inventory, lang = 'it', tone = 'pop' } = req.body;
+    const { input, inputPrice, inventory, lang = 'it', tone = 'pop', knownYear } = req.body;
     const langName = getLanguageName(lang);
     const inventoryContext = inventory.map(w => `${w.quantity}x ${w.name} (${w.type})`).join(', ');
     try {
@@ -203,7 +203,10 @@ app.post('/api/ai/analyze-purchase', authenticateToken, async (req, res) => {
             contentParts.push({ type: 'text', text: input.data });
             extractedImageUrl = await extractOgImage(input.data);
         }
-        contentParts.push({ type: 'text', text: `Prezzo offerto: €${inputPrice}. Cantina attuale: ${inventoryContext || 'vuota'}. Analizza in ${langName}. Rispondi SOLO in JSON.` });
+        const yearHint = knownYear
+            ? `L'annata è già confermata dall'utente: ${knownYear}. Usa esattamente questo valore per wineDetails.year, non cercare di rilevarla diversamente.`
+            : '';
+        contentParts.push({ type: 'text', text: `Prezzo offerto: €${inputPrice}. Cantina attuale: ${inventoryContext || 'vuota'}. ${yearHint} Analizza in ${langName}. Rispondi SOLO in JSON.` });
         const response = await anthropic.messages.create({
             model: MODEL, max_tokens: 2048, temperature: 0,
             system: `Agisci come broker di vini esperto che valuta se un acquisto conviene, indipendentemente dal prezzo richiesto.
@@ -227,6 +230,7 @@ Schema JSON: {"wineDetails": {"name": string, "producer": string, "year": string
             messages: [{ role: 'user', content: contentParts }]
         });
         const result = JSON.parse(cleanJson(extractText(response)));
+        if (knownYear && result.wineDetails) result.wineDetails.year = knownYear;
         if (extractedImageUrl) result.imageUrl = await compressStoredImage(extractedImageUrl);
         res.json(result);
     } catch (err) { res.status(500).json({ error: err.message || 'Errore Shop Advisor' }); }
