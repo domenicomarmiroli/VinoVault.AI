@@ -59,6 +59,11 @@ const AppContent: React.FC = () => {
   const { t, setLanguage, language } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'inventory' | 'shop' | 'sommelier' | 'restaurant' | 'analytics' | 'history' | 'admin' | 'manage-restaurant'>('inventory');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('vinovault_sidebar_collapsed') === 'true');
+
+  useEffect(() => {
+    localStorage.setItem('vinovault_sidebar_collapsed', String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   
   const [wines, setWines] = useState<Wine[]>([]);
@@ -359,31 +364,48 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="flex flex-col md:flex-row h-full w-full bg-stone-50 overflow-hidden">
-      {/* Navigazione laterale: tablet in orizzontale e desktop (da md in su) */}
-      <nav className="hidden md:flex md:flex-col md:w-56 lg:w-64 shrink-0 border-r border-gray-200 bg-white py-6 px-3 overflow-y-auto">
-        <div className="px-3 mb-6 flex items-center gap-2">
-          <Logo className="w-9 h-9" />
-          <span className="font-serif font-bold text-wine-900 text-lg leading-tight">AIKNOWINE</span>
+      {/* Navigazione laterale: tablet in orizzontale e desktop (da md in su), a scomparsa */}
+      <nav className={`hidden md:flex md:flex-col shrink-0 border-r border-gray-200 bg-white overflow-hidden transition-all duration-200 ${sidebarCollapsed ? 'md:w-[72px]' : 'md:w-56 lg:w-64'}`}>
+        {/* Header con logo: sempre visibile, non scorre con il menu */}
+        <div className={`flex items-center h-16 shrink-0 border-b border-gray-100 ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'}`}>
+          <div className="flex items-center gap-2 min-w-0">
+            <Logo className="w-8 h-8" showText={false} />
+            {!sidebarCollapsed && <span className="font-serif font-bold text-wine-900 text-base leading-tight truncate">AIKNOWINE</span>}
+          </div>
+          {!sidebarCollapsed && (
+            <button onClick={() => setSidebarCollapsed(true)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 shrink-0" title="Comprimi menu" aria-label="Comprimi menu">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7M19 19l-7-7 7-7" /></svg>
+            </button>
+          )}
         </div>
-        <div className="flex flex-col gap-1">
-          {navItems.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all text-left ${activeTab === tab.id ? 'bg-wine-50 text-wine-700' : 'text-gray-500 hover:bg-gray-50'}`}>
-              <tab.icon className="w-5 h-5 shrink-0" filled={activeTab === tab.id} />
-              {tab.label}
-            </button>
-          ))}
-          {managedRestaurant && (
-            <button onClick={() => setActiveTab('manage-restaurant')} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all text-left ${activeTab === 'manage-restaurant' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-gray-50'}`}>
-              <RestaurantIcon className="w-5 h-5 shrink-0" filled={activeTab === 'manage-restaurant'} />
-              Locale
-            </button>
-          )}
-          {userRole === 'admin' && (
-            <button onClick={() => setActiveTab('admin')} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all text-left ${activeTab === 'admin' ? 'bg-wine-50 text-wine-700' : 'text-gray-500 hover:bg-gray-50'}`}>
-              <ShieldCheckIcon className="w-5 h-5 shrink-0" filled={activeTab === 'admin'} />
-              Admin
-            </button>
-          )}
+
+        {sidebarCollapsed && (
+          <button onClick={() => setSidebarCollapsed(false)} className="mx-auto my-2 p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 shrink-0" title="Espandi menu" aria-label="Espandi menu">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+          </button>
+        )}
+
+        <div className="flex-1 overflow-y-auto py-3 px-3">
+          <div className="flex flex-col gap-1">
+            {navItems.map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} title={sidebarCollapsed ? tab.label : undefined} className={`flex items-center gap-3 py-2.5 rounded-xl text-sm font-bold transition-all text-left ${sidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === tab.id ? 'bg-wine-50 text-wine-700' : 'text-gray-500 hover:bg-gray-50'}`}>
+                <tab.icon className="w-5 h-5 shrink-0" filled={activeTab === tab.id} />
+                {!sidebarCollapsed && tab.label}
+              </button>
+            ))}
+            {managedRestaurant && (
+              <button onClick={() => setActiveTab('manage-restaurant')} title={sidebarCollapsed ? 'Locale' : undefined} className={`flex items-center gap-3 py-2.5 rounded-xl text-sm font-bold transition-all text-left ${sidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'manage-restaurant' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-gray-50'}`}>
+                <RestaurantIcon className="w-5 h-5 shrink-0" filled={activeTab === 'manage-restaurant'} />
+                {!sidebarCollapsed && 'Locale'}
+              </button>
+            )}
+            {userRole === 'admin' && (
+              <button onClick={() => setActiveTab('admin')} title={sidebarCollapsed ? 'Admin' : undefined} className={`flex items-center gap-3 py-2.5 rounded-xl text-sm font-bold transition-all text-left ${sidebarCollapsed ? 'justify-center px-0' : 'px-3'} ${activeTab === 'admin' ? 'bg-wine-50 text-wine-700' : 'text-gray-500 hover:bg-gray-50'}`}>
+                <ShieldCheckIcon className="w-5 h-5 shrink-0" filled={activeTab === 'admin'} />
+                {!sidebarCollapsed && 'Admin'}
+              </button>
+            )}
+          </div>
         </div>
       </nav>
 

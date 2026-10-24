@@ -158,20 +158,20 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
 
             {!isEditing && (
                 <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start space-y-5 lg:space-y-0">
+                    <WineFactsGrid
+                        grape={formData.grape}
+                        type={formData.type}
+                        alcohol={formData.alcohol}
+                        year={formData.year}
+                        region={formData.region}
+                        serving={formData.servingTemp}
+                        storage={formData.storageTemp}
+                        foodPairings={formData.foodPairings}
+                    />
                     <div className="space-y-5">
-                        <WineFactsGrid
-                            grape={formData.grape}
-                            type={formData.type}
-                            alcohol={formData.alcohol}
-                            year={formData.year}
-                            region={formData.region}
-                            serving={formData.servingTemp}
-                            storage={formData.storageTemp}
-                            foodPairings={formData.foodPairings}
-                        />
+                        {analyticsCard}
                         <WineStyleChart style={formData.wineStyle} />
                     </div>
-                    {analyticsCard}
                 </div>
             )}
 
