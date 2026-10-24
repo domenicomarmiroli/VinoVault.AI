@@ -5,6 +5,14 @@ import { UserIcon, LogoutIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
 import { Language } from '../types';
+import {
+  detectInstallPlatform,
+  hasDeferredInstallPrompt,
+  isAppInstalled,
+  onInstallStateChange,
+  triggerInstallPrompt,
+  InstallPlatform
+} from '../services/pwaInstall';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -16,6 +24,26 @@ interface UserProfileModalProps {
 const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, onLogout, userEmail }) => {
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
+
+  // Install PWA
+  const [appInstalled, setAppInstalled] = useState(false);
+  const [installPlatform, setInstallPlatform] = useState<InstallPlatform>('other');
+  const [canPromptInstall, setCanPromptInstall] = useState(false);
+
+  useEffect(() => {
+    setAppInstalled(isAppInstalled());
+    setInstallPlatform(detectInstallPlatform());
+    setCanPromptInstall(hasDeferredInstallPrompt());
+    const unsubscribe = onInstallStateChange(() => {
+      setAppInstalled(isAppInstalled());
+      setCanPromptInstall(hasDeferredInstallPrompt());
+    });
+    return () => { unsubscribe(); };
+  }, []);
+
+  const handleInstallApp = async () => {
+    await triggerInstallPrompt();
+  };
   
   // Language Context
   const { language, setLanguage, t } = useLanguage();
@@ -227,6 +255,36 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
             </div>
 
             <hr className="border-gray-100" />
+
+            {/* Install App */}
+            {!appInstalled && (
+              <>
+                <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Installa l'app</label>
+                    {canPromptInstall ? (
+                        <button
+                            onClick={handleInstallApp}
+                            className="w-full py-3 bg-wine-700 text-white font-bold rounded-xl hover:bg-wine-800 transition-colors"
+                        >
+                            Installa AIKNOWINE
+                        </button>
+                    ) : installPlatform === 'ios-safari' ? (
+                        <p className="text-xs text-gray-500 leading-relaxed bg-gray-50 border border-gray-200 rounded-xl p-3">
+                            Tocca <span className="font-semibold">Condividi</span> nella barra di Safari, poi <span className="font-semibold">"Aggiungi alla schermata Home"</span>.
+                        </p>
+                    ) : installPlatform === 'mac-safari' ? (
+                        <p className="text-xs text-gray-500 leading-relaxed bg-gray-50 border border-gray-200 rounded-xl p-3">
+                            Apri il menu <span className="font-semibold">Condividi</span> nella barra di Safari e scegli <span className="font-semibold">"Aggiungi al Dock"</span>.
+                        </p>
+                    ) : (
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                            L'app è già installata oppure il browser non supporta ancora l'installazione in questo momento.
+                        </p>
+                    )}
+                </div>
+                <hr className="border-gray-100" />
+              </>
+            )}
 
             {/* Stats Section */}
             <div>

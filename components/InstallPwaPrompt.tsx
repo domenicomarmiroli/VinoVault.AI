@@ -1,24 +1,15 @@
 import React, { useEffect, useState } from 'react';
+import {
+  detectInstallPlatform,
+  hasDeferredInstallPrompt,
+  isAppInstalled,
+  onInstallStateChange,
+  triggerInstallPrompt,
+  InstallPlatform
+} from '../services/pwaInstall';
 
 const DISMISS_KEY = 'aiknow_install_dismissed_at';
 const DISMISS_DAYS = 10;
-
-type Platform = 'android-chrome' | 'desktop-chrome' | 'ios-safari' | 'mac-safari' | 'other';
-
-const detectPlatform = (): Platform => {
-  const ua = navigator.userAgent;
-  const isSafari = /Safari/.test(ua) && !/Chrome|Chromium|CriOS|EdgiOS|Edg\//.test(ua);
-  const isIOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-  const isMac = /Macintosh/.test(ua) && !isIOS;
-  if (isIOS && isSafari) return 'ios-safari';
-  if (isMac && isSafari) return 'mac-safari';
-  if (/Android/.test(ua)) return 'android-chrome';
-  return 'desktop-chrome';
-};
-
-const isStandalone = () =>
-  window.matchMedia('(display-mode: standalone)').matches ||
-  (navigator as any).standalone === true;
 
 const wasRecentlyDismissed = () => {
   const raw = localStorage.getItem(DISMISS_KEY);
@@ -30,39 +21,37 @@ const wasRecentlyDismissed = () => {
 };
 
 const InstallPwaPrompt: React.FC = () => {
-  const [deferredEvent, setDeferredEvent] = useState<any>(null);
   const [visible, setVisible] = useState(false);
-  const [platform, setPlatform] = useState<Platform>('other');
+  const [platform, setPlatform] = useState<InstallPlatform>('other');
 
   useEffect(() => {
-    if (isStandalone() || wasRecentlyDismissed()) return;
+    if (isAppInstalled() || wasRecentlyDismissed()) return;
 
-    setPlatform(detectPlatform());
+    const detected = detectInstallPlatform();
+    setPlatform(detected);
 
-    const handleBeforeInstall = (e: Event) => {
-      e.preventDefault();
-      setDeferredEvent(e);
+    if (hasDeferredInstallPrompt()) {
       setVisible(true);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    }
+
+    const unsubscribe = onInstallStateChange(() => {
+      if (isAppInstalled()) {
+        setVisible(false);
+        localStorage.setItem(DISMISS_KEY, String(Date.now()));
+        return;
+      }
+      if (hasDeferredInstallPrompt()) setVisible(true);
+    });
 
     // Safari (iOS e Mac) non emette beforeinstallprompt: mostriamo
     // istruzioni manuali dopo un breve ritardo, così non è intrusivo.
-    const detected = detectPlatform();
     let timer: ReturnType<typeof setTimeout> | undefined;
     if (detected === 'ios-safari' || detected === 'mac-safari') {
       timer = setTimeout(() => setVisible(true), 2500);
     }
 
-    const handleInstalled = () => {
-      setVisible(false);
-      localStorage.setItem(DISMISS_KEY, String(Date.now()));
-    };
-    window.addEventListener('appinstalled', handleInstalled);
-
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-      window.removeEventListener('appinstalled', handleInstalled);
+      unsubscribe();
       if (timer) clearTimeout(timer);
     };
   }, []);
@@ -73,14 +62,11 @@ const InstallPwaPrompt: React.FC = () => {
   };
 
   const handleInstallClick = async () => {
-    if (!deferredEvent) return;
-    deferredEvent.prompt();
-    const { outcome } = await deferredEvent.userChoice;
-    if (outcome === 'accepted' || outcome === 'dismissed') {
+    const outcome = await triggerInstallPrompt();
+    if (outcome !== 'unavailable') {
       localStorage.setItem(DISMISS_KEY, String(Date.now()));
     }
     setVisible(false);
-    setDeferredEvent(null);
   };
 
   if (!visible) return null;
@@ -92,7 +78,7 @@ const InstallPwaPrompt: React.FC = () => {
       <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 flex items-start gap-3 animate-in slide-in-from-bottom duration-300">
         <div className="w-10 h-10 rounded-xl bg-wine-700 flex items-center justify-center shrink-0 text-white font-black text-sm">AI</div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-gray-900">Installa AIKNOW.WINE</p>
+          <p className="text-sm font-bold text-gray-900">Installa AIKNOWINE</p>
           {isManual ? (
             <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
               {platform === 'ios-safari'
