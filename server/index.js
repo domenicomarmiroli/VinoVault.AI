@@ -585,15 +585,32 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// Unici campi modificabili: i nomi delle colonne non arrivano mai dal client.
+const WINE_UPDATABLE_COLUMNS = {
+    name: 'name', producer: 'producer', year: 'year', type: 'type', region: 'region', grape: 'grape',
+    alcohol: 'alcohol', purchaseDate: 'purchase_date', price: 'price', quantity: 'quantity', location: 'location',
+    storageTemp: 'storage_temp', storageAdvice: 'storage_advice', servingTemp: 'serving_temp', servingAdvice: 'serving_advice',
+    foodPairings: 'food_pairings', imageUrl: 'image_url', drinkWindow: 'drink_window', marketPrice: 'market_price',
+    qualityScore: 'quality_score', wineStyle: 'wine_style', cellarSlots: 'cellar_slots',
+};
+
 app.put('/api/wines/:id', authenticateToken, async (req, res) => {
-    const updates = req.body;
-    if (updates.imageUrl) updates.imageUrl = await compressStoredImage(updates.imageUrl);
-    if (updates.wineStyle) updates.wineStyle = JSON.stringify(updates.wineStyle);
-    if (updates.cellarSlots !== undefined) updates.cellarSlots = JSON.stringify(updates.cellarSlots || []);
-    const fields = Object.keys(updates).map((key, i) => `${key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)} = $${i + 1}`).join(', ');
-    const values = Object.values(updates);
     try {
-        await pool.query(`UPDATE wines SET ${fields} WHERE id = $${values.length + 1} AND user_id = $${values.length + 2}`, [...values, req.params.id, req.user.userId]);
+        const body = req.body && typeof req.body === 'object' ? req.body : {};
+        const columns = [];
+        const values = [];
+        for (const [key, column] of Object.entries(WINE_UPDATABLE_COLUMNS)) {
+            if (!Object.prototype.hasOwnProperty.call(body, key)) continue;
+            let value = body[key];
+            if (key === 'imageUrl' && value) value = await compressStoredImage(value);
+            if (key === 'wineStyle') value = value ? JSON.stringify(value) : null;
+            if (key === 'cellarSlots') value = JSON.stringify(Array.isArray(value) ? value : []);
+            columns.push(column);
+            values.push(value);
+        }
+        if (columns.length === 0) return res.status(400).json({ error: 'Nessun campo da aggiornare' });
+        const setClause = columns.map((c, i) => `${c} = $${i + 1}`).join(', ');
+        await pool.query(`UPDATE wines SET ${setClause} WHERE id = $${values.length + 1} AND user_id = $${values.length + 2}`, [...values, req.params.id, req.user.userId]);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
