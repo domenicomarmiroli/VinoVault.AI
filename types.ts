@@ -50,6 +50,7 @@ export interface Wine {
   imageUrl?: string;
   qualityScore?: number;
   wineStyle?: WineStyle;
+  cellarSlots?: CellarSlot[];
 }
 
 export interface HistoryEntry {
@@ -67,9 +68,31 @@ export interface HistoryEntry {
   location?: string; // NEW: Where it was drunk
 }
 
+export type LocationKind = 'generic' | 'rack' | 'fridge';
+
+// Una colonna dello scaffale (la cantinetta frigo ne ha sempre una sola).
+export interface StorageColumn {
+    shelves: number;
+    bottlesPerShelf: number;
+}
+
+export interface LocationLayout {
+    columns: StorageColumn[];
+}
+
 export interface Location {
     id: string;
     name: string;
+    kind?: LocationKind;
+    layout?: LocationLayout;
+}
+
+// Posizione di una singola bottiglia: shelf 0 = ripiano più in basso.
+// Se position manca, la bottiglia è assegnata solo al ripiano.
+export interface CellarSlot {
+    column: number;
+    shelf: number;
+    position?: number;
 }
 
 export interface RestaurantAnalysis {

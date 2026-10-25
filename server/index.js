@@ -118,7 +118,13 @@ const mapWineToFrontend = (w) => ({
     foodPairings: w.food_pairings || [], imageUrl: w.image_url,
     drinkWindow: w.drink_window || '', marketPrice: parseFloat(w.market_price) || 0,
     qualityScore: w.quality_score !== null && w.quality_score !== undefined ? parseInt(w.quality_score) : undefined,
-    wineStyle: w.wine_style ? (typeof w.wine_style === 'string' ? JSON.parse(w.wine_style) : w.wine_style) : undefined
+    wineStyle: w.wine_style ? (typeof w.wine_style === 'string' ? JSON.parse(w.wine_style) : w.wine_style) : undefined,
+    cellarSlots: w.cellar_slots ? (typeof w.cellar_slots === 'string' ? JSON.parse(w.cellar_slots) : w.cellar_slots) : []
+});
+
+const mapLocationToFrontend = (l) => ({
+    id: l.id, name: l.name, kind: l.kind || 'generic',
+    layout: l.layout ? (typeof l.layout === 'string' ? JSON.parse(l.layout) : l.layout) : undefined
 });
 
 const authenticateToken = (req, res, next) => {
@@ -571,9 +577,9 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
     try {
         if (wine.imageUrl) wine.imageUrl = await compressStoredImage(wine.imageUrl);
         await pool.query(
-            `INSERT INTO wines (id, user_id, name, producer, year, type, region, grape, alcohol, purchase_date, price, quantity, location, storage_temp, storage_advice, serving_temp, serving_advice, food_pairings, image_url, drink_window, market_price, quality_score, wine_style)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
-            [wine.id, req.user.userId, wine.name, wine.producer, wine.year, wine.type, wine.region, wine.grape, wine.alcohol, wine.purchaseDate, wine.price, wine.quantity, wine.location, wine.storageTemp, wine.storageAdvice, wine.servingTemp, wine.servingAdvice, wine.foodPairings, wine.imageUrl, wine.drinkWindow, wine.marketPrice, wine.qualityScore ?? null, wine.wineStyle ? JSON.stringify(wine.wineStyle) : null]
+            `INSERT INTO wines (id, user_id, name, producer, year, type, region, grape, alcohol, purchase_date, price, quantity, location, storage_temp, storage_advice, serving_temp, serving_advice, food_pairings, image_url, drink_window, market_price, quality_score, wine_style, cellar_slots)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)`,
+            [wine.id, req.user.userId, wine.name, wine.producer, wine.year, wine.type, wine.region, wine.grape, wine.alcohol, wine.purchaseDate, wine.price, wine.quantity, wine.location, wine.storageTemp, wine.storageAdvice, wine.servingTemp, wine.servingAdvice, wine.foodPairings, wine.imageUrl, wine.drinkWindow, wine.marketPrice, wine.qualityScore ?? null, wine.wineStyle ? JSON.stringify(wine.wineStyle) : null, JSON.stringify(wine.cellarSlots || [])]
         );
         res.status(201).json(wine);
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
@@ -583,6 +589,7 @@ app.put('/api/wines/:id', authenticateToken, async (req, res) => {
     const updates = req.body;
     if (updates.imageUrl) updates.imageUrl = await compressStoredImage(updates.imageUrl);
     if (updates.wineStyle) updates.wineStyle = JSON.stringify(updates.wineStyle);
+    if (updates.cellarSlots !== undefined) updates.cellarSlots = JSON.stringify(updates.cellarSlots || []);
     const fields = Object.keys(updates).map((key, i) => `${key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)} = $${i + 1}`).join(', ');
     const values = Object.values(updates);
     try {
@@ -717,15 +724,24 @@ app.delete('/api/history/:id', authenticateToken, async (req, res) => {
 app.get('/api/locations', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM locations WHERE user_id = $1', [req.user.userId]);
-        res.json(result.rows);
+        res.json(result.rows.map(mapLocationToFrontend));
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/locations', authenticateToken, async (req, res) => {
-    const { id, name } = req.body;
+    const { id, name, kind = 'generic', layout = null } = req.body;
     try {
-        await pool.query('INSERT INTO locations (id, user_id, name) VALUES ($1, $2, $3)', [id, req.user.userId, name]);
-        res.status(201).json({ id, name });
+        await pool.query('INSERT INTO locations (id, user_id, name, kind, layout) VALUES ($1, $2, $3, $4, $5)', [id, req.user.userId, name, kind, layout ? JSON.stringify(layout) : null]);
+        res.status(201).json({ id, name, kind, layout });
+    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.put('/api/locations/:id', authenticateToken, async (req, res) => {
+    const { kind = 'generic', layout = null } = req.body;
+    if (!['generic', 'rack', 'fridge'].includes(kind)) return res.status(400).json({ error: 'Tipo di posizione non valido' });
+    try {
+        await pool.query('UPDATE locations SET kind = $1, layout = $2 WHERE id = $3 AND user_id = $4', [kind, layout ? JSON.stringify(layout) : null, req.params.id, req.user.userId]);
+        res.json({ success: true });
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
@@ -830,6 +846,9 @@ const initDb = async () => {
         await client.query(`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS menu_analysis JSONB;`);
         await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS quality_score INTEGER;`);
         await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS wine_style JSONB;`);
+        await client.query(`ALTER TABLE wines ADD COLUMN IF NOT EXISTS cellar_slots JSONB;`);
+        await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS kind TEXT DEFAULT 'generic';`);
+        await client.query(`ALTER TABLE locations ADD COLUMN IF NOT EXISTS layout JSONB;`);
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cellar_report JSONB;`);
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cellar_report_history_count INTEGER DEFAULT 0;`);
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cellar_report_generated_at TIMESTAMP WITH TIME ZONE;`);

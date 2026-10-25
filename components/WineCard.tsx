@@ -8,6 +8,7 @@ import { classifyWineType } from '../services/wineTypeClassifier';
 interface WineCardProps {
   wine: Wine;
   onClick: (wine: Wine) => void;
+  slotLabel?: string;
 }
 
 const getTypeColor = (type?: string) => {
@@ -28,7 +29,7 @@ const getQualityColor = (score: number) => {
   return 'border-gray-300 text-gray-500 bg-gray-50';
 };
 
-const WineCard: React.FC<WineCardProps> = ({ wine, onClick }) => {
+const WineCard: React.FC<WineCardProps> = ({ wine, onClick, slotLabel }) => {
   return (
     <div
         onClick={() => onClick(wine)}
@@ -97,7 +98,7 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onClick }) => {
                 {wine.location && (
                     <div className="flex items-center gap-1 text-[10px] text-wine-600 font-medium bg-wine-50 px-1.5 py-0.5 rounded w-fit max-w-full">
                         <MapPinIcon className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate">{wine.location}</span>
+                        <span className="truncate">{wine.location}{slotLabel ? ` · ${slotLabel}` : ''}</span>
                     </div>
                 )}
              </div>

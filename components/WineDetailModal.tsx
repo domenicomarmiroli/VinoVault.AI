@@ -9,6 +9,7 @@ import WineStyleChart from './WineStyleChart';
 import WineFactsGrid from './WineFactsGrid';
 import { useLanguage } from '../contexts/LanguageContext';
 import { classifyWineType } from '../services/wineTypeClassifier';
+import { formatSlot, is3DLocation, slotInRange } from '../services/cellarLayout';
 
 interface WineDetailModalProps {
   wine: Wine | null;
@@ -18,6 +19,7 @@ interface WineDetailModalProps {
   onUpdateWine: (wine: Wine) => void;
   onDelete: (id: string) => void;
   isPremium: boolean;
+  onPlaceIn3D?: (wine: Wine) => void;
 }
 
 const getTypeColor = (type?: string) => {
@@ -31,7 +33,7 @@ const getTypeColor = (type?: string) => {
   }
 };
 
-const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onClose, onConsume, onUpdateWine, onDelete, isPremium }) => {
+const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onClose, onConsume, onUpdateWine, onDelete, isPremium, onPlaceIn3D }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Wine | null>(null);
   const [isImageFullscreen, setIsImageFullscreen] = useState(false);
@@ -75,7 +77,8 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
   const handleLocationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       if (!formData) return;
       const newLoc = e.target.value;
-      const updated = { ...formData, location: newLoc };
+      // Cambiando posizione, il posto nella vecchia struttura non è più valido.
+      const updated = { ...formData, location: newLoc, cellarSlots: [] };
       setFormData(updated);
       if (!isEditing) {
           onUpdateWine(updated);
@@ -217,6 +220,30 @@ const WineDetailModal: React.FC<WineDetailModalProps> = ({ wine, locations, onCl
             <div className="pt-4 border-t border-gray-100 pb-8 md:pb-0">
                 <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between"><span className="text-xs text-gray-400 uppercase font-bold">{t('location')}</span><select value={formData.location} onChange={handleLocationChange} className="text-sm font-medium text-wine-700 bg-gray-50 border border-gray-200 rounded-lg py-1 px-3 outline-none focus:ring-2 focus:ring-wine-500">{locations.map(loc => (<option key={loc.id} value={loc.name}>{loc.name}</option>))}</select></div>
+                    {(() => {
+                        const loc = locations.find(l => l.name === formData.location);
+                        if (!is3DLocation(loc)) return null;
+                        const slots = (formData.cellarSlots || []).filter(s => slotInRange(loc.layout, s));
+                        return (
+                            <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+                                <div className="min-w-0">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">{loc.kind === 'fridge' ? 'Nella cantinetta' : 'Nello scaffale'}</p>
+                                    {slots.length === 0 ? (
+                                        <p className="text-sm text-gray-600">Non ancora posizionata</p>
+                                    ) : (
+                                        <div className="flex flex-wrap gap-1 mt-0.5">
+                                            {slots.map((s, i) => <span key={i} className="text-xs font-bold text-emerald-900 bg-white border border-emerald-200 rounded-full px-2 py-0.5">{formatSlot(loc.layout, s, loc.kind)}</span>)}
+                                        </div>
+                                    )}
+                                </div>
+                                {onPlaceIn3D && (
+                                    <button onClick={() => onPlaceIn3D(formData)} className="shrink-0 text-xs font-bold px-3 py-2 rounded-lg bg-wine-700 text-white hover:bg-wine-800">
+                                        {slots.length ? 'Vedi / sposta in 3D' : 'Posiziona in 3D'}
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    })()}
                     <div className="flex items-center justify-between"><span className="text-xs text-gray-400 uppercase font-bold">{t('purchase_date')}</span>{isEditing ? <input type="date" value={formData.purchaseDate} onChange={(e) => handleChange('purchaseDate', e.target.value)} className="bg-gray-50 border border-gray-300 rounded px-2 py-1 text-sm" /> : <span className="text-sm font-medium text-gray-600">{formData.purchaseDate}</span>}</div>
                 </div>
             </div>

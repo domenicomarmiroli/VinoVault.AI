@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Wine, HistoryEntry, Location, Restaurant, Language, User } from './types';
+import { Wine, HistoryEntry, Location, Restaurant, Language, User, LocationKind, LocationLayout } from './types';
+import { pruneSlotsForLayout } from './services/cellarLayout';
 import InventoryView from './views/InventoryView';
 import HistoryView from './views/HistoryView';
 import ShopView from './views/ShopView';
@@ -257,11 +258,14 @@ const AppContent: React.FC = () => {
       type: wine.type, price: wine.price, imageUrl: wine.imageUrl, consumedDate: new Date().toISOString(), 
       rating: 0, notes: '', location: 'Cantina' 
     };
-    setWines(prev => prev.map(w => w.id === wine.id ? { ...w, quantity: Math.max(0, w.quantity - 1) } : w));
+    const newQuantity = Math.max(0, wine.quantity - 1);
+    // La bottiglia bevuta libera il suo posto in cantina (l'ultimo assegnato).
+    const cellarSlots = (wine.cellarSlots || []).slice(0, newQuantity);
+    setWines(prev => prev.map(w => w.id === wine.id ? { ...w, quantity: newQuantity, cellarSlots } : w));
     setHistory(prev => [historyEntry, ...prev]);
     try {
         await authFetch('/api/history', { method: 'POST', body: JSON.stringify(historyEntry) });
-        await authFetch(`/api/wines/${wine.id}`, { method: 'PUT', body: JSON.stringify({ quantity: Math.max(0, wine.quantity - 1) }) });
+        await authFetch(`/api/wines/${wine.id}`, { method: 'PUT', body: JSON.stringify({ quantity: newQuantity, cellarSlots }) });
         setRatingModalEntry(historyEntry);
     } catch (e) { alert("Errore connessione."); }
   };
@@ -310,6 +314,21 @@ const AppContent: React.FC = () => {
       const newLoc: Location = { id: generateId(), name };
       setLocations(prev => [...prev, newLoc]);
       authFetch('/api/locations', { method: 'POST', body: JSON.stringify(newLoc) });
+  };
+
+  const handleUpdateLocation = (id: string, kind: LocationKind, layout?: LocationLayout) => {
+      const loc = locations.find(l => l.id === id);
+      if (!loc) return;
+      setLocations(prev => prev.map(l => l.id === id ? { ...l, kind, layout } : l));
+      authFetch(`/api/locations/${id}`, { method: 'PUT', body: JSON.stringify({ kind, layout: layout || null }) });
+      // Le bottiglie che non rientrano più nella struttura tornano "da posizionare".
+      wines.filter(w => w.location === loc.name && (w.cellarSlots || []).length > 0).forEach(w => {
+          const pruned = pruneSlotsForLayout(w, kind === 'generic' ? undefined : layout);
+          if (pruned.length !== (w.cellarSlots || []).length) {
+              setWines(prev => prev.map(x => x.id === w.id ? { ...x, cellarSlots: pruned } : x));
+              authFetch(`/api/wines/${w.id}`, { method: 'PUT', body: JSON.stringify({ cellarSlots: pruned }) });
+          }
+      });
   };
 
   const handleDeleteLocation = (id: string) => {
@@ -415,7 +434,7 @@ const AppContent: React.FC = () => {
 
       <div className="flex flex-col flex-1 min-w-0 h-full bg-white overflow-hidden">
         <main className="flex-1 overflow-hidden relative">
-          <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'inventory' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><InventoryView wines={wines} locations={locations} onAddWine={handleAddWine} onUpdateWine={handleUpdateWine} onConsume={handleConsume} onDelete={handleDelete} onAddLocation={handleAddLocation} onDeleteLocation={handleDeleteLocation} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} /></div>
+          <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'inventory' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><InventoryView wines={wines} locations={locations} onAddWine={handleAddWine} onUpdateWine={handleUpdateWine} onConsume={handleConsume} onDelete={handleDelete} onAddLocation={handleAddLocation} onUpdateLocation={handleUpdateLocation} onDeleteLocation={handleDeleteLocation} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} /></div>
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'shop' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><ShopView inventory={wines} onLogout={handleLogout} onAddToInventory={handleAddWine} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} /></div>
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'sommelier' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><SommelierView inventory={wines} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onConsume={handleConsume} /></div>
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'restaurant' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><RestaurantView onLogout={handleLogout} onAddToHistory={handleAddToHistory} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onClearRestaurant={() => { setRestaurantData(null); window.history.replaceState({}, '', '/'); }} restaurantData={restaurantData} /></div>

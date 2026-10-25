@@ -1,10 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Wine, WineType, Location } from '../types';
+import { Wine, WineType, Location, LocationKind, LocationLayout } from '../types';
 import WineCard from '../components/WineCard';
 import AddWineModal from '../components/AddWineModal';
 import WineDetailModal from '../components/WineDetailModal';
 import LocationManagerModal from '../components/LocationManagerModal';
+import LocationConfiguratorModal from '../components/LocationConfiguratorModal';
+import Cellar3DModal from '../components/Cellar3DModal';
+import { formatSlot, is3DLocation, slotInRange } from '../services/cellarLayout';
 import OnboardingModal from '../components/OnboardingModal'; 
 import UserProfileModal from '../components/UserProfileModal'; 
 import { PlusIcon, CogIcon, UserIcon, HelpIcon } from '../components/Icons';
@@ -20,6 +23,7 @@ interface InventoryViewProps {
   onConsume: (wine: Wine) => void;
   onDelete: (id: string) => void;
   onAddLocation: (name: string) => void;
+  onUpdateLocation: (id: string, kind: LocationKind, layout?: LocationLayout) => void;
   onDeleteLocation: (id: string) => void;
   onLogout: () => void;
   onAiUsed: () => void; 
@@ -29,13 +33,27 @@ interface InventoryViewProps {
 type FilterType = 'all' | WineType | 'still';
 
 const InventoryView: React.FC<InventoryViewProps> = ({ 
-    wines, locations, onAddWine, onUpdateWine, onConsume, onDelete, onAddLocation, onDeleteLocation, onLogout, onAiUsed, isPremium
+    wines, locations, onAddWine, onUpdateWine, onConsume, onDelete, onAddLocation, onUpdateLocation, onDeleteLocation, onLogout, onAiUsed, isPremium
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLocManagerOpen, setIsLocManagerOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false); 
   const [isProfileOpen, setIsProfileOpen] = useState(false); 
-  const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
+  const [selectedWineId, setSelectedWineId] = useState<string | null>(null);
+  const selectedWine = selectedWineId ? wines.find(w => w.id === selectedWineId) || null : null;
+  const setSelectedWine = (w: Wine | null) => setSelectedWineId(w ? w.id : null);
+  const [configLocation, setConfigLocation] = useState<Location | null>(null);
+  const [viewer3D, setViewer3D] = useState<{ locationId: string | null; placingWineId?: string | null } | null>(null);
+  const has3DLocations = locations.some(is3DLocation);
+
+  const slotLabelFor = (wine: Wine) => {
+    const loc = locations.find(l => l.name === wine.location);
+    if (!is3DLocation(loc)) return undefined;
+    const slots = (wine.cellarSlots || []).filter(s => slotInRange(loc.layout, s));
+    if (slots.length === 0) return 'Da posizionare';
+    if (slots.length === 1) return formatSlot(loc.layout, slots[0], loc.kind);
+    return `${slots.length}/${wine.quantity} posizionate`;
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
@@ -168,6 +186,19 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                     <option key={loc.id} value={loc.name}>{loc.name}</option>
                 ))}
             </select>
+            {has3DLocations && (
+                <button
+                    onClick={() => {
+                        const selected = locations.find(l => l.name === locationFilter);
+                        setViewer3D({ locationId: is3DLocation(selected) ? selected.id : null });
+                    }}
+                    className="shrink-0 flex items-center gap-1.5 bg-wine-700 text-white rounded-xl py-2 px-3 text-xs font-bold hover:bg-wine-800 shadow-sm"
+                    title="Apri la cantina in 3D"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" /></svg>
+                    <span className="hidden sm:inline">Vista 3D</span>
+                </button>
+            )}
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
@@ -189,6 +220,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
               <WineCard
                 key={wine.id}
                 wine={wine}
+                slotLabel={slotLabelFor(wine)}
                 onClick={(w) => setSelectedWine(w)}
               />
             ))}
@@ -220,6 +252,27 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         locations={locations}
         onAddLocation={onAddLocation}
         onDeleteLocation={onDeleteLocation}
+        onConfigure={(loc) => setConfigLocation(loc)}
+        onOpen3D={(loc) => { setIsLocManagerOpen(false); setViewer3D({ locationId: loc.id }); }}
+      />
+
+      <LocationConfiguratorModal
+        isOpen={!!configLocation}
+        location={configLocation}
+        wines={wines}
+        onClose={() => setConfigLocation(null)}
+        onSave={(kind, layout) => configLocation && onUpdateLocation(configLocation.id, kind, layout)}
+      />
+
+      <Cellar3DModal
+        isOpen={!!viewer3D}
+        locations={locations}
+        initialLocationId={viewer3D?.locationId || null}
+        initialPlacingWineId={viewer3D?.placingWineId || null}
+        wines={wines}
+        onClose={() => setViewer3D(null)}
+        onUpdateWine={onUpdateWine}
+        onOpenWine={(w) => { setViewer3D(null); setSelectedWine(w); }}
       />
 
       <OnboardingModal
@@ -241,7 +294,11 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         onConsume={onConsume}
         onUpdateWine={onUpdateWine}
         onDelete={onDelete}
-        isPremium={isPremium} 
+        isPremium={isPremium}
+        onPlaceIn3D={(w) => {
+            const loc = locations.find(l => l.name === w.location);
+            setViewer3D({ locationId: loc?.id || null, placingWineId: w.id });
+        }}
       />
     </div> 
   );
