@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { HistoryEntry, Wine, CellarValueHistory } from '../types';
 import { getCellarValueHistory, revalueCellar } from '../services/cellarValueService';
 import { classifyWineType } from '../services/wineTypeClassifier';
-import { useCountUp, StatTile, Donut } from './DashboardWidgets';
+import { StatTile, Donut } from './DashboardWidgets';
 
 interface HistoryDashboardProps {
   history: HistoryEntry[];
@@ -106,41 +106,9 @@ const HistoryDashboard: React.FC<HistoryDashboardProps> = ({ history, wines, onW
   const canRevalue = valueHistory ? valueHistory.canRevalue : true;
 
   const gain = stats.cellarValue - stats.cellarCost;
-  const gainPct = stats.cellarCost > 0 ? (gain / stats.cellarCost) * 100 : 0;
 
   return (
     <div className="space-y-5">
-      {/* Hero valore cantina */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-wine-900 via-wine-700 to-wine-500 text-white p-6 md:p-8 shadow-xl animate-in fade-in zoom-in-95 duration-700">
-        <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/10 blur-2xl animate-pulse" />
-        <div className="absolute -left-10 -bottom-20 w-56 h-56 rounded-full bg-cyan-400/20 blur-3xl" />
-        <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-5">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/70">Valore attuale della cantina</p>
-            <HeroValue value={stats.cellarValue} />
-            <p className={`text-sm font-bold mt-1 ${gain >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
-              {gain >= 0 ? '▲' : '▼'} €{Math.abs(gain).toLocaleString('it-IT', { maximumFractionDigits: 0 })} ({gainPct >= 0 ? '+' : ''}{gainPct.toFixed(1)}%) rispetto al prezzo d'acquisto
-            </p>
-          </div>
-          <div className="flex flex-col items-start md:items-end gap-2">
-            <button
-              onClick={handleRevalue}
-              disabled={!canRevalue || revaluing}
-              className="group relative px-5 py-3 rounded-2xl bg-white text-wine-800 font-black text-sm shadow-lg hover:shadow-2xl hover:scale-[1.03] active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2"
-            >
-              <svg className={`w-4 h-4 ${revaluing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
-              {revaluing ? 'Ricalcolo in corso...' : 'Ricalcola valore di mercato'}
-            </button>
-            <p className="text-[11px] text-white/70">
-              {canRevalue ? 'Disponibile ora · utilizzabile 1 volta al mese' : `Prossimo ricalcolo tra ${daysLeft} giorni${nextDate ? ` (${nextDate.toLocaleDateString('it-IT')})` : ''}`}
-            </p>
-            {revalueMessage && (
-              <p className={`text-xs font-bold px-3 py-1.5 rounded-lg animate-in fade-in slide-in-from-top-2 ${revalueMessage.type === 'ok' ? 'bg-emerald-500/20 text-emerald-100' : 'bg-red-500/20 text-red-100'}`}>{revalueMessage.text}</p>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Stat tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatTile label="Bottiglie bevute" value={history.length} accent="bg-wine-500" delay={100} />
@@ -195,9 +163,27 @@ const HistoryDashboard: React.FC<HistoryDashboardProps> = ({ history, wines, onW
 
         {/* Grafico valore nel tempo */}
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: '150ms' }}>
-          <div className="mb-4">
-            <h3 className="font-serif font-bold text-lg text-gray-900">Valore della cantina nel tempo</h3>
-            <p className="text-xs text-gray-400">Ogni ricalcolo aggiunge un punto al grafico</p>
+          <div className="mb-4 flex flex-wrap justify-between items-start gap-3">
+            <div>
+              <h3 className="font-serif font-bold text-lg text-gray-900">Valore della cantina nel tempo</h3>
+              <p className="text-xs text-gray-400">Ogni ricalcolo aggiunge un punto al grafico</p>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={handleRevalue}
+                disabled={!canRevalue || revaluing}
+                className="group px-3 py-2 rounded-xl bg-wine-700 text-white font-bold text-xs shadow-sm hover:bg-wine-800 hover:shadow-md active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                <svg className={`w-3.5 h-3.5 ${revaluing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                {revaluing ? 'Ricalcolo...' : 'Ricalcola valore'}
+              </button>
+              <p className="text-[10px] text-gray-400">
+                {canRevalue ? '1 volta al mese' : `Tra ${daysLeft} giorni${nextDate ? ` (${nextDate.toLocaleDateString('it-IT')})` : ''}`}
+              </p>
+              {revalueMessage && (
+                <p className={`text-[11px] font-bold px-2 py-1 rounded-lg animate-in fade-in slide-in-from-top-2 ${revalueMessage.type === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>{revalueMessage.text}</p>
+              )}
+            </div>
           </div>
           <div className="relative">
             <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-52 overflow-visible">
@@ -278,11 +264,6 @@ const HistoryDashboard: React.FC<HistoryDashboardProps> = ({ history, wines, onW
       </div>
     </div>
   );
-};
-
-const HeroValue: React.FC<{ value: number }> = ({ value }) => {
-  const v = useCountUp(value, 1600);
-  return <p className="text-5xl md:text-6xl font-black tracking-tight mt-1 tabular-nums">€{v.toLocaleString('it-IT', { maximumFractionDigits: 0 })}</p>;
 };
 
 const Highlight: React.FC<{ icon: string; label: string; value: string }> = ({ icon, label, value }) => (

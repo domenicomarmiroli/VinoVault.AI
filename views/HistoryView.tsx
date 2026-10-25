@@ -109,22 +109,6 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
              </div>
         </div>
 
-        <div className="flex gap-2 mb-3">
-             <input type="text" placeholder={t('history_search_placeholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="flex-1 bg-gray-100 border-none rounded-xl py-2 px-4 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none"/>
-            <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as SortOption)} className="bg-gray-100 border-none rounded-xl py-2 px-2 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none max-w-[120px]">
-                <option value="date_desc">{t('sort_recent')}</option>
-                <option value="date_asc">{t('sort_oldest')}</option>
-                <option value="rating_desc">{t('sort_rating_high')}</option>
-                <option value="rating_asc">{t('sort_rating_low')}</option>
-            </select>
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar -mx-6 px-6">
-            {filters.map(f => (
-                <button key={f.label} onClick={() => setActiveFilter(f.value)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === f.value ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>{f.label}</button>
-            ))}
-        </div>
-
         <div className="flex md:hidden p-1 bg-gray-100 rounded-xl mt-1 mb-1">
             <button onClick={() => setMobileTab('diary')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${mobileTab === 'diary' ? 'bg-white shadow-sm text-wine-700' : 'text-gray-500'}`}>Diario</button>
             <button onClick={() => setMobileTab('stats')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${mobileTab === 'stats' ? 'bg-white shadow-sm text-wine-700' : 'text-gray-500'}`}>Statistiche</button>
@@ -139,6 +123,22 @@ const HistoryView: React.FC<HistoryViewProps> = ({ wines, history, onClearHistor
 
         <div className={mobileTab === 'diary' ? 'block' : 'hidden md:block'}>
         <h2 className="hidden md:block font-serif font-bold text-xl text-gray-900 mb-4">{t('history_diary_title')}</h2>
+        <div className="mb-6 space-y-3">
+            <div className="flex gap-2 md:max-w-2xl">
+                <input type="text" placeholder={t('history_search_placeholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="flex-1 bg-white border border-gray-200 rounded-xl py-2 px-4 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none"/>
+                <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as SortOption)} className="bg-white border border-gray-200 rounded-xl py-2 px-2 text-sm text-gray-700 focus:ring-2 focus:ring-wine-500 outline-none max-w-[140px]">
+                    <option value="date_desc">{t('sort_recent')}</option>
+                    <option value="date_asc">{t('sort_oldest')}</option>
+                    <option value="rating_desc">{t('sort_rating_high')}</option>
+                    <option value="rating_asc">{t('sort_rating_low')}</option>
+                </select>
+            </div>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                {filters.map(f => (
+                    <button key={f.label} onClick={() => setActiveFilter(f.value)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${activeFilter === f.value ? 'bg-wine-600 text-white border-wine-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>{f.label}</button>
+                ))}
+            </div>
+        </div>
         {filteredHistory.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
             <WineIcon className="w-12 h-12 mx-auto mb-4 opacity-20" />
