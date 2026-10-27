@@ -13,6 +13,7 @@ import { OAuth2Client } from 'google-auth-library';
 import Anthropic from '@anthropic-ai/sdk';
 import sharp from 'sharp';
 import { randomUUID } from 'crypto';
+import { startBotWakeup } from './botWakeup.js';
 
 dotenv.config();
 
@@ -874,4 +875,4 @@ const initDb = async () => {
     finally { client.release(); }
 };
 
-app.listen(PORT, () => { console.log(`Server on port ${PORT}`); initDb(); });
+app.listen(PORT, () => { console.log(`Server on port ${PORT}`); initDb(); try { startBotWakeup(); } catch (e) { console.warn('[sveglia bot] non avviata', e && e.name); } });
