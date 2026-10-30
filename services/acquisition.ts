@@ -53,9 +53,10 @@ export const captureVisit = (isLoggedIn: boolean) => {
     body: JSON.stringify({ source: { ...current, ...(hasCampaign ? fromUrl : {}) }, path: window.location.pathname }),
   }).catch(() => { /* la statistica non deve mai bloccare l'app */ });
 
-  // Toglie ?src= e utm dalla barra degli indirizzi, così non finiscono nei link condivisi.
-  if (hasCampaign) {
-    ['src', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(k => params.delete(k));
+  // Toglie solo ?src= dalla barra degli indirizzi. I parametri UTM restano: se in futuro si aggiunge
+  // Google Analytics, li legge da lì al caricamento della pagina.
+  if (fromUrl.src) {
+    params.delete('src');
     const query = params.toString();
     window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : '') + window.location.hash);
   }
