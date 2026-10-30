@@ -3,6 +3,9 @@ import { Language } from '../types';
 
 export const launchTranslations: Record<Language, Record<string, string>> = {
   it: {
+    premium_soon_badge: "🔒 Premium · in arrivo",
+    premium_soon_title: "Premium in arrivo",
+    premium_soon_desc: "Per ora l'app è gratuita. Confronto prezzi online e report del sommelier sulla tua cantina arriveranno con il Premium.",
     auth_accept_required: "Accetto l'informativa privacy e i termini di servizio",
     auth_marketing: "Voglio ricevere novità e offerte via email (facoltativo)",
     auth_read: "Leggi",
@@ -41,6 +44,9 @@ export const launchTranslations: Record<Language, Record<string, string>> = {
     lead_error: "Invio non riuscito. Riprova o scrivici a business@aiknow.wine.",
   },
   en: {
+    premium_soon_badge: "🔒 Premium · coming soon",
+    premium_soon_title: "Premium coming soon",
+    premium_soon_desc: "For now the app is free. Online price comparison and the sommelier report on your cellar will arrive with Premium.",
     auth_accept_required: "I accept the privacy policy and the terms of service",
     auth_marketing: "Send me news and offers by email (optional)",
     auth_read: "Read",
@@ -79,6 +85,9 @@ export const launchTranslations: Record<Language, Record<string, string>> = {
     lead_error: "Sending failed. Try again or write to business@aiknow.wine.",
   },
   fr: {
+    premium_soon_badge: "🔒 Premium · bientôt",
+    premium_soon_title: "Premium bientôt disponible",
+    premium_soon_desc: "Pour l'instant l'app est gratuite. La comparaison des prix en ligne et le rapport du sommelier sur votre cave arriveront avec Premium.",
     auth_accept_required: "J'accepte la politique de confidentialité et les conditions d'utilisation",
     auth_marketing: "Je souhaite recevoir des nouveautés et des offres par e-mail (facultatif)",
     auth_read: "Lire",
@@ -117,6 +126,9 @@ export const launchTranslations: Record<Language, Record<string, string>> = {
     lead_error: "Échec de l'envoi. Réessayez ou écrivez à business@aiknow.wine.",
   },
   es: {
+    premium_soon_badge: "🔒 Premium · próximamente",
+    premium_soon_title: "Premium próximamente",
+    premium_soon_desc: "Por ahora la app es gratuita. La comparación de precios online y el informe del sumiller sobre tu bodega llegarán con Premium.",
     auth_accept_required: "Acepto la política de privacidad y los términos del servicio",
     auth_marketing: "Quiero recibir novedades y ofertas por email (opcional)",
     auth_read: "Leer",
@@ -155,6 +167,9 @@ export const launchTranslations: Record<Language, Record<string, string>> = {
     lead_error: "No se pudo enviar. Inténtalo de nuevo o escribe a business@aiknow.wine.",
   },
   de: {
+    premium_soon_badge: "🔒 Premium · demnächst",
+    premium_soon_title: "Premium kommt bald",
+    premium_soon_desc: "Die App ist vorerst kostenlos. Online-Preisvergleich und Sommelier-Bericht zu deinem Keller kommen mit Premium.",
     auth_accept_required: "Ich akzeptiere die Datenschutzerklärung und die Nutzungsbedingungen",
     auth_marketing: "Ich möchte Neuigkeiten und Angebote per E-Mail erhalten (optional)",
     auth_read: "Lesen",
