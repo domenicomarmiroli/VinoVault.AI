@@ -1,10 +1,11 @@
 
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { Logo } from './Logo';
-import { WineIcon, ChefIcon, ShopIcon, ChartBarIcon, RestaurantIcon, HistoryIcon, CameraIcon } from './Icons';
+import { WineIcon, ChefIcon, ShopIcon, ChartBarIcon, RestaurantIcon, HistoryIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { GUIDES, getGuideContent, readingMinutes, academyUi } from '../constants/academy';
 import { AcademyIcon } from './AcademyShared';
+import AppDemoPhone from './AppDemoPhone';
 import { Language, LocationLayout, Wine } from '../types';
 
 const Cellar3D = React.lazy(() => import('./Cellar3D'));
@@ -100,64 +101,6 @@ const DemoLoader: React.FC<{ label: string }> = ({ label }) => (
   </div>
 );
 
-// Illustrazione dell'hero: bottiglia con scansione e schede che fluttuano.
-const HeroVisual: React.FC = () => {
-  const { t } = useLanguage();
-  const year = new Date().getFullYear() + 4;
-  return (
-    <div className="relative mx-auto w-full max-w-md aspect-[4/5]">
-      <div className="absolute -inset-6 bg-gradient-to-tr from-wine-200 via-fuchsia-100 to-cyan-100 rounded-[3rem] blur-3xl opacity-70" />
-      <div className="relative h-full rounded-[2.5rem] bg-gradient-to-br from-gray-900 via-wine-950 to-wine-800 shadow-2xl border border-white/10 overflow-hidden">
-        <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-fuchsia-500/20 blur-3xl lp-blob" />
-        <div className="absolute -left-20 bottom-0 w-72 h-72 rounded-full bg-cyan-400/15 blur-3xl lp-blob" style={{ animationDelay: '-6s' }} />
-        {/* bottiglia */}
-        <svg viewBox="0 0 120 300" className="absolute left-1/2 top-[8%] -translate-x-1/2 h-[78%] drop-shadow-2xl">
-          <defs>
-            <linearGradient id="lpGlass" x1="0" x2="1">
-              <stop offset="0" stopColor="#1a0509" /><stop offset=".35" stopColor="#4a0f1d" /><stop offset=".55" stopColor="#6b1a2c" /><stop offset="1" stopColor="#1a0509" />
-            </linearGradient>
-            <linearGradient id="lpFoil" x1="0" x2="1"><stop offset="0" stopColor="#7f1d1d" /><stop offset=".5" stopColor="#b91c1c" /><stop offset="1" stopColor="#7f1d1d" /></linearGradient>
-          </defs>
-          <path d="M48 6h24v62c0 12 22 22 22 52v166a8 8 0 0 1-8 8H34a8 8 0 0 1-8-8V120c0-30 22-40 22-52z" fill="url(#lpGlass)" />
-          <path d="M48 6h24v40H48z" fill="url(#lpFoil)" />
-          <rect x="30" y="160" width="60" height="78" rx="3" fill="#f5f0e6" />
-          <text x="60" y="186" textAnchor="middle" fontFamily="Playfair Display, serif" fontStyle="italic" fontWeight="700" fontSize="13" fill="#4e1633">Barolo</text>
-          <line x1="40" x2="80" y1="196" y2="196" stroke="#933d76" strokeWidth="1" />
-          <text x="60" y="212" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="8" letterSpacing="2" fill="#6b5560">DOCG</text>
-          <text x="60" y="228" textAnchor="middle" fontFamily="Inter, sans-serif" fontWeight="700" fontSize="9" fill="#4e1633">2019</text>
-          <path d="M76 70c6 6 12 16 12 40v150" stroke="white" strokeOpacity=".18" strokeWidth="4" fill="none" strokeLinecap="round" />
-        </svg>
-        {/* riquadro di scansione */}
-        <div className="absolute left-[22%] right-[22%] top-[44%] h-[34%] rounded-2xl border-2 border-cyan-300/70 overflow-hidden">
-          <div className="absolute inset-x-0 h-0.5 bg-cyan-300 shadow-[0_0_16px_4px_rgba(103,232,249,.7)] lp-scan" />
-        </div>
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur text-white text-[11px] font-bold border border-white/10">
-          <CameraIcon className="w-3.5 h-3.5" /> {t('lp_hero_scan')}
-        </div>
-      </div>
-      {/* schede fluttuanti */}
-      <div className="absolute -left-6 top-[14%] lp-float" style={{ ['--lp-rot' as any]: '-4deg' }}>
-        <div className="bg-white rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3 border border-gray-100">
-          <div className="w-11 h-11 rounded-full border-4 border-emerald-500 flex items-center justify-center text-sm font-black text-emerald-700">92</div>
-          <div><p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t('lp_hero_card1')}</p><p className="text-sm font-bold text-gray-900">92/100</p></div>
-        </div>
-      </div>
-      <div className="absolute -right-8 top-[42%] lp-float" style={{ animationDelay: '-2s', ['--lp-rot' as any]: '3deg' }}>
-        <div className="bg-white rounded-2xl shadow-xl px-4 py-3 border border-gray-100 max-w-[190px]">
-          <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">🍽️ {t('lp_hero_card2')}</p>
-          <p className="text-sm font-bold text-gray-900 leading-tight mt-0.5">{t('lp_hero_card2_v')}</p>
-        </div>
-      </div>
-      <div className="absolute -left-4 bottom-[12%] lp-float" style={{ animationDelay: '-4s', ['--lp-rot' as any]: '-2deg' }}>
-        <div className="bg-white rounded-2xl shadow-xl px-4 py-3 border border-gray-100">
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t('lp_hero_card3')}</p>
-          <p className="text-sm font-bold text-gray-900 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> {year}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const FaqItem: React.FC<{ q: string; a: string; defaultOpen?: boolean }> = ({ q, a, defaultOpen }) => {
   const [open, setOpen] = useState(!!defaultOpen);
   return (
@@ -247,7 +190,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
             <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-wine-100/70 blur-3xl lp-blob" />
             <div className="absolute top-40 -right-40 w-[30rem] h-[30rem] rounded-full bg-cyan-100/60 blur-3xl lp-blob" style={{ animationDelay: '-9s' }} />
           </div>
-          <div className="relative px-6 py-16 md:py-28 max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center">
+          <div className="relative px-6 py-16 md:py-24 lg:py-14 max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-8">
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 inline-flex items-center gap-2 bg-wine-50 text-wine-700 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest border border-wine-100">
                 <span className="w-2 h-2 rounded-full bg-wine-500 animate-pulse" /> {t('lp_hero_tag')}
@@ -275,7 +218,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
               </div>
             </div>
             <div className="animate-in fade-in zoom-in-95 duration-700 px-6 lg:px-0" style={{ animationDelay: '250ms' }}>
-              <HeroVisual />
+              <AppDemoPhone />
             </div>
           </div>
         </section>

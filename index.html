@@ -102,7 +102,24 @@
       .lp-reveal.is-visible { opacity: 1; transform: none; }
       .lp-line { transform-origin: left; transform: scaleX(0); }
       .is-visible .lp-line { animation: lp-draw 1.2s .3s cubic-bezier(.2,.8,.2,1) forwards; }
+      /* Demo dell'app nel telefono della pagina pubblica */
+      @keyframes demo-grow { from { transform: scaleX(0); } }
+      @keyframes demo-ring { from { stroke-dashoffset: 97.4; } }
+      @keyframes demo-tap { 0% { opacity: 0; transform: scale(.4); } 30% { opacity: 1; transform: scale(.8); } 100% { opacity: 0; transform: scale(1.6); } }
+      @keyframes demo-flash { 0%, 100% { opacity: 0; } 30% { opacity: .85; } }
+      @keyframes demo-press { 0%, 100% { transform: scale(1); } 40% { transform: scale(.92); } }
+      @keyframes demo-drop { 0% { opacity: 0; transform: translateY(-26px) scale(1.3); } 70% { opacity: 1; transform: translateY(2px) scale(1); } 100% { opacity: 1; transform: none; } }
+      @keyframes demo-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+      .demo-grow { animation: demo-grow 900ms cubic-bezier(.2,.8,.2,1) both; }
+      .demo-ring { animation: demo-ring 1200ms cubic-bezier(.2,.8,.2,1) both; }
+      .demo-tap { opacity: 0; animation: demo-tap 700ms ease-out both; }
+      .demo-flash { opacity: 0; animation: demo-flash 450ms ease-out both; }
+      .demo-press { animation: demo-press 300ms ease-in-out both; }
+      .demo-drop { animation: demo-drop 700ms cubic-bezier(.2,.8,.2,1) both; }
+      .demo-progress { animation: demo-progress linear both; }
       @media (prefers-reduced-motion: reduce) {
+        .demo-grow, .demo-ring, .demo-press, .demo-drop { animation: none; }
+        .demo-tap, .demo-flash { display: none; }
         .animate-in, .lp-float, .lp-blob, .lp-shine, .lp-scan { animation: none; }
         .lp-reveal { opacity: 1; transform: none; transition: none; }
         .lp-line { transform: none; }
