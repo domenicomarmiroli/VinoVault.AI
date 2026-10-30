@@ -1,6 +1,10 @@
 // Contenuti della Wine Academy. Ogni guida ha i testi in italiano e inglese;
 // per le altre lingue si usa l'inglese finché non vengono tradotti.
 
+import { ACADEMY_FR } from './academy.fr';
+import { ACADEMY_ES } from './academy.es';
+import { ACADEMY_DE } from './academy.de';
+
 export type GuideCategory = 'learn' | 'app';
 
 export type GuideBlock =
@@ -440,7 +444,7 @@ export const GUIDES: Guide[] = [
             '**On tablets and computers** the cellar becomes a grid with more information on each wine.',
           ] },
           { type: 'h2', text: 'When you drink a bottle' },
-          { type: 'p', text: 'From the wine card tap "Uncork & rate": the quantity drops by one, the bottle goes to your History and you can rate it and add a note. If you had recorded its slot on a rack, that slot frees up automatically.' },
+          { type: 'p', text: 'From the wine card tap "Open & Rate": the quantity drops by one, the bottle goes to your History and you can rate it and add a note. If you had recorded its slot on a rack, that slot frees up automatically.' },
           { type: 'tip', title: 'Go further', text: 'If you have many bottles, set up your locations in 3D to know exactly where each one is: see the guide "Your cellar in 3D".' },
         ],
       },
@@ -537,7 +541,7 @@ export const GUIDES: Guide[] = [
           { type: 'h2', text: 'Come funziona' },
           { type: 'steps', items: [
             { title: 'Scrivi il menu', text: 'Anche in modo informale: "antipasto di salumi, risotto ai funghi, arrosto di vitello, tiramisù".' },
-            { title: 'Scegli il servizio', text: '"Per portata", per un vino diverso a ogni piatto, oppure "Un solo vino", per una bottiglia che accompagni tutta la cena.' },
+            { title: 'Scegli il servizio', text: '"Per portata", per un vino diverso a ogni piatto, oppure "Tutto pasto", per una bottiglia che accompagni tutta la cena.' },
             { title: 'Leggi i consigli', text: 'Per ogni portata ricevi più opzioni, con la motivazione, la temperatura di servizio e un consiglio pratico (es. stapparlo un\'ora prima).' },
           ] },
           { type: 'h2', text: 'In cantina o da comprare' },
@@ -545,7 +549,7 @@ export const GUIDES: Guide[] = [
             '**Vini che possiedi**: indicati con la posizione in cui si trovano. Da lì puoi premere "Stappa e vota" per registrare la bottiglia.',
             "**Consigli d'acquisto**: se in cantina manca qualcosa di adatto, il Sommelier ti suggerisce cosa comprare.",
           ] },
-          { type: 'tip', title: 'Condividi la cena', text: "Con \"Condividi abbinamento\" generi un link con menu e vini scelti, da mandare agli ospiti o tenere per la prossima volta." },
+          { type: 'tip', title: 'Condividi la cena', text: "Con \"Condividi\" generi un link con menu e vini scelti, da mandare agli ospiti o tenere per la prossima volta." },
           { type: 'tip', title: 'Rendi i consigli più personali', text: "Più bottiglie registri e più voti dai nello Storico, più i suggerimenti rispecchiano i tuoi gusti." },
         ],
       },
@@ -558,15 +562,15 @@ export const GUIDES: Guide[] = [
           { type: 'h2', text: 'How it works' },
           { type: 'steps', items: [
             { title: 'Write the menu', text: 'Casually is fine: "cured meats, mushroom risotto, roast veal, tiramisu".' },
-            { title: 'Choose the service', text: '"Per course", for a different wine with each dish, or "Single wine", for one bottle for the whole dinner.' },
+            { title: 'Choose the service', text: '"Per course", for a different wine with each dish, or "Whole meal", for one bottle for the whole dinner.' },
             { title: 'Read the suggestions', text: 'For each course you get several options, with the reasoning, serving temperature and a practical tip (e.g. open it an hour early).' },
           ] },
           { type: 'h2', text: 'In your cellar or to buy' },
           { type: 'list', items: [
-            '**Wines you own**: shown with their location. From there you can tap "Uncork & rate" to log the bottle.',
+            '**Wines you own**: shown with their location. From there you can tap "Open & Rate" to log the bottle.',
             '**Buying suggestions**: if nothing suitable is in your cellar, the Sommelier tells you what to buy.',
           ] },
-          { type: 'tip', title: 'Share the dinner', text: '"Share pairing" creates a link with the menu and chosen wines, to send to guests or keep for next time.' },
+          { type: 'tip', title: 'Share the dinner', text: '"Share" creates a link with the menu and chosen wines, to send to guests or keep for next time.' },
           { type: 'tip', title: 'Make it more personal', text: 'The more bottles you log and the more you rate in your History, the more the suggestions reflect your taste.' },
         ],
       },
@@ -641,7 +645,7 @@ export const GUIDES: Guide[] = [
             "**Se colma una lacuna**: l'app confronta il vino con la tua cantina e ti dice se aggiunge qualcosa di nuovo o se è un doppione.",
             '**Confronto prezzi online**, per vedere dove si trova a meno.',
           ] },
-          { type: 'tip', title: 'Un clic per aggiungerlo', text: "Se decidi di comprarlo, \"Acquista e aggiungi\" lo mette in cantina con tutti i dati della valutazione, punteggio e profilo compresi." },
+          { type: 'tip', title: 'Un clic per aggiungerlo', text: "Se decidi di comprarlo, \"Compra e aggiungi\" lo mette in cantina con tutti i dati della valutazione, punteggio e profilo compresi." },
         ],
       },
       en: {
@@ -665,7 +669,7 @@ export const GUIDES: Guide[] = [
             '**Cellar fit**: the app compares the wine with your cellar and tells you whether it adds something new or duplicates what you have.',
             '**Online price comparison**, to see where it costs less.',
           ] },
-          { type: 'tip', title: 'One tap to add it', text: '"Buy & add" puts it in your cellar with all the evaluation data, score and profile included.' },
+          { type: 'tip', title: 'One tap to add it', text: '"Buy & Add" puts it in your cellar with all the evaluation data, score and profile included.' },
         ],
       },
     },
@@ -822,8 +826,10 @@ export const GUIDES: Guide[] = [
 
 export const getGuide = (slug: string) => GUIDES.find(g => g.slug === slug);
 
+const EXTRA: Record<string, Record<string, GuideContent>> = { fr: ACADEMY_FR, es: ACADEMY_ES, de: ACADEMY_DE };
+
 export const getGuideContent = (guide: Guide, language: string): GuideContent =>
-  language === 'it' ? guide.content.it : guide.content.en;
+  language === 'it' ? guide.content.it : (EXTRA[language]?.[guide.slug] ?? guide.content.en);
 
 export const readingMinutes = (content: GuideContent) => {
   const text = content.blocks.map(b => {
@@ -836,7 +842,7 @@ export const readingMinutes = (content: GuideContent) => {
   return Math.max(2, Math.ceil(text.split(/\s+/).length / 180));
 };
 
-export const ACADEMY_UI: Record<'it' | 'en', Record<string, string>> = {
+export const ACADEMY_UI: Record<string, Record<string, string>> = {
   it: {
     title: 'Wine Academy', intro: "Guide pratiche per conoscere il vino e per usare al meglio il tuo sommelier digitale.",
     all: 'Tutte', learn: 'Impara il vino', app: 'Usa AIKNOW.WINE', search: 'Cerca una guida...', min: 'min di lettura',
@@ -851,6 +857,27 @@ export const ACADEMY_UI: Record<'it' | 'en', Record<string, string>> = {
     cta_title: 'Put it into practice with AIKNOW.WINE', cta_text: 'Your personal sommelier: cellar, shopping, restaurants and pairings at home.', cta_btn: 'Start for free',
     empty: 'No guides found.', featured: 'Featured', start: 'Start now',
   },
+  fr: {
+    title: 'Wine Academy', intro: 'Des guides pratiques pour comprendre le vin et tirer le meilleur de votre sommelier numérique.',
+    all: 'Tous', learn: 'Découvrir le vin', app: 'Utiliser AIKNOW.WINE', search: 'Rechercher un guide...', min: 'min de lecture',
+    read: 'Lire le guide', back: 'Tous les guides', toc: 'Dans ce guide', related: 'Continuer la lecture',
+    cta_title: 'Passez à la pratique avec AIKNOW.WINE', cta_text: 'Votre sommelier personnel : cave, achats, restaurant et accords à la maison.', cta_btn: 'Commencer gratuitement',
+    empty: 'Aucun guide trouvé.', featured: 'À la une', start: 'Commencer',
+  },
+  es: {
+    title: 'Wine Academy', intro: 'Guías prácticas para conocer el vino y sacar el máximo partido a tu sumiller digital.',
+    all: 'Todas', learn: 'Aprende sobre vino', app: 'Usa AIKNOW.WINE', search: 'Buscar una guía...', min: 'min de lectura',
+    read: 'Leer la guía', back: 'Todas las guías', toc: 'En esta guía', related: 'Sigue leyendo',
+    cta_title: 'Ponlo en práctica con AIKNOW.WINE', cta_text: 'Tu sumiller personal: bodega, compras, restaurante y maridajes en casa.', cta_btn: 'Empieza gratis',
+    empty: 'No se encontraron guías.', featured: 'Destacada', start: 'Empezar',
+  },
+  de: {
+    title: 'Wine Academy', intro: 'Praktische Ratgeber, um Wein besser zu verstehen und deinen digitalen Sommelier optimal zu nutzen.',
+    all: 'Alle', learn: 'Wein verstehen', app: 'AIKNOW.WINE nutzen', search: 'Ratgeber suchen...', min: 'Min. Lesezeit',
+    read: 'Ratgeber lesen', back: 'Alle Ratgeber', toc: 'In diesem Ratgeber', related: 'Weiterlesen',
+    cta_title: 'Jetzt mit AIKNOW.WINE ausprobieren', cta_text: 'Dein persönlicher Sommelier: Keller, Einkauf, Restaurant und Weinbegleitung zu Hause.', cta_btn: 'Kostenlos starten',
+    empty: 'Keine Ratgeber gefunden.', featured: 'Empfohlen', start: 'Jetzt starten',
+  },
 };
 
-export const academyUi = (language: string) => (language === 'it' ? ACADEMY_UI.it : ACADEMY_UI.en);
+export const academyUi = (language: string) => ACADEMY_UI[language] ?? ACADEMY_UI.en;
