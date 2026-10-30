@@ -4,7 +4,15 @@ import { CameraIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 // Primo accesso in 60 secondi: una domanda facoltativa, poi subito la prima etichetta.
-const HEARD_FROM = ['fiera', 'biglietto', 'passaparola', 'social', 'google', 'locale', 'altro'] as const;
+const HEARD_FROM = [
+  { id: 'fiera', icon: '🍷' },
+  { id: 'biglietto', icon: '📇' },
+  { id: 'passaparola', icon: '👋' },
+  { id: 'social', icon: '📱' },
+  { id: 'google', icon: '🔎' },
+  { id: 'locale', icon: '🍽️' },
+  { id: 'altro', icon: '✨' },
+] as const;
 
 interface WelcomeModalProps {
   isOpen: boolean;
@@ -39,14 +47,15 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onScan, onClose }) 
         {step === 'heard' ? (
           <div className="p-6 space-y-4">
             <p className="font-bold text-gray-900">{t('welcome_heard_q')}</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {HEARD_FROM.map(option => (
                 <button
-                  key={option}
-                  onClick={() => answer(option)}
-                  className="px-4 py-2.5 rounded-full border border-gray-200 bg-gray-50 text-sm font-medium text-gray-800 hover:border-wine-400 hover:bg-wine-50 active:scale-95 transition-all"
+                  key={option.id}
+                  onClick={() => answer(option.id)}
+                  className={`flex items-center gap-2.5 min-h-[60px] px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-left text-sm font-medium leading-tight text-gray-800 hover:border-wine-400 hover:bg-wine-50 active:scale-[0.98] transition-all ${option.id === 'altro' ? 'col-span-2 justify-center' : ''}`}
                 >
-                  {t(`heard_${option}`)}
+                  <span className="text-lg shrink-0" aria-hidden="true">{option.icon}</span>
+                  <span>{t(`heard_${option.id}`)}</span>
                 </button>
               ))}
             </div>
