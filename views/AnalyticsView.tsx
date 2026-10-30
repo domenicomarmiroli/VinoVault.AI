@@ -8,6 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
 import { classifyWineType } from '../services/wineTypeClassifier';
 import { AnimatedNumber, StatTile, Card, Donut, useMounted } from '../components/DashboardWidgets';
+import { UpgradeButton } from '../components/UpgradePanel';
 
 const REPORT_COOLDOWN_BOTTLES = 10;
 
@@ -172,7 +173,7 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ inventory, history, onLog
                   )}
                 </>
               ) : (
-                <button disabled className="mt-3 w-full py-2.5 rounded-xl bg-white/20 text-white/70 font-bold text-sm cursor-not-allowed">🔒 Premium</button>
+                <UpgradeButton className="mt-3 w-full justify-center py-2.5 text-sm" />
               )}
             </div>
           </div>

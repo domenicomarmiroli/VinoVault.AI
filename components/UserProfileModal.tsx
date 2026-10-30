@@ -13,6 +13,8 @@ import {
   triggerInstallPrompt,
   InstallPlatform
 } from '../services/pwaInstall';
+import { UpgradePanel } from './UpgradePanel';
+import { openBillingPortal } from '../services/billing';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -157,6 +159,27 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
     }
   };
 
+  const [portalError, setPortalError] = useState('');
+  const handleOpenPortal = async () => {
+      setPortalError('');
+      try { await openBillingPortal(); } catch (e: any) { setPortalError(e.message); }
+  };
+
+  const handleMarketingToggle = async (value: boolean) => {
+      setProfileData((prev: any) => ({ ...prev, marketing_consent: value }));
+      const token = localStorage.getItem('vinovault_token');
+      try {
+          const res = await fetch('/api/users/me/preferences', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ marketingConsent: value })
+          });
+          if (!res.ok) throw new Error();
+      } catch (e) {
+          setProfileData((prev: any) => ({ ...prev, marketing_consent: !value }));
+      }
+  };
+
   const handleDeleteAccount = async () => {
     setDeleteError('');
     if (deleteConfirmText.trim().toLowerCase() !== (userEmail || '').trim().toLowerCase()) {
@@ -188,7 +211,8 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
   if (!isOpen) return null;
 
   const isPremium = profileData?.is_premium;
-  const usageCount = profileData?.ai_usage_count || 0;
+  // Analisi AI del mese corrente, contate dal server (prima era un totale che non si azzerava mai).
+  const usageCount = profileData?.ai_usage_month ?? 0;
   const monthlyLimit = isPremium ? 1000 : 50;
   const usagePercentage = Math.min((usageCount / monthlyLimit) * 100, 100);
 
@@ -211,6 +235,27 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
         </div>
 
         <div className="p-6 space-y-6 overflow-y-auto">
+
+            {/* Premium: acquisto o gestione dell'abbonamento */}
+            {profileData && (
+              <>
+                {isPremium ? (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
+                        <p className="text-sm font-bold text-amber-900">💎 {t('premium_active')}</p>
+                        {profileData.premium_source === 'stripe' && profileData.has_billing_account && (
+                            <button onClick={handleOpenPortal} className="w-full py-2.5 bg-white border border-amber-300 text-amber-900 text-sm font-bold rounded-lg hover:bg-amber-100 transition-colors">
+                                {t('manage_subscription')}
+                            </button>
+                        )}
+                        {portalError && <p className="text-xs text-red-600">{portalError}</p>}
+                    </div>
+                ) : (
+                    <UpgradePanel compact />
+                )}
+                <hr className="border-gray-100" />
+              </>
+            )}
+
 
             {/* Language Selector */}
             <div>
@@ -289,7 +334,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
             {/* Stats Section */}
             <div>
                 <div className="flex justify-between items-end mb-2">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">AI Usage</span>
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">{t('ai_usage_month_label')}</span>
                     <span className="text-sm font-bold text-wine-900">{usageCount} <span className="text-gray-400 font-normal">/ {isPremium ? '∞' : monthlyLimit}</span></span>
                 </div>
                 <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
@@ -299,6 +344,18 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
                     ></div>
                 </div>
             </div>
+
+            {profileData && (
+                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                    <span className="text-sm text-gray-700">{t('marketing_pref')}</span>
+                    <input
+                        type="checkbox"
+                        checked={Boolean(profileData.marketing_consent)}
+                        onChange={(e) => handleMarketingToggle(e.target.checked)}
+                        className="w-5 h-5 accent-wine-700"
+                    />
+                </label>
+            )}
 
             <hr className="border-gray-100" />
 

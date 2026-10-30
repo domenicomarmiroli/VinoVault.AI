@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, Restaurant, RestaurantAnalysis } from '../types';
 import { ShieldCheckIcon, LogoutIcon, TrashIcon, WineIcon, ChartBarIcon, RestaurantIcon, CameraIcon, UserIcon, ChefIcon, StarIcon, PlusIcon } from '../components/Icons';
 import { extractTextFromMedia } from '../services/geminiService';
+import AdminMetrics from './AdminMetrics';
+import AdminLeads from './AdminLeads';
 
 interface AdminViewProps {
   onLogout: () => void;
@@ -55,7 +57,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token, onExit }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'users' | 'restaurants'>('users');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'users' | 'restaurants' | 'leads'>('metrics');
 
   const [editingRest, setEditingRest] = useState<Partial<Restaurant> | null>(null);
   const [extracting, setExtracting] = useState<'wine' | 'food' | null>(null);
@@ -98,7 +100,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token, onExit }) => {
   }, [token]);
 
   const totalBottlesGlobal = users.reduce((acc, u) => acc + Number(u.wine_count || 0), 0);
-  const totalAiUsageGlobal = users.reduce((acc, u) => acc + Number(u.ai_usage_count || 0), 0);
+  const totalAiUsageGlobal = users.reduce((acc, u) => acc + Number(u.ai_calls_count ?? u.ai_usage_count ?? 0), 0);
 
   const handleSaveRestaurant = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -162,7 +164,9 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token, onExit }) => {
               method: 'PUT',
               headers: { 'Authorization': `Bearer ${token}` }
           });
-          if (res.ok) setUsers(prev => prev.map(u => u.id === id ? { ...u, is_premium: !u.is_premium } : u));
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) setUsers(prev => prev.map(u => u.id === id ? { ...u, is_premium: data.is_premium } : u));
+          else alert(data.error || 'Operazione non riuscita');
       } catch (e) { alert("Errore"); }
   };
 
@@ -214,13 +218,19 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token, onExit }) => {
 
       <div className="flex border-b border-gray-200 bg-white">
           <div className="max-w-7xl mx-auto w-full flex">
+            <button onClick={() => setActiveTab('metrics')} className={`flex-1 md:flex-none md:px-8 py-3 font-bold text-sm ${activeTab === 'metrics' ? 'border-b-2 border-wine-600 text-wine-700' : 'text-gray-500'}`}>Metriche</button>
             <button onClick={() => setActiveTab('users')} className={`flex-1 md:flex-none md:px-8 py-3 font-bold text-sm ${activeTab === 'users' ? 'border-b-2 border-wine-600 text-wine-700' : 'text-gray-500'}`}>Utenti ({users.length})</button>
+            <button onClick={() => setActiveTab('leads')} className={`flex-1 md:flex-none md:px-8 py-3 font-bold text-sm ${activeTab === 'leads' ? 'border-b-2 border-wine-600 text-wine-700' : 'text-gray-500'}`}>Contatti</button>
             <button onClick={() => setActiveTab('restaurants')} className={`flex-1 md:flex-none md:px-8 py-3 font-bold text-sm ${activeTab === 'restaurants' ? 'border-b-2 border-wine-600 text-wine-700' : 'text-gray-500'}`}>Ristoranti ({restaurants.length})</button>
           </div>
       </div>
 
       <div className="flex-1 p-4 md:p-6 pb-24 space-y-6 max-w-7xl mx-auto w-full">
-         {activeTab === 'users' ? (
+         {activeTab === 'metrics' ? (
+             <AdminMetrics token={token} />
+         ) : activeTab === 'leads' ? (
+             <AdminLeads token={token} />
+         ) : activeTab === 'users' ? (
              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                  <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50"><h3 className="font-bold text-gray-700">Utenti Registrati</h3><button onClick={fetchData} className="text-wine-600 text-sm font-bold hover:underline">Aggiorna</button></div>
                  {loading ? <div className="p-8 text-center text-gray-400">Caricamento...</div> : (
@@ -231,9 +241,13 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token, onExit }) => {
                                  {users.map(user => (
                                      <tr key={user.id} className="hover:bg-gray-50">
                                          <td className="p-3 font-medium text-gray-900">{user.email}{user.role === 'admin' && <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-700">Admin</span>}</td>
-                                         <td className="p-3 text-gray-500 text-xs font-mono">{user.ref_restaurant_slug ? <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded">{user.ref_restaurant_slug}</span> : <span className="text-gray-400">-</span>}</td>
-                                         <td className="p-3 text-center">{user.is_premium ? <span className="px-2 py-0.5 rounded text-[10px] bg-amber-100 text-amber-700">Premium</span> : <span className="px-2 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500">Free</span>}</td>
-                                         <td className="p-3 text-center text-xs">{user.wine_count || 0} Bott. / {user.ai_usage_count || 0} AI</td>
+                                         <td className="p-3 text-gray-500 text-xs">
+                                             {user.ref_restaurant_slug ? <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-mono">{user.ref_restaurant_slug}</span> : <span className="font-mono">{user.signup_source || '-'}</span>}
+                                             {user.heard_from && <span className="block text-[10px] text-gray-400">dice: {user.heard_from}</span>}
+                                             {user.created_at && <span className="block text-[10px] text-gray-400">iscritto {new Date(user.created_at).toLocaleDateString('it-IT')}{user.last_seen_at ? ` · visto ${new Date(user.last_seen_at).toLocaleDateString('it-IT')}` : ''}</span>}
+                                         </td>
+                                         <td className="p-3 text-center">{user.is_premium ? <span className="px-2 py-0.5 rounded text-[10px] bg-amber-100 text-amber-700">Premium{user.premium_source === 'stripe' ? ' · paga' : user.premium_source === 'admin' ? ' · regalo' : ''}</span> : <span className="px-2 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500">Free</span>}</td>
+                                         <td className="p-3 text-center text-xs">{user.wine_count || 0} Bott. / {user.ai_calls_count ?? user.ai_usage_count ?? 0} AI{user.ai_cost_usd ? <span className="block text-[10px] text-gray-400">${Number(user.ai_cost_usd).toFixed(3)}</span> : null}</td>
                                          <td className="p-3 text-right flex gap-2 justify-end">
                                              <button onClick={() => handleTogglePremium(user.id)} className="text-amber-600 hover:text-amber-800 text-lg p-1">💎</button>
                                              <button onClick={() => setResetModalUser(user)} className="text-blue-600 hover:text-blue-800 text-xs font-bold border border-blue-200 bg-blue-50 px-2 py-1 rounded">Pwd</button>

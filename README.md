@@ -18,3 +18,30 @@ View your app in AI Studio: https://ai.studio/apps/drive/1MdmPYHBjg5HidgIsiKHfuy
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Pagamenti Premium (Stripe)
+
+I pagamenti restano spenti finché su Render non ci sono queste variabili d'ambiente:
+
+| Variabile | Valore |
+| --- | --- |
+| `STRIPE_SECRET_KEY` | Chiave segreta Stripe (`sk_live_...`, o `sk_test_...` per le prove) |
+| `STRIPE_PRICE_MONTHLY` | Id del prezzo mensile (`price_...`) |
+| `STRIPE_PRICE_YEARLY` | Id del prezzo annuale (`price_...`) |
+| `STRIPE_WEBHOOK_SECRET` | Segreto dell'endpoint webhook (`whsec_...`) |
+| `APP_URL` | `https://aiknow.wine` (indirizzo a cui Stripe rimanda dopo il pagamento) |
+
+Su Stripe:
+
+1. Crea un prodotto «AIKNOW.WINE Premium» con due prezzi ricorrenti: mensile e annuale.
+2. Aggiungi un endpoint webhook su `https://aiknow.wine/api/billing/webhook` con gli eventi
+   `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.
+3. Attiva il portale clienti (Impostazioni → Billing → Customer portal), che serve al pulsante «Gestisci abbonamento».
+4. Per regalare il Premium ai contatti della fiera puoi creare codici promozionali: il checkout li accetta.
+
+## Misurare il lancio
+
+- Area admin → **Metriche**: iscrizioni, attivazione, ritorno a 1/7/30 giorni, funzioni usate, costo AI stimato, periodo della fiera.
+- Area admin → **Contatti**: richieste dal modulo della pagina `/ristoranti`.
+- Link tracciati per i materiali stampati futuri: `https://aiknow.wine/qr/<codice>` (es. `/qr/vinitaly27`) oppure `?src=<codice>`.
+- Le date delle campagne (es. la fiera FIVI) sono in `server/growth.js`, costante `CAMPAIGNS`.

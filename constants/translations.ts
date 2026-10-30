@@ -1,5 +1,6 @@
 
 import { Language } from "../types";
+import { launchTranslations } from './translationsLaunch';
 
 const italianTranslations = {
     nav_cellar: "Cantina", nav_shop: "Shop", nav_restaurant: "Ristorante", nav_sommelier: "Sommelier", nav_data: "Dati", nav_history: "Storico", nav_admin: "Admin",
@@ -332,9 +333,9 @@ const germanTranslations = {
 };
 
 export const translations: Record<Language, Record<string, string>> = {
-  it: italianTranslations,
-  en: englishTranslations,
-  fr: frenchTranslations,
-  es: spanishTranslations,
-  de: germanTranslations
+  it: { ...italianTranslations, ...launchTranslations.it },
+  en: { ...englishTranslations, ...launchTranslations.en },
+  fr: { ...frenchTranslations, ...launchTranslations.fr },
+  es: { ...spanishTranslations, ...launchTranslations.es },
+  de: { ...germanTranslations, ...launchTranslations.de }
 };

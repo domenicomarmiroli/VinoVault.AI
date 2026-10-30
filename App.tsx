@@ -25,6 +25,7 @@ import { Logo } from './components/Logo';
 import { WineIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon, ChefIcon, CogIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { AnalysisStyleProvider } from './contexts/AnalysisStyleContext';
+import { captureVisit } from './services/acquisition';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
@@ -210,10 +211,39 @@ const AppContent: React.FC = () => {
     fetchData();
   }, [token, isInitializing, isAuthProcessing]);
 
+  // Ritorno dal pagamento Stripe: il webhook può arrivare qualche secondo dopo il redirect.
+  const [billingReturn, setBillingReturn] = useState<'success' | null>(null);
+  useEffect(() => {
+    if (billingReturn !== 'success' || !token || !isLoaded) return;
+    let attempts = 0;
+    let cancelled = false;
+    const check = async () => {
+      attempts++;
+      try {
+        const res = await authFetch('/api/users/me');
+        const profile = res.ok ? await res.json() : null;
+        if (cancelled) return;
+        if (profile?.is_premium) { setUserPremium(true); setBillingReturn(null); alert(t('premium_welcome')); return; }
+      } catch (e) {}
+      if (attempts < 6) setTimeout(check, 2500);
+      else { setBillingReturn(null); alert(t('premium_pending')); }
+    };
+    check();
+    return () => { cancelled = true; };
+  }, [billingReturn, token, isLoaded]);
+
   useEffect(() => {
     const handlePopState = () => setCurrentPath(window.location.pathname);
     window.addEventListener('popstate', handlePopState);
+    captureVisit(Boolean(localStorage.getItem('vinovault_token')));
     const params = new URLSearchParams(window.location.search);
+    const billing = params.get('billing');
+    if (billing) {
+      if (billing === 'success') setBillingReturn('success');
+      params.delete('billing');
+      const query = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : ''));
+    }
     const ref = params.get('ref');
     const shareId = params.get('s');
     if (shareId) fetch(`/api/shares/${shareId}`).then(res => res.json()).then(data => { if (data && !data.error) setSharedPairingData(data); });

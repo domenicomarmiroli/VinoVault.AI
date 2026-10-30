@@ -10,6 +10,7 @@ import Cellar3DModal from '../components/Cellar3DModal';
 import { formatSlot, is3DLocation, slotInRange } from '../services/cellarLayout';
 import OnboardingModal from '../components/OnboardingModal'; 
 import UserProfileModal from '../components/UserProfileModal'; 
+import WelcomeModal from '../components/WelcomeModal';
 import { PlusIcon, CogIcon, UserIcon, HelpIcon } from '../components/Icons';
 import { Logo } from '../components/Logo';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -38,6 +39,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLocManagerOpen, setIsLocManagerOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false); 
+  const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false); 
   const [selectedWineId, setSelectedWineId] = useState<string | null>(null);
   const selectedWine = selectedWineId ? wines.find(w => w.id === selectedWineId) || null : null;
@@ -60,13 +62,20 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   
   const { t } = useLanguage();
 
-  // Controllo Primo Accesso (Tutorial)
+  // Primo accesso: domanda «come ci hai conosciuto» e subito la prima etichetta.
+  // La guida completa resta disponibile dal pulsante «?».
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('vinovault_tutorial_seen');
     if (!hasSeenTutorial) {
-      setIsHelpOpen(true);
+      setIsWelcomeOpen(true);
     }
   }, []);
+
+  const closeWelcome = (openScanner: boolean) => {
+    setIsWelcomeOpen(false);
+    localStorage.setItem('vinovault_tutorial_seen', 'true');
+    if (openScanner) setIsModalOpen(true);
+  };
 
   const handleCloseHelp = () => {
     setIsHelpOpen(false);
@@ -278,6 +287,12 @@ const InventoryView: React.FC<InventoryViewProps> = ({
       <OnboardingModal
         isOpen={isHelpOpen}
         onClose={handleCloseHelp}
+      />
+
+      <WelcomeModal
+        isOpen={isWelcomeOpen}
+        onScan={() => closeWelcome(true)}
+        onClose={() => closeWelcome(false)}
       />
 
       <UserProfileModal 
