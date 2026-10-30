@@ -21,7 +21,7 @@ View your app in AI Studio: https://ai.studio/apps/drive/1MdmPYHBjg5HidgIsiKHfuy
 
 ## Pagamenti Premium (Stripe)
 
-I pagamenti restano spenti finché su Render non ci sono queste variabili d'ambiente:
+Per ora l'app è gratuita e gestita a titolo personale: i pagamenti sono spenti e le funzioni Premium mostrano «in arrivo» (si possono regalare dall'admin con 💎). Quando ci sarà una società, aggiornare titolare, pagamenti e abbonamento in `views/LegalView.tsx` e impostare su Render queste variabili d'ambiente:
 
 | Variabile | Valore |
 | --- | --- |

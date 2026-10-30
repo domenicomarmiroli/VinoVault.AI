@@ -25,6 +25,15 @@ export const UpgradePanel: React.FC<{ compact?: boolean }> = ({ compact = false 
     ? Math.round((1 - yearly.amount / (monthly.amount * 12)) * 100)
     : 0;
 
+  if (config && !config.enabled) {
+    return (
+      <div className={`rounded-2xl border border-gray-200 bg-gray-50 ${compact ? 'p-4' : 'p-5'} space-y-1.5`}>
+        <h3 className="font-serif font-bold text-gray-900 text-lg">🔒 {t('premium_soon_title')}</h3>
+        <p className="text-xs text-gray-600 leading-relaxed">{t('premium_soon_desc')}</p>
+      </div>
+    );
+  }
+
   return (
     <div className={`rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white ${compact ? 'p-4' : 'p-5'} space-y-3`}>
       <div>
@@ -33,8 +42,6 @@ export const UpgradePanel: React.FC<{ compact?: boolean }> = ({ compact = false 
       </div>
       {!config ? (
         <div className="h-12 rounded-xl bg-amber-100/60 animate-pulse" />
-      ) : !config.enabled ? (
-        <p className="text-xs font-bold text-amber-800 bg-amber-100 rounded-lg px-3 py-2">{t('upgrade_unavailable')}</p>
       ) : (
         <div className="grid grid-cols-2 gap-2">
           {[monthly, yearly].filter(Boolean).map(plan => (
@@ -66,6 +73,17 @@ export const UpgradePanel: React.FC<{ compact?: boolean }> = ({ compact = false 
 export const UpgradeButton: React.FC<{ className?: string }> = ({ className = '' }) => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  useEffect(() => { getBillingConfig().then(c => setEnabled(c.enabled)); }, []);
+
+  if (enabled !== true) {
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 border border-gray-200 text-gray-600 rounded-lg text-xs font-bold ${className}`}>
+        {t('premium_soon_badge')}
+      </span>
+    );
+  }
+
   return (
     <>
       <button

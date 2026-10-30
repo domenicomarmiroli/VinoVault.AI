@@ -7,12 +7,11 @@ interface LegalViewProps {
   onBack: () => void;
 }
 
-// ⚠️ I campi tra [ ] vanno completati con i dati reali della tua società
-// e il testo va validato da un consulente prima della pubblicazione sugli store.
+// Oggi il servizio è gestito da una persona fisica e gratuito: quando ci sarà una società,
+// aggiornare titolare e sezioni su pagamenti e abbonamento (il codice Stripe è già pronto, spento).
+// Il testo va validato da un consulente prima della pubblicazione sugli store.
 const COMPANY = {
-  name: '[RAGIONE SOCIALE]',
-  address: '[INDIRIZZO COMPLETO]',
-  vat: '[P.IVA / C.F.]',
+  name: 'Domenico Marmiroli',
   email: 'privacy@aiknow.wine',
 };
 
@@ -32,7 +31,7 @@ const PrivacyContent: React.FC = () => (
   <>
     <Section title="1. Chi tratta i tuoi dati">
       <p>
-        Il titolare del trattamento è {COMPANY.name}, {COMPANY.address}, {COMPANY.vat}.
+        Il titolare del trattamento è {COMPANY.name}, persona fisica che sviluppa e gestisce AIKNOW.WINE a titolo personale.
         Per qualsiasi richiesta sui tuoi dati puoi scrivere a{' '}
         <a href={`mailto:${COMPANY.email}`} className="text-wine-700 font-medium underline">{COMPANY.email}</a>.
       </p>
@@ -44,7 +43,7 @@ const PrivacyContent: React.FC = () => (
       <p><strong>Dati di utilizzo:</strong> i giorni in cui usi l'app, le funzioni che usi, il numero di analisi AI effettuate e il loro costo stimato, la lingua preferita e lo stile di analisi scelto.</p>
       <p><strong>Come sei arrivato:</strong> al momento della registrazione salviamo il link o il sito da cui sei arrivato la prima volta (ad esempio il QR code di un ristorante partner o di un nostro materiale promozionale) e, se scegli di rispondere, come ci hai conosciuto.</p>
       <p><strong>Consensi:</strong> la data in cui hai accettato questa informativa e i termini, e la tua scelta, modificabile in ogni momento dal profilo, sulla ricezione di novità e offerte via email.</p>
-      <p><strong>Abbonamento Premium:</strong> se ti abboni, il pagamento avviene sulle pagine di Stripe. Noi riceviamo solo l'identificativo cliente, il piano scelto e lo stato dell'abbonamento: non vediamo né conserviamo i dati della tua carta.</p>
+      <p><strong>Nessun dato di pagamento:</strong> il servizio è gratuito, quindi non raccogliamo dati di carte o di pagamento.</p>
       <p><strong>Richieste dalla pagina business:</strong> se compili il modulo contatti per ristoranti, enoteche e cantine, conserviamo nome, attività, email, telefono, città e messaggio che ci invii.</p>
       <p><strong>Visite anonime:</strong> contiamo le visite alla home e il loro canale di provenienza senza registrare indirizzi IP né identificativi del visitatore.</p>
       <p>Non raccogliamo dati di geolocalizzazione, non usiamo cookie di profilazione e non facciamo pubblicità.</p>
@@ -53,7 +52,7 @@ const PrivacyContent: React.FC = () => (
     <Section title="3. Perché li trattiamo e con quale base giuridica">
       <p><strong>Per erogare il servizio</strong> (gestione cantina, analisi AI, abbinamenti): esecuzione del contratto — art. 6.1.b GDPR.</p>
       <p><strong>Per la sicurezza dell'account</strong> e per prevenire abusi: legittimo interesse — art. 6.1.f GDPR.</p>
-      <p><strong>Per gestire l'abbonamento Premium</strong> e per rispondere alle richieste dalla pagina business: esecuzione del contratto o di misure precontrattuali — art. 6.1.b GDPR.</p>
+      <p><strong>Per rispondere alle richieste dalla pagina business</strong>: misure precontrattuali richieste da te — art. 6.1.b GDPR.</p>
       <p><strong>Per capire come viene usato il servizio e migliorarlo</strong> (statistiche d'uso, provenienza delle iscrizioni, costi di funzionamento): legittimo interesse — art. 6.1.f GDPR. Puoi opporti scrivendoci.</p>
       <p><strong>Per inviarti novità e offerte via email</strong>, solo se lo hai scelto: consenso — art. 6.1.a GDPR, revocabile in ogni momento dal profilo.</p>
       <p><strong>Per obblighi di legge</strong> (fiscali, contabili, se applicabili): art. 6.1.c GDPR.</p>
@@ -80,7 +79,6 @@ const PrivacyContent: React.FC = () => (
       <ul className="list-disc pl-5 space-y-1">
         <li><strong>Anthropic PBC</strong> (USA) — elaborazione delle analisi AI</li>
         <li><strong>Render Services Inc.</strong> (USA/UE) — hosting dell'applicazione e del database</li>
-        <li><strong>Stripe Payments Europe, Ltd.</strong> (Irlanda) — pagamento dell'abbonamento Premium; per alcuni trattamenti, come la prevenzione delle frodi, Stripe agisce come titolare autonomo secondo la propria informativa</li>
         <li><strong>Google LLC</strong> — erogazione dei web font utilizzati dall'interfaccia</li>
       </ul>
       <p>Non vendiamo e non cediamo i tuoi dati a terzi per finalità commerciali.</p>
@@ -158,7 +156,7 @@ const TermsContent: React.FC = () => (
       <p>
         AIKNOW.WINE è un'applicazione che permette di catalogare la propria cantina, registrare le degustazioni
         e ottenere analisi e suggerimenti generati da un sistema di intelligenza artificiale.
-        Il servizio è fornito da {COMPANY.name}.
+        Il servizio è fornito gratuitamente da {COMPANY.name}, a titolo personale.
       </p>
     </Section>
 
@@ -197,22 +195,15 @@ const TermsContent: React.FC = () => (
       </p>
     </Section>
 
-    <Section title="6. Piani e funzionalità Premium">
+    <Section title="6. Gratuità e funzionalità Premium">
       <p>
-        Alcune funzionalità sono riservate agli account Premium. Le funzionalità incluse in ciascun piano
-        possono essere modificate nel tempo per esigenze tecniche o di sostenibilità del servizio.
+        Il servizio è attualmente <strong>gratuito</strong>. Alcune funzionalità indicate come «Premium» non sono ancora disponibili
+        oppure sono abilitate solo per alcuni account in prova. Le funzionalità offerte possono cambiare nel tempo
+        per esigenze tecniche o di sostenibilità del servizio.
       </p>
       <p>
-        <strong>Abbonamento.</strong> Il Premium è un abbonamento mensile o annuale. Prezzo e durata sono mostrati prima del pagamento,
-        che avviene tramite Stripe. L'abbonamento si rinnova automaticamente alla scadenza finché non lo disdici.
-      </p>
-      <p>
-        <strong>Disdetta.</strong> Puoi disdire in qualsiasi momento dal tuo profilo («Gestisci abbonamento»): il Premium resta attivo
-        fino alla fine del periodo già pagato e non ci saranno altri addebiti.
-      </p>
-      <p>
-        <strong>Recesso.</strong> Se sei un consumatore puoi recedere entro 14 giorni dal primo pagamento scrivendo a{' '}
-        <a href={`mailto:${COMPANY.email}`} className="text-wine-700 font-medium underline">{COMPANY.email}</a>: ti rimborsiamo l'importo pagato.
+        Se in futuro alcune funzionalità diventeranno a pagamento, prezzo e condizioni ti saranno comunicati prima:
+        nessun addebito avverrà senza una tua scelta esplicita.
       </p>
     </Section>
 
