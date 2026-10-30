@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useId } from 'react';
 
 interface LogoProps {
   className?: string;
@@ -8,16 +8,21 @@ interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({ className = "w-12 h-12", showText = true, light = false }) => {
+  // Nomi dei gradienti unici per ogni logo: con più loghi nella pagina, se il primo è nascosto
+  // gli altri non trovano i colori e l'icona sparisce.
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const wineId = `wineGrad-${uid}`;
+  const techId = `techGrad-${uid}`;
   return (
     <div className="flex items-center gap-3 select-none">
       <div className={`relative ${className} flex-shrink-0`}>
         <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-sm">
             <defs>
-                <linearGradient id="wineGrad" x1="0" y1="100" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+                <linearGradient id={wineId} x1="0" y1="100" x2="100" y2="0" gradientUnits="userSpaceOnUse">
                     <stop stopColor="#5d173a" />
                     <stop offset="1" stopColor="#933d76" />
                 </linearGradient>
-                <linearGradient id="techGrad" x1="100" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
+                <linearGradient id={techId} x1="100" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
                     <stop stopColor="#0891b2" />
                     <stop offset="1" stopColor="#22d3ee" />
                 </linearGradient>
@@ -26,13 +31,13 @@ export const Logo: React.FC<LogoProps> = ({ className = "w-12 h-12", showText = 
             {/* Wine Swirl (Left/Bottom) */}
             <path 
                 d="M50 50C50 77.6142 27.6142 100 0 100V50C0 22.3858 22.3858 0 50 0C65 0 78 10 85 20C75 15 60 15 50 25C35 40 35 60 50 75C60 85 75 85 85 80C78 90 65 100 50 100C50 72.3858 50 50 50 50Z" 
-                fill="url(#wineGrad)" 
+                fill={`url(#${wineId})`} 
             />
             
             {/* Tech Network (Right/Top Overlay) */}
             <path 
                 d="M50 50C50 22.3858 72.3858 0 100 0V50C100 77.6142 77.6142 100 50 100C35 100 22 90 15 80C25 85 40 85 50 75C65 60 65 40 50 25C40 15 25 15 15 20C22 10 35 0 50 0C50 27.6142 50 50 50 50Z" 
-                fill="url(#techGrad)" 
+                fill={`url(#${techId})`} 
                 opacity="0.9"
             />
             
