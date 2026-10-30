@@ -5,6 +5,7 @@ import { UserIcon, ChartBarIcon, ShoppingCartIcon, WineIcon, LogoutIcon, ReportI
 import { generateCellarReport } from '../services/geminiService';
 import { useLanguage } from '../contexts/LanguageContext';
 import LoadingScreen from '../components/LoadingScreen';
+import { UpgradeButton } from '../components/UpgradePanel';
 
 interface AnalysisViewProps {
   inventory: Wine[];
@@ -23,10 +24,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
   const safeHistory = Array.isArray(history) ? history : [];
 
   const handleGenerateAnalysis = async () => {
-    if (!isPremium) {
-      alert("L'analisi avanzata è una funzione Premium.");
-      return;
-    }
+    if (!isPremium) return;
     if (safeInventory.length < 3) {
       alert("Aggiungi almeno 3 vini in cantina per permettere all'IA di analizzare il tuo profilo.");
       return;
@@ -62,13 +60,16 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
                 Attiva l'analisi per scoprire che tipo di degustatore sei e quali sono i punti di forza della tua collezione.
               </p>
             </div>
-            <button 
-              onClick={handleGenerateAnalysis}
-              className="w-full py-4 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:bg-purple-700 transition-all flex items-center justify-center gap-2"
-            >
-               Genera Analisi IA
-            </button>
-            {!isPremium && <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Richiede Account Premium</p>}
+            {isPremium ? (
+              <button 
+                onClick={handleGenerateAnalysis}
+                className="w-full py-4 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:bg-purple-700 transition-all flex items-center justify-center gap-2"
+              >
+                 Genera Analisi IA
+              </button>
+            ) : (
+              <UpgradeButton />
+            )}
           </div>
         ) : (
           <div className="space-y-6 animate-in slide-in-from-bottom duration-500">

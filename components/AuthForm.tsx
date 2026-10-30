@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Logo } from './Logo';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../types';
+import { getFirstTouch } from '../services/acquisition';
 
 interface AuthFormProps {
   onLogin: (token: string, userEmail: string) => void;
@@ -16,6 +17,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   // Rilevamento immediato e aggressivo dell'ambiente APP
   const [isApp, setIsApp] = useState(() => {
@@ -54,14 +57,18 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLogin && !privacyAccepted) { setError(t('auth_accept_error')); return; }
     setLoading(true);
     setError('');
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+    const payload = isLogin
+        ? { email, password }
+        : { email, password, language, ref: referralRef, privacyAccepted, marketingConsent, source: getFirstTouch() };
     try {
         const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, language, ref: referralRef })
+            body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (res.ok) onLogin(data.token, data.user.email);
@@ -113,6 +120,22 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onBack, referralRef }) => 
                     className="w-full p-3.5 border-2 border-gray-50 rounded-2xl focus:border-wine-600 outline-none bg-gray-50/50 transition-colors" 
                 />
             </div>
+
+            {!isLogin && (
+                <div className="space-y-2.5 pt-1">
+                    <label className="flex items-start gap-2.5 text-xs text-gray-600 leading-snug cursor-pointer">
+                        <input type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} className="mt-0.5 w-4 h-4 accent-wine-700 shrink-0" />
+                        <span>
+                            {t('auth_accept_required')}{' '}
+                            <span className="text-gray-400">({t('auth_read')}: <a href="/privacy" target="_blank" rel="noopener" className="underline hover:text-wine-700">Privacy</a> · <a href="/termini" target="_blank" rel="noopener" className="underline hover:text-wine-700">Termini</a>)</span>
+                        </span>
+                    </label>
+                    <label className="flex items-start gap-2.5 text-xs text-gray-600 leading-snug cursor-pointer">
+                        <input type="checkbox" checked={marketingConsent} onChange={(e) => setMarketingConsent(e.target.checked)} className="mt-0.5 w-4 h-4 accent-wine-700 shrink-0" />
+                        <span>{t('auth_marketing')}</span>
+                    </label>
+                </div>
+            )}
 
             {error && <div className="text-red-500 text-[10px] font-bold text-center bg-red-50 p-3 rounded-2xl border border-red-100">{error}</div>}
 

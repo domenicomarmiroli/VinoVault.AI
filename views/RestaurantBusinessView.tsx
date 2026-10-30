@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { Logo } from '../components/Logo';
 import { RestaurantIcon, ChefIcon, StarIcon, ShieldCheckIcon, CameraIcon, ChartBarIcon, PlusIcon } from '../components/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import LeadForm from '../components/LeadForm';
 
 interface RestaurantBusinessViewProps {
   onBack: () => void;
@@ -30,10 +31,6 @@ const RestaurantBusinessView: React.FC<RestaurantBusinessViewProps> = ({ onBack,
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const getContactMail = () => {
-      return `mailto:business@aiknow.wine?subject=Business Info Request [${language.toUpperCase()}]`;
-  };
-
   return (
     <div className="h-full w-full overflow-y-auto bg-white text-gray-900 font-sans selection:bg-emerald-100">
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
@@ -42,7 +39,7 @@ const RestaurantBusinessView: React.FC<RestaurantBusinessViewProps> = ({ onBack,
             <Logo className="w-8 h-8" showText={true} />
           </div>
           <button 
-            onClick={() => window.location.href = getContactMail()}
+            onClick={() => scrollToSection('contatti')}
             className="bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all"
           >
             {t('b2b_contact_free')}
@@ -67,7 +64,7 @@ const RestaurantBusinessView: React.FC<RestaurantBusinessViewProps> = ({ onBack,
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                <button 
-                 onClick={() => window.location.href = getContactMail()}
+                 onClick={() => scrollToSection('contatti')}
                  className="px-10 py-5 bg-gray-900 text-white font-bold rounded-2xl shadow-xl hover:bg-black transition-all transform hover:scale-105"
                >
                  {t('b2b_cta_setup')}
@@ -186,11 +183,24 @@ const RestaurantBusinessView: React.FC<RestaurantBusinessViewProps> = ({ onBack,
                     ))}
                 </div>
                 <button 
-                  onClick={() => window.location.href = getContactMail()}
+                  onClick={() => scrollToSection('contatti')}
                   className="bg-emerald-600 text-white px-12 py-5 rounded-2xl font-bold text-xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 active:scale-95"
                 >
                     {t('b2b_cta_setup')}
                 </button>
+            </div>
+        </section>
+        {/* Modulo contatti: i dati arrivano nell'area admin, sezione «Contatti» */}
+        <section id="contatti" className="px-6 py-20 bg-stone-50 border-t border-stone-100 scroll-mt-16">
+            <div className="max-w-2xl mx-auto space-y-8">
+                <div className="text-center space-y-3">
+                    <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900">{t('lead_title')}</h2>
+                    <p className="text-gray-500">{t('lead_desc')}</p>
+                </div>
+                <LeadForm />
+                <p className="text-center text-xs text-gray-400">
+                    <a href={`mailto:business@aiknow.wine?subject=Business Info Request [${language.toUpperCase()}]`} className="underline hover:text-emerald-700">business@aiknow.wine</a>
+                </p>
             </div>
         </section>
       </main>

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { OnlinePrice } from '../types';
 import { ShoppingCartIcon, ExternalLinkIcon } from './Icons';
+import { UpgradeButton } from './UpgradePanel';
 
 interface PriceComparisonProps {
   name: string;
@@ -69,10 +70,7 @@ const PriceComparison: React.FC<PriceComparisonProps> = ({ name, producer, year,
               </div>
               <h3 className="text-sm font-bold text-gray-600">Confronta Prezzi Online</h3>
               <p className="text-xs text-gray-500 mt-1 mb-3">Trova le migliori offerte su Google Shopping.</p>
-              <div className="inline-block px-3 py-1.5 bg-amber-100 border border-amber-200 text-amber-800 rounded-lg text-xs font-bold">
-                  🔒 Funzionalità Premium
-              </div>
-              <p className="text-[10px] text-gray-400 mt-2">Contatta l'Admin per sbloccare.</p>
+              <UpgradeButton />
           </div>
       );
   }

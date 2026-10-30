@@ -137,6 +137,18 @@ export interface User {
   ai_usage_count?: number; 
   wine_count?: number;
   managed_restaurant?: Restaurant; // Dati del ristorante se l'utente è un gestore
+  // Fase 0 lancio: origine, attività, consensi, abbonamento
+  signup_source?: string | null;
+  heard_from?: string | null;
+  last_seen_at?: string | null;
+  marketing_consent?: boolean;
+  premium_source?: 'stripe' | 'admin' | null;
+  premium_plan?: string | null;
+  premium_until?: string | null;
+  has_billing_account?: boolean;
+  ai_usage_month?: number;
+  ai_calls_count?: number;
+  ai_cost_usd?: number;
 }
 
 export interface OnlinePrice {

@@ -16,7 +16,7 @@ const COMPANY = {
   email: 'privacy@aiknow.wine',
 };
 
-const LAST_UPDATE = '15 agosto 2026';
+const LAST_UPDATE = '30 ottobre 2026';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section className="space-y-2">
@@ -41,13 +41,21 @@ const PrivacyContent: React.FC = () => (
     <Section title="2. Quali dati raccogliamo">
       <p><strong>Dati di account:</strong> indirizzo email e password. La password è conservata solo in forma cifrata (hash bcrypt): non è leggibile da noi.</p>
       <p><strong>Dati della tua cantina:</strong> i vini che inserisci (nome, produttore, annata, prezzo, posizione, quantità), le fotografie delle etichette che carichi, lo storico delle bottiglie consumate, le tue valutazioni personali e le note di degustazione.</p>
-      <p><strong>Dati di utilizzo:</strong> numero di analisi AI effettuate, lingua preferita e stile di analisi scelto. Se sei arrivato tramite il QR code di un ristorante partner, registriamo il codice identificativo di quel locale.</p>
+      <p><strong>Dati di utilizzo:</strong> i giorni in cui usi l'app, le funzioni che usi, il numero di analisi AI effettuate e il loro costo stimato, la lingua preferita e lo stile di analisi scelto.</p>
+      <p><strong>Come sei arrivato:</strong> al momento della registrazione salviamo il link o il sito da cui sei arrivato la prima volta (ad esempio il QR code di un ristorante partner o di un nostro materiale promozionale) e, se scegli di rispondere, come ci hai conosciuto.</p>
+      <p><strong>Consensi:</strong> la data in cui hai accettato questa informativa e i termini, e la tua scelta, modificabile in ogni momento dal profilo, sulla ricezione di novità e offerte via email.</p>
+      <p><strong>Abbonamento Premium:</strong> se ti abboni, il pagamento avviene sulle pagine di Stripe. Noi riceviamo solo l'identificativo cliente, il piano scelto e lo stato dell'abbonamento: non vediamo né conserviamo i dati della tua carta.</p>
+      <p><strong>Richieste dalla pagina business:</strong> se compili il modulo contatti per ristoranti, enoteche e cantine, conserviamo nome, attività, email, telefono, città e messaggio che ci invii.</p>
+      <p><strong>Visite anonime:</strong> contiamo le visite alla home e il loro canale di provenienza senza registrare indirizzi IP né identificativi del visitatore.</p>
       <p>Non raccogliamo dati di geolocalizzazione, non usiamo cookie di profilazione e non facciamo pubblicità.</p>
     </Section>
 
     <Section title="3. Perché li trattiamo e con quale base giuridica">
       <p><strong>Per erogare il servizio</strong> (gestione cantina, analisi AI, abbinamenti): esecuzione del contratto — art. 6.1.b GDPR.</p>
       <p><strong>Per la sicurezza dell'account</strong> e per prevenire abusi: legittimo interesse — art. 6.1.f GDPR.</p>
+      <p><strong>Per gestire l'abbonamento Premium</strong> e per rispondere alle richieste dalla pagina business: esecuzione del contratto o di misure precontrattuali — art. 6.1.b GDPR.</p>
+      <p><strong>Per capire come viene usato il servizio e migliorarlo</strong> (statistiche d'uso, provenienza delle iscrizioni, costi di funzionamento): legittimo interesse — art. 6.1.f GDPR. Puoi opporti scrivendoci.</p>
+      <p><strong>Per inviarti novità e offerte via email</strong>, solo se lo hai scelto: consenso — art. 6.1.a GDPR, revocabile in ogni momento dal profilo.</p>
       <p><strong>Per obblighi di legge</strong> (fiscali, contabili, se applicabili): art. 6.1.c GDPR.</p>
     </Section>
 
@@ -72,6 +80,7 @@ const PrivacyContent: React.FC = () => (
       <ul className="list-disc pl-5 space-y-1">
         <li><strong>Anthropic PBC</strong> (USA) — elaborazione delle analisi AI</li>
         <li><strong>Render Services Inc.</strong> (USA/UE) — hosting dell'applicazione e del database</li>
+        <li><strong>Stripe Payments Europe, Ltd.</strong> (Irlanda) — pagamento dell'abbonamento Premium; per alcuni trattamenti, come la prevenzione delle frodi, Stripe agisce come titolare autonomo secondo la propria informativa</li>
         <li><strong>Google LLC</strong> — erogazione dei web font utilizzati dall'interfaccia</li>
       </ul>
       <p>Non vendiamo e non cediamo i tuoi dati a terzi per finalità commerciali.</p>
@@ -89,7 +98,9 @@ const PrivacyContent: React.FC = () => (
         Conserviamo i dati del tuo account e della tua cantina finché l'account resta attivo.
         Quando elimini l'account, i tuoi dati personali, i vini, le foto e lo storico vengono
         <strong> cancellati definitivamente dai nostri sistemi</strong>, salvo quanto debba essere conservato per obblighi di legge.
+        Restano solo i totali dei costi delle analisi AI, senza alcun collegamento alla tua persona.
       </p>
+      <p>Le richieste inviate dalla pagina business sono conservate fino a 24 mesi dall'ultimo contatto, salvo che diventino un rapporto contrattuale.</p>
     </Section>
 
     <Section title="8. I tuoi diritti">
@@ -114,6 +125,8 @@ const PrivacyContent: React.FC = () => (
         Usiamo esclusivamente l'archiviazione locale del dispositivo (localStorage) per conservare il token che ti mantiene
         collegato e le tue preferenze di lingua e stile: si tratta di strumenti tecnici necessari al funzionamento del servizio,
         per i quali non è richiesto il consenso.
+        Sullo stesso dispositivo salviamo anche il link o il sito da cui sei arrivato la prima volta: resta sul tuo dispositivo
+        e ci viene inviato solo se crei un account, per sapere quali canali funzionano. Non serve a seguirti su altri siti.
       </p>
     </Section>
 
@@ -188,6 +201,18 @@ const TermsContent: React.FC = () => (
       <p>
         Alcune funzionalità sono riservate agli account Premium. Le funzionalità incluse in ciascun piano
         possono essere modificate nel tempo per esigenze tecniche o di sostenibilità del servizio.
+      </p>
+      <p>
+        <strong>Abbonamento.</strong> Il Premium è un abbonamento mensile o annuale. Prezzo e durata sono mostrati prima del pagamento,
+        che avviene tramite Stripe. L'abbonamento si rinnova automaticamente alla scadenza finché non lo disdici.
+      </p>
+      <p>
+        <strong>Disdetta.</strong> Puoi disdire in qualsiasi momento dal tuo profilo («Gestisci abbonamento»): il Premium resta attivo
+        fino alla fine del periodo già pagato e non ci saranno altri addebiti.
+      </p>
+      <p>
+        <strong>Recesso.</strong> Se sei un consumatore puoi recedere entro 14 giorni dal primo pagamento scrivendo a{' '}
+        <a href={`mailto:${COMPANY.email}`} className="text-wine-700 font-medium underline">{COMPANY.email}</a>: ti rimborsiamo l'importo pagato.
       </p>
     </Section>
 
