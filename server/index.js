@@ -5,6 +5,7 @@ const { Pool } = pkg;
 import cors from 'cors';
 import compression from 'compression';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
@@ -934,6 +935,36 @@ const distPath = path.resolve(__dirname, '../dist');
 app.use(express.static(distPath));
 // Vecchi indirizzi dell'Academy: redirect permanente al nuovo percorso /guide/<slug>
 app.get('/guida/:slug', (req, res) => res.redirect(301, `/guide/${encodeURIComponent(req.params.slug)}`));
+// --- SEO: sitemap.xml e robots.txt per Google Search Console ---
+// Le guide si leggono dal file dell'Academy: ogni nuova guida entra da sola nella sitemap.
+const SITE_URL = (process.env.SITE_URL || 'https://aiknow.wine').replace(/\/$/, '');
+const guideSlugs = (() => {
+    try {
+        const src = fs.readFileSync(path.resolve(__dirname, '../constants/academy.ts'), 'utf8');
+        return [...new Set([...src.matchAll(/slug:\s*'([a-z0-9-]+)'/g)].map(m => m[1]))];
+    } catch (e) { console.error('Sitemap: guide non lette', e.message); return []; }
+})();
+app.get('/sitemap.xml', (req, res) => {
+    const pages = [
+        { loc: '/', priority: '1.0' },
+        { loc: '/guide', priority: '0.8' },
+        ...guideSlugs.map(slug => ({ loc: `/guide/${slug}`, priority: '0.7' })),
+        ...['/ristoranti', '/restaurants', '/restaurants-fr', '/restaurantes', '/restaurants-de'].map(loc => ({ loc, priority: '0.6' })),
+        { loc: '/privacy', priority: '0.2' },
+        { loc: '/termini', priority: '0.2' },
+    ];
+    const body = pages.map(p => `  <url><loc>${SITE_URL}${p.loc}</loc><priority>${p.priority}</priority></url>`).join('\n');
+    res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`);
+});
+app.get('/robots.txt', (req, res) => {
+    res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /qr/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+});
+// Verifica di Search Console con file HTML: GOOGLE_SITE_VERIFICATION = nome del file dato da Google (es. google1234abcd.html)
+if (process.env.GOOGLE_SITE_VERIFICATION) {
+    const file = process.env.GOOGLE_SITE_VERIFICATION.replace(/^\//, '');
+    app.get(`/${file}`, (req, res) => res.type('text/html').send(`google-site-verification: ${file}`));
+}
+
 // Link brevi per i materiali stampati: aiknow.wine/qr/fivi26 → home con sorgente tracciata
 app.get('/qr/:src', (req, res) => res.redirect(302, `/?src=${encodeURIComponent(String(req.params.src).slice(0, 60))}`));
 app.get('*', (req, res) => res.sendFile(path.resolve(distPath, 'index.html')));

@@ -45,3 +45,9 @@ Su Stripe:
 - Area admin → **Contatti**: richieste dal modulo della pagina `/ristoranti`.
 - Link tracciati per i materiali stampati futuri: `https://aiknow.wine/qr/<codice>` (es. `/qr/vinitaly27`) oppure `?src=<codice>`.
 - Le date delle campagne (es. la fiera FIVI) sono in `server/growth.js`, costante `CAMPAIGNS`.
+
+## Google Search Console
+
+- Sitemap: `https://aiknow.wine/sitemap.xml` (generata dal server, include in automatico le guide dell'Academy). `robots.txt` la indica già.
+- Verifica del sito: meglio come «Dominio» con record DNS. In alternativa, metodo «File HTML»: imposta su Render `GOOGLE_SITE_VERIFICATION` con il nome del file dato da Google (es. `google1234abcd.html`).
+- Se l'indirizzo principale è `www.aiknow.wine`, imposta `SITE_URL=https://www.aiknow.wine`.
