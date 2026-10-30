@@ -43,7 +43,7 @@ Su Stripe:
 
 - Area admin → **Metriche**: iscrizioni, attivazione, ritorno a 1/7/30 giorni, funzioni usate, costo AI stimato, periodo della fiera.
 - Area admin → **Contatti**: richieste dal modulo della pagina `/ristoranti`.
-- Link tracciati per i materiali stampati futuri: `https://aiknow.wine/qr/<codice>` (es. `/qr/vinitaly27`) oppure `?src=<codice>`.
+- Link tracciati per i materiali stampati: `https://aiknow.wine/qr/<codice>` (es. `/qr/vinitaly27`) rimanda alla home con `utm_source=<codice>&utm_medium=qr&utm_campaign=offline`, leggibile anche da Google Analytics. Per i link online usa direttamente i parametri UTM.
 - Le date delle campagne (es. la fiera FIVI) sono in `server/growth.js`, costante `CAMPAIGNS`.
 
 ## Google Search Console

@@ -967,8 +967,12 @@ if (process.env.GOOGLE_SITE_VERIFICATION) {
     app.get(`/${file}`, (req, res) => res.type('text/html').send(`google-site-verification: ${file}`));
 }
 
-// Link brevi per i materiali stampati: aiknow.wine/qr/fivi26 → home con sorgente tracciata
-app.get('/qr/:src', (req, res) => res.redirect(302, `/?src=${encodeURIComponent(String(req.params.src).slice(0, 60))}`));
+// Link brevi per i materiali stampati: aiknow.wine/qr/fivi26 → home con parametri UTM
+// Parametri UTM standard: li capiscono sia il cruscotto dell'app sia, in futuro, Google Analytics.
+app.get('/qr/:src', (req, res) => {
+    const code = encodeURIComponent(String(req.params.src).slice(0, 60));
+    res.redirect(302, `/?utm_source=${code}&utm_medium=qr&utm_campaign=offline`);
+});
 const seo = createSeo({ distPath, siteUrl: SITE_URL });
 app.get('*', (req, res) => {
     try {
