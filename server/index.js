@@ -847,6 +847,8 @@ app.get('/api/shares/:id', async (req, res) => {
 
 const distPath = path.resolve(__dirname, '../dist');
 app.use(express.static(distPath));
+// Vecchi indirizzi dell'Academy: redirect permanente al nuovo percorso /guide/<slug>
+app.get('/guida/:slug', (req, res) => res.redirect(301, `/guide/${encodeURIComponent(req.params.slug)}`));
 app.get('*', (req, res) => res.sendFile(path.resolve(distPath, 'index.html')));
 
 const initDb = async () => {

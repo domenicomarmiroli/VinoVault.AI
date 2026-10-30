@@ -10,14 +10,9 @@ import RestaurantView from './views/RestaurantView';
 import SommelierView from './views/SommelierView';
 import AdminView from './views/AdminView';
 import RestaurantManagerView from './views/RestaurantManagerView';
-import DigitalCellarGuide from './views/DigitalCellarGuide';
-import SommelierHomeGuide from './views/SommelierHomeGuide';
-import RestaurantGuide from './views/RestaurantGuide';
-import ShopGuide from './views/ShopGuide';
-import AnalyticsGuide from './views/AnalyticsGuide';
-import SommelierAnalysisGuide from './views/SommelierAnalysisGuide';
-import HistoryGuide from './views/HistoryGuide';
 import AllGuidesView from './views/AllGuidesView';
+import GuidePage from './views/GuidePage';
+import { getGuide } from './constants/academy';
 import RestaurantBusinessView from './views/RestaurantBusinessView';
 import LegalView from './views/LegalView';
 import AuthForm from './components/AuthForm';
@@ -147,6 +142,15 @@ const AppContent: React.FC = () => {
           if (language !== pathLang) {
               setLanguage(pathLang);
           }
+      }
+  }, [currentPath]);
+
+  // Vecchi link dell'Academy (/guida/<slug>) → nuovo indirizzo /guide/<slug>
+  useEffect(() => {
+      if (currentPath.startsWith('/guida/')) {
+          const fixed = currentPath.replace(/^\/guida\//, '/guide/');
+          window.history.replaceState({}, '', fixed + window.location.search);
+          setCurrentPath(fixed);
       }
   }, [currentPath]);
 
@@ -347,19 +351,24 @@ const AppContent: React.FC = () => {
       return <RestaurantBusinessView onBack={() => navigateTo('/')} onContact={() => {}} />;
   }
 
-  if (currentPath.startsWith('/guida/')) {
-    const Guide = { 'cantina-digitale': DigitalCellarGuide, 'sommelier-a-casa': SommelierHomeGuide, 'al-ristorante': RestaurantGuide, 'acquisti-intelligenti': ShopGuide, 'analisi-e-roi': AnalyticsGuide, 'analisi-sommelier': SommelierAnalysisGuide, 'storico-degustazioni': HistoryGuide }[currentPath.split('/')[2]];
-    return Guide ? <Guide onBack={() => navigateTo('/')} onStart={() => { setShowAuth(true); navigateTo('/'); }} /> : <LandingPage onStart={() => setShowAuth(true)} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} onOpenBusiness={() => navigateTo(languageToBusinessPath[language])} />;
+  // Wine Academy: indice su /guide, articoli su /guide/<slug> (i vecchi link /guida/<slug> vengono reindirizzati)
+  const academyStart = () => { navigateTo('/'); if (!token) setShowAuth(true); };
+  if (currentPath === '/guide' || currentPath === '/guide/') {
+    return <AllGuidesView onHome={() => navigateTo('/')} onStart={academyStart} onOpenGuide={(slug) => navigateTo(`/guide/${slug}`)} />;
   }
-  
-  if (currentPath === '/guide') return <AllGuidesView onBack={() => navigateTo('/')} onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} onOpenBusiness={() => navigateTo(languageToBusinessPath[language])} />;
+  if (currentPath.startsWith('/guide/') || currentPath.startsWith('/guida/')) {
+    const guide = getGuide(currentPath.split('/')[2] || '');
+    return guide
+      ? <GuidePage guide={guide} onBack={() => navigateTo('/guide')} onHome={() => navigateTo('/')} onStart={academyStart} onOpenGuide={(slug) => navigateTo(`/guide/${slug}`)} />
+      : <AllGuidesView onHome={() => navigateTo('/')} onStart={academyStart} onOpenGuide={(slug) => navigateTo(`/guide/${slug}`)} />;
+  }
 
   if (!token) {
     if (showAuth) return <AuthForm onLogin={handleLogin} onBack={() => { setShowAuth(false); navigateTo('/'); }} referralRef={restaurantData?.slug} />;
     return <>
         <LandingPage 
             onStart={() => setShowAuth(true)} 
-            onOpenGuide={(slug) => navigateTo(`/guida/${slug}`)} 
+            onOpenGuide={(slug) => navigateTo(`/guide/${slug}`)} 
             onViewAllGuides={() => navigateTo('/guide')} 
             onOpenBusiness={() => navigateTo(languageToBusinessPath[language])} 
         />

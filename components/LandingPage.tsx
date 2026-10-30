@@ -1,8 +1,10 @@
 
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { Logo } from './Logo';
-import { WineIcon, ChefIcon, ShopIcon, ChartBarIcon, RestaurantIcon, UserIcon, HistoryIcon, CameraIcon } from './Icons';
+import { WineIcon, ChefIcon, ShopIcon, ChartBarIcon, RestaurantIcon, HistoryIcon, CameraIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import { GUIDES, getGuideContent, readingMinutes, academyUi } from '../constants/academy';
+import { AcademyIcon } from './AcademyShared';
 import { Language, LocationLayout, Wine } from '../types';
 
 const Cellar3D = React.lazy(() => import('./Cellar3D'));
@@ -175,15 +177,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
   const { t, language, setLanguage } = useLanguage();
   const steps = useInView<HTMLDivElement>();
 
-  const guideItems = [
-    { slug: 'cantina-digitale', title: t('guide_title_cellar'), desc: t('guide_desc_cellar'), icon: WineIcon, color: 'bg-wine-800', tag: t('guide_tag_manage') },
-    { slug: 'sommelier-a-casa', title: t('guide_title_home'), desc: t('guide_desc_home'), icon: ChefIcon, color: 'bg-amber-600', tag: t('guide_tag_dinner') },
-    { slug: 'al-ristorante', title: t('guide_title_rest'), desc: t('guide_desc_rest'), icon: RestaurantIcon, color: 'bg-emerald-600', tag: t('guide_tag_gourmet') },
-    { slug: 'acquisti-intelligenti', title: t('guide_title_shop'), desc: t('guide_desc_shop'), icon: ShopIcon, color: 'bg-indigo-600', tag: t('guide_tag_shop') },
-    { slug: 'analisi-e-roi', title: t('guide_title_roi'), desc: t('guide_desc_roi'), icon: ChartBarIcon, color: 'bg-slate-800', tag: t('guide_tag_finance') },
-    { slug: 'analisi-sommelier', title: t('guide_title_somm'), desc: t('guide_desc_somm'), icon: UserIcon, color: 'bg-purple-700', tag: t('guide_tag_strat') },
-    { slug: 'storico-degustazioni', title: t('guide_title_hist'), desc: t('guide_desc_hist'), icon: HistoryIcon, color: 'bg-stone-700', tag: t('guide_tag_mem') },
-  ];
+  const academy = academyUi(language);
+  const guideItems = GUIDES.map(g => ({ guide: g, content: getGuideContent(g, language) }));
+
 
   const features = [
     { icon: <WineIcon className="w-8 h-8 text-white" />, title: t('lp_f1_t'), desc: t('lp_f1_d'), color: 'from-wine-600 to-wine-800' },
@@ -378,25 +374,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
 
               <div className="relative -mx-6 px-6">
                   <div className="flex gap-6 overflow-x-auto pb-12 no-scrollbar snap-x snap-mandatory">
-                     {guideItems.map((item) => (
+                     {guideItems.map(({ guide, content }) => (
                         <div
-                           key={item.slug}
-                           onClick={() => onOpenGuide?.(item.slug)}
-                           className="flex-shrink-0 w-[300px] md:w-[350px] snap-start bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer group flex flex-col h-full border border-gray-100"
+                           key={guide.slug}
+                           onClick={() => onOpenGuide?.(guide.slug)}
+                           className="flex-shrink-0 w-[280px] md:w-[330px] snap-start bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer group flex flex-col border border-gray-100"
                         >
-                           <div className={`h-48 ${item.color} flex items-center justify-center relative overflow-hidden shrink-0`}>
+                           <div className={`h-40 bg-gradient-to-br ${guide.gradient} flex items-center justify-center relative overflow-hidden shrink-0`}>
                                <div className="bg-white/10 backdrop-blur-md p-5 rounded-[1.5rem] border border-white/20 relative z-10 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
-                                   <item.icon className="w-12 h-12 text-white" filled />
+                                   <AcademyIcon icon={guide.icon} className="w-10 h-10 text-white" />
                                </div>
                                <div className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-125 transition-transform duration-700">
-                                  <item.icon className="w-40 h-40 text-white" filled />
+                                  <AcademyIcon icon={guide.icon} className="w-40 h-40 text-white" />
                                </div>
                            </div>
-                           <div className="p-8 flex-1 flex flex-col">
-                               <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3 block">{item.tag}</span>
-                               <h3 className="text-2xl font-serif font-bold text-gray-900 mb-3 group-hover:text-wine-700 transition-colors leading-tight">{item.title}</h3>
-                               <p className="text-gray-500 text-sm leading-relaxed mb-6">{item.desc}</p>
-                               <div className="mt-auto pt-6 border-t border-gray-50 flex items-center text-wine-700 font-bold text-xs uppercase tracking-wider">
+                           <div className="p-7 flex-1 flex flex-col">
+                               <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3 block">{guide.category === 'learn' ? academy.learn : academy.app} · {readingMinutes(content)} {academy.min}</span>
+                               <h3 className="text-xl font-serif font-bold text-gray-900 mb-3 group-hover:text-wine-700 transition-colors leading-tight">{content.title}</h3>
+                               <p className="text-gray-500 text-sm leading-relaxed mb-6">{content.excerpt}</p>
+                               <div className="mt-auto pt-5 border-t border-gray-50 flex items-center text-wine-700 font-bold text-xs uppercase tracking-wider">
                                    {t('lp_read_guide')} <span className="ml-3 transition-transform group-hover:translate-x-2">→</span>
                                </div>
                            </div>
