@@ -310,17 +310,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
                     <h2 className="text-4xl font-serif font-bold text-gray-900 mb-2">{t('lp_academy_title')}</h2>
                     <p className="text-gray-500 text-lg">{t('lp_academy_desc')}</p>
                  </div>
-                 <button onClick={onViewAllGuides} className="text-wine-700 font-bold text-sm uppercase tracking-widest hover:bg-wine-100 px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-wine-100">
+                 <a href="/guide" onClick={(e) => { e.preventDefault(); onViewAllGuides?.(); }} className="text-wine-700 font-bold text-sm uppercase tracking-widest hover:bg-wine-100 px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-wine-100">
                     {t('lp_academy_all')} <span className="text-xl">→</span>
-                 </button>
+                 </a>
               </Reveal>
 
               <div className="relative -mx-6 px-6">
                   <div className="flex gap-6 overflow-x-auto pb-12 no-scrollbar snap-x snap-mandatory">
                      {guideItems.map(({ guide, content }) => (
-                        <div
+                        <a href={`/guide/${guide.slug}`}
                            key={guide.slug}
-                           onClick={() => onOpenGuide?.(guide.slug)}
+                           onClick={(e) => { e.preventDefault(); onOpenGuide?.(guide.slug); }}
                            className="flex-shrink-0 w-[280px] md:w-[330px] snap-start bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer group flex flex-col border border-gray-100"
                         >
                            <div className={`h-40 bg-gradient-to-br ${guide.gradient} flex items-center justify-center relative overflow-hidden shrink-0`}>
@@ -339,7 +339,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
                                    {t('lp_read_guide')} <span className="ml-3 transition-transform group-hover:translate-x-2">→</span>
                                </div>
                            </div>
-                        </div>
+                        </a>
                      ))}
                   </div>
               </div>
@@ -383,8 +383,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenGuide, onViewA
             <h5 className="text-white font-bold text-sm uppercase tracking-widest">Link</h5>
             <ul className="space-y-2 text-sm">
                 <li><button onClick={() => window.scrollTo({top:0, behavior:'smooth'})} className="hover:text-wine-400">Home</button></li>
-                <li><button onClick={onViewAllGuides} className="hover:text-wine-400">{t('lp_academy')}</button></li>
-                <li><button onClick={onOpenBusiness} className="hover:text-emerald-400">Business</button></li>
+                <li><a href="/guide" onClick={(e) => { e.preventDefault(); onViewAllGuides?.(); }} className="hover:text-wine-400">{t('lp_academy')}</a></li>
+                <li><a href="/ristoranti" onClick={(e) => { e.preventDefault(); onOpenBusiness?.(); }} className="hover:text-emerald-400">Business</a></li>
             </ul>
           </div>
           <div className="space-y-4">

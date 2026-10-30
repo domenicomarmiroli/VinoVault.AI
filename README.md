@@ -51,3 +51,4 @@ Su Stripe:
 - Sitemap: `https://aiknow.wine/sitemap.xml` (generata dal server, include in automatico le guide dell'Academy). `robots.txt` la indica già.
 - Verifica del sito: meglio come «Dominio» con record DNS. In alternativa, metodo «File HTML»: imposta su Render `GOOGLE_SITE_VERIFICATION` con il nome del file dato da Google (es. `google1234abcd.html`).
 - Se l'indirizzo principale è `www.aiknow.wine`, imposta `SITE_URL=https://www.aiknow.wine`.
+- Ogni pagina pubblica (home, Academy, guide, pagine business, privacy, termini) parte con titolo, descrizione, indirizzo canonico, anteprima social e dati strutturati generati da `server/seo.js`; le guide includono anche il testo completo nell'HTML. I dati delle guide vengono esportati durante `npm run build` (`scripts/build-seo.mjs`).

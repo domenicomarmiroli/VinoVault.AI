@@ -17,6 +17,7 @@ import { randomUUID } from 'crypto';
 import { startBotWakeup } from './botWakeup.js';
 import { createGrowth, normalizeSignupSource } from './growth.js';
 import { createBilling } from './billing.js';
+import { createSeo } from './seo.js';
 
 dotenv.config();
 
@@ -932,7 +933,8 @@ app.get('/api/shares/:id', async (req, res) => {
 });
 
 const distPath = path.resolve(__dirname, '../dist');
-app.use(express.static(distPath));
+// index: false → anche la home passa dal renderer SEO qui sotto
+app.use(express.static(distPath, { index: false }));
 // Vecchi indirizzi dell'Academy: redirect permanente al nuovo percorso /guide/<slug>
 app.get('/guida/:slug', (req, res) => res.redirect(301, `/guide/${encodeURIComponent(req.params.slug)}`));
 // --- SEO: sitemap.xml e robots.txt per Google Search Console ---
@@ -967,7 +969,16 @@ if (process.env.GOOGLE_SITE_VERIFICATION) {
 
 // Link brevi per i materiali stampati: aiknow.wine/qr/fivi26 → home con sorgente tracciata
 app.get('/qr/:src', (req, res) => res.redirect(302, `/?src=${encodeURIComponent(String(req.params.src).slice(0, 60))}`));
-app.get('*', (req, res) => res.sendFile(path.resolve(distPath, 'index.html')));
+const seo = createSeo({ distPath, siteUrl: SITE_URL });
+app.get('*', (req, res) => {
+    try {
+        const { status, html } = seo.render(req.path);
+        res.status(status).type('html').set('Cache-Control', 'no-cache').send(html);
+    } catch (e) {
+        console.error('SEO render error', e.message);
+        res.sendFile(path.resolve(distPath, 'index.html'));
+    }
+});
 
 const initDb = async () => {
     const client = await pool.connect();
