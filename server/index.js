@@ -14,6 +14,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import sharp from 'sharp';
 import { randomUUID } from 'crypto';
 import { startBotWakeup } from './botWakeup.js';
+import { createGrowth, normalizeSignupSource } from './growth.js';
+import { createBilling } from './billing.js';
 
 dotenv.config();
 
@@ -100,6 +102,10 @@ const compressStoredImage = async (dataUri) => {
     }
 };
 
+// Render è dietro un proxy: serve per leggere l'IP reale nei limiti di richieste.
+app.set('trust proxy', 1);
+// Il webhook di Stripe va letto come testo grezzo per verificarne la firma: deve stare prima di express.json.
+app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), (req, res) => billing.webhookHandler(req, res));
 app.use(cors());
 app.use(compression());
 app.use(express.json({ limit: '100mb' }));
@@ -134,7 +140,9 @@ const authenticateToken = (req, res, next) => {
   if (!token) return res.sendStatus(401);
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
-    req.user = user; next();
+    req.user = user;
+    growth.recordActivity(user.userId);
+    next();
   });
 };
 
@@ -145,13 +153,18 @@ const authenticateAdmin = (req, res, next) => {
     });
 };
 
+const growth = createGrowth({ pool, anthropic, authenticateToken, authenticateAdmin });
+const billing = createBilling({ pool, authenticateToken, trackEvent: growth.trackEvent });
+growth.registerRoutes(app);
+billing.registerRoutes(app);
+
 // --- AI ENDPOINTS ---
 
 app.post('/api/ai/analyze-label', authenticateToken, async (req, res) => {
     const { base64Image, lang = 'it', tone = 'pop' } = req.body;
     const langName = getLanguageName(lang);
     try {
-        const response = await anthropic.messages.create({
+        const response = await growth.aiCreate(req.user.userId, 'analyze-label', {
             model: MODEL, max_tokens: 1536, temperature: 0,
             system: `Sei un esperto di vino che analizza etichette da foto per un'app di gestione cantina. Leggi con attenzione ogni dettaglio visibile (nome, produttore, annata, denominazione/regione, vitigno, gradazione) e, se un dato non è leggibile, deducilo in modo plausibile dal contesto (tipologia di vino, denominazione, stile dell'etichetta) invece di lasciarlo vuoto quando possibile. Se l'annata non è davvero leggibile né deducibile con ragionevole certezza, lascia il campo "year" vuoto: lo inserirà l'utente a mano.
 ${getToneInstructions(tone)}
@@ -181,7 +194,7 @@ app.post('/api/ai/suggest-pairing', authenticateToken, async (req, res) => {
     const langName = getLanguageName(lang);
     const inventoryList = inventory.map(w => `ID: ${w.id}, Nome: ${w.name} (${w.year}), Tipo: ${w.type}, Vitigno: ${w.grape || 'N/D'}`).join('\n');
     try {
-        const response = await anthropic.messages.create({
+        const response = await growth.aiCreate(req.user.userId, 'suggest-pairing', {
             model: MODEL, max_tokens: 2048,
             system: `Sei un sommelier che consiglia abbinamenti cibo-vino per una cena, ragionando su ingredienti principali, metodo di cottura, intensità del piatto e struttura del vino (non solo sul tipo di carne/pesce).
 ${getToneInstructions(tone)}
@@ -217,7 +230,7 @@ app.post('/api/ai/analyze-purchase', authenticateToken, async (req, res) => {
             ? `L'annata è già confermata dall'utente: ${knownYear}. Usa esattamente questo valore per wineDetails.year, non cercare di rilevarla diversamente.`
             : '';
         contentParts.push({ type: 'text', text: `Prezzo offerto: €${inputPrice}. Cantina attuale: ${inventoryContext || 'vuota'}. ${yearHint} Analizza in ${langName}. Rispondi SOLO in JSON.` });
-        const response = await anthropic.messages.create({
+        const response = await growth.aiCreate(req.user.userId, 'analyze-purchase', {
             model: MODEL, max_tokens: 2048, temperature: 0,
             system: `Agisci come broker di vini esperto che valuta se un acquisto conviene, indipendentemente dal prezzo richiesto.
 ${getToneInstructions(tone)}
@@ -259,7 +272,7 @@ app.post('/api/ai/suggest-restaurant-pairing', authenticateToken, async (req, re
             contentParts.push({ type: 'text', text: menuSource.data });
         }
         contentParts.push({ type: 'text', text: `Scegli i migliori vini per: ${dish}. Max 2 per fascia (Economica/Media/Alta) o 3 totali se carta piccola. Rispondi in ${langName} solo JSON.` });
-        const response = await anthropic.messages.create({
+        const response = await growth.aiCreate(req.user.userId, 'suggest-restaurant-pairing', {
             model: MODEL, max_tokens: 2048, temperature: 0,
             system: `Sei un sommelier digitale che consulta la carta vini di un ristorante per consigliare il miglior abbinamento con il piatto scelto dal cliente.
 ${getToneInstructions(tone)}
@@ -282,7 +295,7 @@ app.post('/api/ai/analyze-restaurant', authenticateToken, async (req, res) => {
     const { wineList, foodMenu, lang = 'it' } = req.body;
     const langName = getLanguageName(lang);
     try {
-        const response = await anthropic.messages.create({
+        const response = await growth.aiCreate(req.user.userId, 'analyze-restaurant', {
             model: MODEL, max_tokens: 3000, temperature: 0,
             system: `Sei un Master Sommelier che esegue un audit tecnico professionale della carta vini di un ristorante, verificandone la coerenza con il menu cibo.
 Analisi da svolgere:
@@ -311,7 +324,7 @@ app.post('/api/ai/extract-text', authenticateToken, async (req, res) => {
                 { type: 'text', text: 'OCR PROFESSIONALE. Estrai il testo mantenendo struttura e prezzi.' }
               ]
             : [{ type: 'text', text: `Estrai il testo dal contenuto (${mimeType}): ${base64Data}` }];
-        const response = await anthropic.messages.create({
+        const response = await growth.aiCreate(req.user.userId, 'extract-text', {
             model: MODEL, max_tokens: 4096,
             messages: [{ role: 'user', content: contentParts }]
         });
@@ -394,11 +407,11 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido, testi in ${langName}, senza 
         };
         let response;
         try {
-            response = await anthropic.messages.create({ ...requestBody, model: CELLAR_REPORT_MODEL, output_config: { effort: 'low' } });
+            response = await growth.aiCreate(req.user.userId, 'cellar-report', { ...requestBody, model: CELLAR_REPORT_MODEL, output_config: { effort: 'low' } });
         } catch (primaryErr) {
             // Se il modello principale non è disponibile per questa chiave API, il report non deve rompersi.
             console.error(`Cellar report: ${CELLAR_REPORT_MODEL} non disponibile, uso ${MODEL}`, primaryErr?.status, primaryErr?.message);
-            response = await anthropic.messages.create({ ...requestBody, model: MODEL });
+            response = await growth.aiCreate(req.user.userId, 'cellar-report', { ...requestBody, model: MODEL });
         }
         if (response.stop_reason === 'refusal') return res.status(422).json({ error: 'Analisi non disponibile al momento, riprova più tardi.' });
         const report = JSON.parse(cleanJson(extractText(response) || '{}'));
@@ -422,6 +435,7 @@ app.post('/api/auth/google', async (req, res) => {
     const token = req.body.token;
     const language = req.body.language;
     const ref = req.body.ref;
+    const marketingConsent = req.body.marketingConsent === true;
     if (!GOOGLE_CLIENT_ID || !token) return res.status(400).json({ error: 'Missing params' });
     try {
         const client = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -432,12 +446,16 @@ app.post('/api/auth/google', async (req, res) => {
         let result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
         let user = result.rows[0];
         if (!user) {
+            if (req.body.privacyAccepted !== true) return res.status(400).json({ error: "Per registrarti devi accettare l'informativa privacy e i termini." });
             const userId = 'u_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+            const { source, meta } = normalizeSignupSource(req.body.source);
             const newUserResult = await pool.query(
-                "INSERT INTO users (id, email, google_id, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, 'user', FALSE, $4, $5) RETURNING *",
-                [userId, email, googleId, language || 'it', ref || null]
+                `INSERT INTO users (id, email, google_id, role, is_premium, language, ref_restaurant_slug, signup_source, signup_meta, privacy_accepted_at, marketing_consent, marketing_consent_at)
+                 VALUES ($1, $2, $3, 'user', FALSE, $4, $5, $6, $7, NOW(), $8, CASE WHEN $8 THEN NOW() ELSE NULL END) RETURNING *`,
+                [userId, email, googleId, language || 'it', ref || null, ref ? 'ristorante' : source, JSON.stringify(meta), marketingConsent]
             );
             user = newUserResult.rows[0];
+            growth.trackEvent(user.id, 'signup', { method: 'google', source: user.signup_source });
         }
         const jwtToken = jwt.sign({ userId: user.id, email: user.email, role: user.role, isPremium: user.is_premium, language: user.language || 'it' }, JWT_SECRET, { expiresIn: '30d' });
         res.json({ token: jwtToken, user: { id: user.id, email: user.email, role: user.role, is_premium: user.is_premium, language: user.language || 'it' } });
@@ -446,18 +464,23 @@ app.post('/api/auth/google', async (req, res) => {
 
 app.post('/api/auth/register', async (req, res) => {
     const { email, password, language, ref } = req.body;
+    const marketingConsent = req.body.marketingConsent === true;
     if (!email || !password) return res.status(400).json({ error: 'Email e password richiesti' });
     if (password.length < 6) return res.status(400).json({ error: 'La password deve avere almeno 6 caratteri' });
+    if (req.body.privacyAccepted !== true) return res.status(400).json({ error: "Per registrarti devi accettare l'informativa privacy e i termini." });
     try {
         const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
         if (existing.rows[0]) return res.status(400).json({ error: 'Email già registrata' });
         const hashedPassword = await bcrypt.hash(password, 10);
         const userId = 'u_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        const { source, meta } = normalizeSignupSource(req.body.source);
         const result = await pool.query(
-            "INSERT INTO users (id, email, password, role, is_premium, language, ref_restaurant_slug) VALUES ($1, $2, $3, 'user', FALSE, $4, $5) RETURNING *",
-            [userId, email, hashedPassword, language || 'it', ref || null]
+            `INSERT INTO users (id, email, password, role, is_premium, language, ref_restaurant_slug, signup_source, signup_meta, privacy_accepted_at, marketing_consent, marketing_consent_at)
+             VALUES ($1, $2, $3, 'user', FALSE, $4, $5, $6, $7, NOW(), $8, CASE WHEN $8 THEN NOW() ELSE NULL END) RETURNING *`,
+            [userId, email, hashedPassword, language || 'it', ref || null, ref ? 'ristorante' : source, JSON.stringify(meta), marketingConsent]
         );
         const user = result.rows[0];
+        growth.trackEvent(user.id, 'signup', { method: 'email', source: user.signup_source });
         const token = jwt.sign({ userId: user.id, email: user.email, role: user.role, isPremium: user.is_premium, language: user.language || 'it' }, JWT_SECRET, { expiresIn: '30d' });
         res.json({ token, user: { id: user.id, email: user.email, role: user.role, is_premium: user.is_premium, language: user.language || 'it' } });
     } catch (err) {
@@ -479,9 +502,14 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/users/me', authenticateToken, async (req, res) => {
     try {
-        const userResult = await pool.query('SELECT id, email, role, is_premium, language, ai_usage_count, cellar_report, cellar_report_history_count FROM users WHERE id = $1', [req.user.userId]);
+        const userResult = await pool.query(
+            `SELECT id, email, role, is_premium, language, ai_usage_count, cellar_report, cellar_report_history_count,
+                    heard_from, marketing_consent, premium_source, premium_plan, premium_until,
+                    (stripe_customer_id IS NOT NULL) AS has_billing_account
+             FROM users WHERE id = $1`, [req.user.userId]);
         const user = userResult.rows[0];
         if (!user) return res.status(404).json({ error: 'User not found' });
+        user.ai_usage_month = await growth.monthlyAiCalls(user.id);
         if (typeof user.cellar_report === 'string') try { user.cellar_report = JSON.parse(user.cellar_report); } catch(e) {}
         const restResult = await pool.query(`SELECT r.*, (SELECT COUNT(*) FROM users WHERE ref_restaurant_slug = r.slug) as user_count, (SELECT SUM(ai_usage_count) FROM users WHERE ref_restaurant_slug = r.slug) as total_ai_usage FROM restaurants r WHERE r.manager_id = $1`, [user.id]);
         if (restResult.rows[0]) {
@@ -512,6 +540,24 @@ app.delete('/api/users/me', authenticateToken, async (req, res) => {
     }
 });
 
+app.put('/api/users/me/password', authenticateToken, async (req, res) => {
+    const { newPassword } = req.body || {};
+    if (typeof newPassword !== 'string' || newPassword.length < 6) return res.status(400).json({ error: 'La password deve avere almeno 6 caratteri' });
+    try {
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [await bcrypt.hash(newPassword, 10), req.user.userId]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Aggiornamento non riuscito' }); }
+});
+
+app.put('/api/users/me/language', authenticateToken, async (req, res) => {
+    const { language } = req.body || {};
+    if (!['it', 'en', 'fr', 'es', 'de'].includes(language)) return res.status(400).json({ error: 'Lingua non valida' });
+    try {
+        await pool.query('UPDATE users SET language = $1 WHERE id = $2', [language, req.user.userId]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Aggiornamento non riuscito' }); }
+});
+
 app.put('/api/managed-restaurant', authenticateToken, async (req, res) => {
     const { menu_context, food_menu, menu_analysis } = req.body;
     try {
@@ -540,7 +586,7 @@ app.post('/api/users/track-ai', authenticateToken, async (req, res) => {
 app.get('/api/search-prices', authenticateToken, async (req, res) => {
     const { query } = req.query;
     try {
-        const response = await anthropic.messages.create({
+        const response = await growth.aiCreate(req.user.userId, 'search-prices', {
             model: MODEL, max_tokens: 1500,
             tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 4 }],
             system: `Sei un assistente che cerca prezzi REALI di vini su negozi online italiani ed europei (es. Tannico, Vino.com, Callmewine, Bernabei, Wineplatform, Xtrawine, Google Shopping) usando la ricerca web.
@@ -582,6 +628,7 @@ app.post('/api/wines', authenticateToken, async (req, res) => {
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)`,
             [wine.id, req.user.userId, wine.name, wine.producer, wine.year, wine.type, wine.region, wine.grape, wine.alcohol, wine.purchaseDate, wine.price, wine.quantity, wine.location, wine.storageTemp, wine.storageAdvice, wine.servingTemp, wine.servingAdvice, wine.foodPairings, wine.imageUrl, wine.drinkWindow, wine.marketPrice, wine.qualityScore ?? null, wine.wineStyle ? JSON.stringify(wine.wineStyle) : null, JSON.stringify(wine.cellarSlots || [])]
         );
+        growth.trackEvent(req.user.userId, 'wine_added', { withPhoto: Boolean(wine.imageUrl) });
         res.status(201).json(wine);
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -665,7 +712,7 @@ app.post('/api/wines/revalue', authenticateToken, async (req, res) => {
         if (wines.length === 0) return res.status(400).json({ error: 'La cantina è vuota: aggiungi qualche vino prima di ricalcolare il valore.' });
 
         const list = wines.map(w => `${w.id}|${w.name || ''}|${w.producer || ''}|${w.year || ''}|${w.region || ''}|${w.grape || ''}`).join('\n');
-        const response = await anthropic.messages.create({
+        const response = await growth.aiCreate(req.user.userId, 'revalue', {
             model: MODEL, max_tokens: 4096, temperature: 0,
             system: `Sei un esperto di mercato enologico. Riceverai un elenco di vini nel formato "id|nome|produttore|annata|regione|vitigno", uno per riga. Per OGNUNO, stima il prezzo di mercato ATTUALE e realistico in euro per una singola bottiglia, basandoti su produttore, denominazione, annata e reputazione. Rispondi ESCLUSIVAMENTE con un array JSON valido, nessun testo aggiuntivo, un elemento per ogni id ricevuto (stesso id, non alterarlo). Schema: [{"id": string, "marketPrice": number}]`,
             messages: [{ role: 'user', content: `Elenco vini:\n${list}` }]
@@ -720,6 +767,7 @@ app.post('/api/history', authenticateToken, async (req, res) => {
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
             [h.id, req.user.userId, h.wineId, h.name, h.producer, h.year, h.type, h.price, h.imageUrl, h.consumedDate, h.rating || 0, h.notes || '', h.location || 'Cantina']
         );
+        growth.trackEvent(req.user.userId, 'bottle_opened', { fromCellar: !String(h.wineId || '').startsWith('ext_') });
         res.status(201).json(h);
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -772,8 +820,38 @@ app.delete('/api/locations/:id', authenticateToken, async (req, res) => {
 
 app.get('/api/users', authenticateAdmin, async (req, res) => {
     try {
-        const result = await pool.query(`SELECT u.id, u.email, u.role, u.is_premium, u.language, u.ai_usage_count, u.ref_restaurant_slug, COALESCE((SELECT SUM(quantity) FROM wines WHERE user_id = u.id), 0) as wine_count FROM users u ORDER BY created_at DESC`);
+        const result = await pool.query(`SELECT u.id, u.email, u.role, u.is_premium, u.premium_source, u.language, u.ai_usage_count, u.ref_restaurant_slug, u.signup_source, u.heard_from, u.created_at, u.last_seen_at, u.marketing_consent, COALESCE((SELECT SUM(quantity) FROM wines WHERE user_id = u.id), 0) as wine_count, (SELECT COUNT(*) FROM ai_calls a WHERE a.user_id = u.id)::int AS ai_calls_count, (SELECT COALESCE(SUM(cost_usd), 0) FROM ai_calls a WHERE a.user_id = u.id)::float AS ai_cost_usd FROM users u ORDER BY created_at DESC`);
         res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// Premium regalato dall'admin (es. contatti della fiera): non viene toccato dai rinnovi Stripe.
+app.put('/api/users/:id/premium', authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `UPDATE users SET is_premium = NOT is_premium, premium_source = CASE WHEN is_premium THEN NULL ELSE 'admin' END
+             WHERE id = $1 AND NOT (is_premium AND premium_source = 'stripe') RETURNING is_premium`,
+            [req.params.id]
+        );
+        if (result.rowCount === 0) return res.status(409).json({ error: "L'utente ha un abbonamento Stripe attivo: gestiscilo da Stripe." });
+        res.json({ success: true, is_premium: result.rows[0].is_premium });
+    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.put('/api/users/:id/reset-password', authenticateAdmin, async (req, res) => {
+    const { newPassword } = req.body || {};
+    if (typeof newPassword !== 'string' || newPassword.length < 6) return res.status(400).json({ error: 'La password deve avere almeno 6 caratteri' });
+    try {
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [await bcrypt.hash(newPassword, 10), req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.delete('/api/users/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query("DELETE FROM users WHERE id = $1 AND role <> 'admin'", [req.params.id]);
+        if (result.rowCount === 0) return res.status(404).json({ error: 'Utente non trovato o amministratore' });
+        res.json({ success: true });
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
@@ -822,6 +900,13 @@ app.post('/api/admin/restaurants', authenticateAdmin, async (req, res) => {
     }
 });
 
+app.delete('/api/admin/restaurants/:id', authenticateAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM restaurants WHERE id = $1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+});
+
 app.get('/api/restaurants/:slug', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM restaurants WHERE slug = $1', [req.params.slug]);
@@ -849,6 +934,8 @@ const distPath = path.resolve(__dirname, '../dist');
 app.use(express.static(distPath));
 // Vecchi indirizzi dell'Academy: redirect permanente al nuovo percorso /guide/<slug>
 app.get('/guida/:slug', (req, res) => res.redirect(301, `/guide/${encodeURIComponent(req.params.slug)}`));
+// Link brevi per i materiali stampati: aiknow.wine/qr/fivi26 → home con sorgente tracciata
+app.get('/qr/:src', (req, res) => res.redirect(302, `/?src=${encodeURIComponent(String(req.params.src).slice(0, 60))}`));
 app.get('*', (req, res) => res.sendFile(path.resolve(distPath, 'index.html')));
 
 const initDb = async () => {
@@ -872,6 +959,8 @@ const initDb = async () => {
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cellar_report JSONB;`);
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cellar_report_history_count INTEGER DEFAULT 0;`);
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cellar_report_generated_at TIMESTAMP WITH TIME ZONE;`);
+        await growth.initGrowthDb(client);
+        await billing.initBillingDb(client);
         console.log('DB Ready');
     } catch (e) { console.error('DB Init Error', e); }
     finally { client.release(); }
