@@ -177,7 +177,7 @@ const GuidePage: React.FC<GuidePageProps> = ({ guide, onBack, onHome, onStart, o
           {related.map(g => {
             const c = getGuideContent(g, language);
             return (
-              <button key={g.slug} onClick={() => onOpenGuide(g.slug)} className="group text-left bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+              <a href={`/guide/${g.slug}`} key={g.slug} onClick={(e) => { e.preventDefault(); onOpenGuide(g.slug); }} className="group block text-left bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                 <div className={`h-24 bg-gradient-to-br ${g.gradient} relative overflow-hidden`}>
                   <AcademyIcon icon={g.icon} className="absolute right-4 -bottom-4 w-24 h-24 text-white/20 group-hover:scale-110 transition-transform duration-500" />
                   <span className="absolute left-4 top-4 text-[10px] font-bold uppercase tracking-widest text-white/80">{g.category === 'learn' ? ui.learn : ui.app}</span>
@@ -186,7 +186,7 @@ const GuidePage: React.FC<GuidePageProps> = ({ guide, onBack, onHome, onStart, o
                   <h3 className="font-serif font-bold text-lg leading-snug mb-2 group-hover:text-wine-700 transition-colors">{c.title}</h3>
                   <p className="text-sm text-gray-500 line-clamp-2">{c.excerpt}</p>
                 </div>
-              </button>
+              </a>
             );
           })}
         </div>

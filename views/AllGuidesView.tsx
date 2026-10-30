@@ -35,8 +35,8 @@ const AllGuidesView: React.FC<AllGuidesViewProps> = ({ onHome, onStart, onOpenGu
   const sections: { cat: GuideCategory; label: string }[] = [{ cat: 'learn', label: ui.learn }, { cat: 'app', label: ui.app }];
 
   const Card = ({ item, i }: { item: typeof items[number]; i: number }) => (
-    <button
-      onClick={() => onOpenGuide(item.guide.slug)}
+    <a href={`/guide/${item.guide.slug}`}
+      onClick={(e) => { e.preventDefault(); onOpenGuide(item.guide.slug); }}
       style={{ animationDelay: `${Math.min(i, 8) * 60}ms` }}
       className="group text-left bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500"
     >
@@ -56,7 +56,7 @@ const AllGuidesView: React.FC<AllGuidesViewProps> = ({ onHome, onStart, onOpenGu
           {ui.read} <span className="ml-2 transition-transform group-hover:translate-x-1.5">→</span>
         </span>
       </div>
-    </button>
+    </a>
   );
 
   return (
@@ -95,8 +95,8 @@ const AllGuidesView: React.FC<AllGuidesViewProps> = ({ onHome, onStart, onOpenGu
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
         {showFeatured && featured && (
-          <button onClick={() => onOpenGuide(featured.guide.slug)}
-            className={`group w-full text-left mb-14 rounded-3xl overflow-hidden bg-gradient-to-br ${featured.guide.gradient} text-white relative shadow-xl hover:shadow-2xl transition-shadow animate-in fade-in zoom-in-95 duration-700`}>
+          <a href={`/guide/${featured.guide.slug}`} onClick={(e) => { e.preventDefault(); onOpenGuide(featured.guide.slug); }}
+            className={`group block w-full text-left mb-14 rounded-3xl overflow-hidden bg-gradient-to-br ${featured.guide.gradient} text-white relative shadow-xl hover:shadow-2xl transition-shadow animate-in fade-in zoom-in-95 duration-700`}>
             <AcademyIcon icon={featured.guide.icon} className="absolute -right-10 -bottom-16 w-80 h-80 text-white/10 group-hover:scale-110 transition-transform duration-700" />
             <div className="relative p-8 md:p-12 max-w-2xl">
               <span className="inline-block bg-white/15 border border-white/20 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest mb-5">{ui.featured} · {featured.minutes} {ui.min}</span>
@@ -106,7 +106,7 @@ const AllGuidesView: React.FC<AllGuidesViewProps> = ({ onHome, onStart, onOpenGu
                 {ui.read} <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
               </span>
             </div>
-          </button>
+          </a>
         )}
 
         {visible.length === 0 && <p className="text-center text-gray-500 py-16">{ui.empty}</p>}
