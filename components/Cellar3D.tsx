@@ -21,6 +21,7 @@ interface Cellar3DProps {
   onPick?: (info: PickInfo) => void;
   onHover?: (info: PickInfo | null) => void;
   className?: string;
+  autoRotate?: boolean;
 }
 
 const SLOT_W = 1.0;
@@ -123,10 +124,10 @@ const createBottleGeometries = () => {
   return { body, cap, label };
 };
 
-const Cellar3D: React.FC<Cellar3DProps> = ({ kind, layout, wines, interaction, highlightWineId, onPick, onHover, className }) => {
+const Cellar3D: React.FC<Cellar3DProps> = ({ kind, layout, wines, interaction, highlightWineId, onPick, onHover, className, autoRotate }) => {
   const mountRef = useRef<HTMLDivElement>(null);
-  const propsRef = useRef({ onPick, onHover, interaction });
-  propsRef.current = { onPick, onHover, interaction };
+  const propsRef = useRef({ onPick, onHover, interaction, autoRotate });
+  propsRef.current = { onPick, onHover, interaction, autoRotate };
 
   const engine = useRef<{
     renderer: THREE.WebGLRenderer;
@@ -167,6 +168,10 @@ const Cellar3D: React.FC<Cellar3DProps> = ({ kind, layout, wines, interaction, h
     controls.dampingFactor = 0.08;
     controls.maxPolarAngle = Math.PI * 0.52;
     controls.screenSpacePanning = true;
+    controls.autoRotateSpeed = 0.7;
+    // la rotazione automatica si ferma per sempre appena l'utente interagisce
+    let userTookControl = false;
+    controls.addEventListener('start', () => { userTookControl = true; });
 
     scene.add(new THREE.HemisphereLight(0xfff7ed, 0x44403c, 0.9));
     const sun = new THREE.DirectionalLight(0xffffff, 1.7);
@@ -289,6 +294,7 @@ const Cellar3D: React.FC<Cellar3DProps> = ({ kind, layout, wines, interaction, h
       }
       const pulse = 0.35 + Math.sin(clock.elapsedTime * 4) * 0.25;
       e.highlighted.forEach(m => { (m.material as THREE.MeshPhysicalMaterial).emissiveIntensity = pulse; });
+      controls.autoRotate = !!propsRef.current.autoRotate && !userTookControl && !e.intro;
       controls.update();
       renderer.render(scene, camera);
     };
