@@ -1,5 +1,6 @@
 
 import React, { useState, useRef } from 'react';
+import AnalysisProgress from './AnalysisProgress';
 import { createPortal } from 'react-dom';
 import { Wine, WineType, Location, PurchaseAnalysis } from '../types';
 import { analyzeWineLabel, analyzePurchase } from '../services/geminiService';
@@ -208,10 +209,7 @@ const AddWineModal: React.FC<AddWineModalProps> = ({ isOpen, onClose, onAdd, loc
 
         <div className="flex-1 overflow-y-auto p-4 bg-gray-50 pb-32">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-24 space-y-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wine-600"></div>
-              <p className="text-wine-700 animate-pulse text-center">{t('ai_analyzing')}</p>
-            </div>
+            <AnalysisProgress kind="label" inline />
           ) : step === 'upload' ? (
             <div className="space-y-4 pt-4">
               <button

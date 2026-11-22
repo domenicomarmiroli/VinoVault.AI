@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
+import AnalysisProgress from '../components/AnalysisProgress';
 import { Wine, HistoryEntry, CellarReport } from '../types';
 import { UserIcon, ChartBarIcon, ShoppingCartIcon, WineIcon, LogoutIcon, ReportIcon } from '../components/Icons';
 import { generateCellarReport } from '../services/geminiService';
 import { useLanguage } from '../contexts/LanguageContext';
-import LoadingScreen from '../components/LoadingScreen';
 import { UpgradeButton } from '../components/UpgradePanel';
 
 interface AnalysisViewProps {
@@ -46,7 +46,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ inventory, history, onLogou
 
   return (
     <div className="h-full flex flex-col bg-slate-50 overflow-hidden relative">
-      {loading && <LoadingScreen message="Analisi Sommelier in corso..." subMessage="L'IA sta studiando le tue abitudini e la tua cantina..." />}
+      {loading && <AnalysisProgress kind="report" />}
 
       <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-6">
         {!report ? (

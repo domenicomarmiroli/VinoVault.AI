@@ -1,11 +1,11 @@
 
 import React, { useState, useRef } from 'react';
+import AnalysisProgress from '../components/AnalysisProgress';
 import { suggestRestaurantPairing } from '../services/geminiService';
 import { RestaurantSuggestion, HistoryEntry, Restaurant } from '../types';
 import { CameraIcon, LogoutIcon, RestaurantIcon, PlusIcon, HelpIcon } from '../components/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
-import LoadingScreen from '../components/LoadingScreen';
 
 interface RestaurantViewProps {
   onLogout: () => void;
@@ -143,7 +143,7 @@ const RestaurantView: React.FC<RestaurantViewProps> = ({ onLogout, onAddToHistor
 
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden relative">
-      {loading && <LoadingScreen message={t('ai_analyzing')} subMessage="Analisi del menu e ricerca abbinamenti in corso..." />}
+      {loading && <AnalysisProgress kind="restaurant" />}
 
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
         <div className="flex-1 min-w-0">

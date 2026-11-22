@@ -1,5 +1,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
+import AnalysisProgress from './AnalysisProgress';
 import { createPortal } from 'react-dom';
 import { CellarReport, Wine, HistoryEntry } from '../types';
 import { ReportIcon, ShoppingCartIcon, ClockIcon, UserIcon, StarIcon, WineIcon } from './Icons';
@@ -48,14 +49,6 @@ const BREAKDOWN_LABELS: Record<string, string> = {
   variety: 'Varietà', quality: 'Qualità', balance: 'Equilibrio', readiness: 'Maturità', value: 'Rapporto qualità/prezzo',
 };
 
-const LOADING_MESSAGES = [
-  'Il Sommelier sta stappando la tua cantina...',
-  'Confronto i voti dello storico con le bottiglie in cantina...',
-  'Controllo le finestre di beva...',
-  'Cerco le lacune nel tuo profilo...',
-  'Scelgo i consigli d\'acquisto su misura...',
-];
-
 const Section: React.FC<{ delay: number; className?: string; children: React.ReactNode }> = ({ delay, className = '', children }) => (
   <div className={`animate-in fade-in slide-in-from-bottom-4 duration-700 ${className}`} style={{ animationDelay: `${delay}ms` }}>{children}</div>
 );
@@ -66,7 +59,6 @@ const parseDrinkWindowEnd = (drinkWindow?: string) => {
 };
 
 const CellarReportModal: React.FC<CellarReportModalProps> = ({ isOpen, onClose, report, loading, inventory, history }) => {
-  const [msgIndex, setMsgIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -75,11 +67,6 @@ const CellarReportModal: React.FC<CellarReportModalProps> = ({ isOpen, onClose, 
     return () => clearTimeout(id);
   }, [isOpen, loading, report]);
 
-  useEffect(() => {
-    if (!loading) return;
-    const id = setInterval(() => setMsgIndex(i => (i + 1) % LOADING_MESSAGES.length), 2200);
-    return () => clearInterval(id);
-  }, [loading]);
 
   const avgRating = useMemo(() => {
     const rated = history.filter(h => (h.rating || 0) > 0);
@@ -147,14 +134,7 @@ const CellarReportModal: React.FC<CellarReportModalProps> = ({ isOpen, onClose, 
         {/* Content */}
         <div className="overflow-y-auto flex-1">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-24 px-6 space-y-6">
-              <div className="relative w-20 h-20">
-                <div className="absolute inset-0 rounded-full border-4 border-wine-100" />
-                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-wine-600 border-r-wine-400 animate-spin" />
-                <WineIcon className="absolute inset-0 m-auto w-8 h-8 text-wine-600 animate-pulse" filled />
-              </div>
-              <p key={msgIndex} className="text-wine-800 text-sm font-medium text-center animate-in fade-in slide-in-from-bottom-4 duration-500">{LOADING_MESSAGES[msgIndex]}</p>
-            </div>
+            <AnalysisProgress kind="report" inline />
           ) : report ? (
             <div className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
 

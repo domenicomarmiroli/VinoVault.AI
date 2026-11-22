@@ -117,7 +117,13 @@
       .demo-press { animation: demo-press 300ms ease-in-out both; }
       .demo-drop { animation: demo-drop 700ms cubic-bezier(.2,.8,.2,1) both; }
       .demo-progress { animation: demo-progress linear both; }
+      /* Barra di avanzamento delle analisi */
+      @keyframes ap-wave { from { transform: translateX(0); } to { transform: translateX(40px); } }
+      @keyframes ap-shine { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+      .ap-wave { animation: ap-wave 1.6s linear infinite; }
+      .ap-shine { background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); width: 40%; animation: ap-shine 1.8s ease-in-out infinite; }
       @media (prefers-reduced-motion: reduce) {
+        .ap-wave, .ap-shine { animation: none; }
         .demo-grow, .demo-ring, .demo-press, .demo-drop { animation: none; }
         .demo-tap, .demo-flash { display: none; }
         .animate-in, .lp-float, .lp-blob, .lp-shine, .lp-scan { animation: none; }

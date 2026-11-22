@@ -1,5 +1,6 @@
 
 import React, { useState, useRef } from 'react';
+import AnalysisProgress from '../components/AnalysisProgress';
 import { createPortal } from 'react-dom';
 import { Wine, PurchaseAnalysis, HistoryEntry } from '../types';
 import { analyzePurchase, analyzeWineLabel } from '../services/geminiService';
@@ -9,7 +10,6 @@ import WineStyleChart from '../components/WineStyleChart';
 import WineFactsGrid from '../components/WineFactsGrid';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
-import LoadingScreen from '../components/LoadingScreen';
 
 interface ShopViewProps {
   inventory: Wine[];
@@ -258,10 +258,7 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden relative">
       {loading && (
-        <LoadingScreen
-          message={t('ai_analyzing')}
-          subMessage={t('loading_shop')}
-        />
+        <AnalysisProgress kind="shop" />
       )}
 
       {yearPromptVisible && createPortal(

@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
+import AnalysisProgress from '../components/AnalysisProgress';
 import { Wine, PairingSuggestion } from '../types';
 import { suggestPairing } from '../services/geminiService';
 import { ChefIcon, LogoutIcon, ThermometerIcon, ClockIcon, StarIcon, ShoppingCartIcon, WineIcon } from '../components/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAnalysisStyle } from '../contexts/AnalysisStyleContext';
-import LoadingScreen from '../components/LoadingScreen';
 
 interface SommelierViewProps {
   inventory: Wine[];
@@ -86,7 +86,7 @@ const SommelierView: React.FC<SommelierViewProps> = ({ inventory, onLogout, onAi
 
   return (
     <div className="h-full flex flex-col bg-stone-50 overflow-hidden relative">
-      {loading && <LoadingScreen message={t('ai_analyzing')} subMessage={t('loading_somm')} />}
+      {loading && <AnalysisProgress kind="sommelier" />}
 
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
         <div>
