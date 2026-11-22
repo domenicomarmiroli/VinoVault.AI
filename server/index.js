@@ -465,13 +465,14 @@ app.post('/api/auth/google', async (req, res) => {
 });
 
 app.post('/api/auth/register', async (req, res) => {
-    const { email, password, language, ref } = req.body;
+    const { password, language, ref } = req.body;
+    const email = String(req.body.email || '').trim().toLowerCase();
     const marketingConsent = req.body.marketingConsent === true;
     if (!email || !password) return res.status(400).json({ error: 'Email e password richiesti' });
     if (password.length < 6) return res.status(400).json({ error: 'La password deve avere almeno 6 caratteri' });
     if (req.body.privacyAccepted !== true) return res.status(400).json({ error: "Per registrarti devi accettare l'informativa privacy e i termini." });
     try {
-        const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+        const existing = await pool.query('SELECT id FROM users WHERE lower(email) = $1', [email]);
         if (existing.rows[0]) return res.status(400).json({ error: 'Email già registrata' });
         const hashedPassword = await bcrypt.hash(password, 10);
         const userId = 'u_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -492,9 +493,11 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 app.post('/api/auth/login', async (req, res) => {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = String(req.body.email || '').trim().toLowerCase();
     try {
-        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        // Email senza distinzione tra maiuscole e minuscole (le tastiere dei telefoni spesso mettono la maiuscola)
+        const result = await pool.query('SELECT * FROM users WHERE lower(email) = $1 ORDER BY created_at LIMIT 1', [email]);
         const user = result.rows[0];
         if (!user || !user.password || !(await bcrypt.compare(password, user.password))) return res.status(400).json({ error: 'Invalid credentials' });
         const token = jwt.sign({ userId: user.id, email: user.email, role: user.role, isPremium: user.is_premium, language: user.language || 'it' }, JWT_SECRET, { expiresIn: '30d' });

@@ -172,17 +172,25 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token, onExit }) => {
 
   const handleResetPassword = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!resetModalUser || !newPassword) return;
+      // Gli spazi all'inizio/fine (aggiunti spesso dalla tastiera) renderebbero la password impossibile da digitare
+      const pw = newPassword.trim();
+      if (!resetModalUser || !pw) return;
+      if (pw.length < 6) { alert('La password deve avere almeno 6 caratteri.'); return; }
       try {
-          await fetch(`${API_BASE}/api/users/${resetModalUser.id}/reset-password`, {
+          const res = await fetch(`${API_BASE}/api/users/${resetModalUser.id}/reset-password`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({ newPassword })
+              body: JSON.stringify({ newPassword: pw })
           });
-          alert("Password aggiornata");
+          if (!res.ok) {
+              const data = await res.json().catch(() => ({}));
+              alert(`Password NON aggiornata: ${data.error || `errore ${res.status}`}`);
+              return;
+          }
+          alert(`Password aggiornata per ${resetModalUser.email}.\n\nNuova password: ${pw}\n(attenzione a maiuscole e minuscole)`);
           setResetModalUser(null);
           setNewPassword('');
-      } catch (e) { alert("Errore"); }
+      } catch (e) { alert("Errore di connessione: password non aggiornata."); }
   };
 
   return (
@@ -314,7 +322,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onLogout, token, onExit }) => {
           <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-xl animate-in zoom-in-95">
                   <h3 className="font-bold text-lg mb-2">Reset Password</h3><p className="text-sm text-gray-600 mb-4">Per <strong>{resetModalUser.email}</strong></p>
-                  <form onSubmit={handleResetPassword}><input type="text" placeholder="Nuova Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg mb-4" autoFocus />
+                  <form onSubmit={handleResetPassword}><input type="text" placeholder="Nuova password (min. 6 caratteri)" value={newPassword} onChange={e => setNewPassword(e.target.value)} autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck={false} className="w-full p-3 border border-gray-300 rounded-lg mb-4 font-mono" autoFocus />
                       <div className="flex gap-3"><button type="button" onClick={() => { setResetModalUser(null); setNewPassword(''); }} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold">Annulla</button><button type="submit" disabled={!newPassword} className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50">Salva</button></div>
                   </form>
               </div>
