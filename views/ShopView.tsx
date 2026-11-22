@@ -1,8 +1,9 @@
 
 import React, { useState, useRef } from 'react';
-import { Wine, PurchaseAnalysis } from '../types';
+import { createPortal } from 'react-dom';
+import { Wine, PurchaseAnalysis, HistoryEntry } from '../types';
 import { analyzePurchase, analyzeWineLabel } from '../services/geminiService';
-import { CameraIcon, LogoutIcon, ShopIcon, WineIcon, ExternalLinkIcon, ChefIcon } from '../components/Icons';
+import { CameraIcon, LogoutIcon, ShopIcon, WineIcon, ExternalLinkIcon, ChefIcon, GlassIcon, StarIcon, MapPinIcon } from '../components/Icons';
 import PriceComparison from '../components/PriceComparison';
 import WineStyleChart from '../components/WineStyleChart';
 import WineFactsGrid from '../components/WineFactsGrid';
@@ -16,7 +17,13 @@ interface ShopViewProps {
   onAddToInventory: (wine: Wine) => void;
   onAiUsed: () => void;
   isPremium: boolean;
+  // 'tasting': modalità Degustazione per fiere ed eventi, salva l'assaggio nello Storico
+  variant?: 'shop' | 'tasting';
+  onSaveTasting?: (entry: Partial<HistoryEntry>) => Promise<void>;
 }
+
+const EVENT_KEY = 'aiknow_tasting_event';
+const readEvent = () => { try { return localStorage.getItem(EVENT_KEY) || ''; } catch { return ''; } };
 
 const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -50,7 +57,15 @@ const compressImage = (file: File): Promise<string> => {
     });
 };
 
-const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInventory, onAiUsed, isPremium }) => {
+const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInventory, onAiUsed, isPremium, variant = 'shop', onSaveTasting }) => {
+  const isTasting = variant === 'tasting';
+  const [tastingYear, setTastingYear] = useState('');
+  const [tastingOpen, setTastingOpen] = useState(false);
+  const [tastingRating, setTastingRating] = useState(0);
+  const [tastingNotes, setTastingNotes] = useState('');
+  const [tastingEvent, setTastingEvent] = useState(readEvent);
+  const [tastingSaving, setTastingSaving] = useState(false);
+  const [savedToast, setSavedToast] = useState(false);
   const [mode, setMode] = useState<'camera' | 'link'>('camera');
   const [image, setImage] = useState<string | null>(null);
   const [linkUrl, setLinkUrl] = useState('');
@@ -109,6 +124,10 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
 
       // Solo in modalità foto possiamo leggere l'annata dall'etichetta prima
       // della valutazione completa: se non è leggibile, la chiediamo subito.
+      if (mode === 'camera' && isTasting && tastingYear) {
+          await runFullAnalysis(tastingYear);
+          return;
+      }
       if (mode === 'camera') {
           setLoading(true);
           try {
@@ -177,6 +196,40 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
       setEditedYear('');
   };
 
+  const resetAll = () => {
+      setAnalysis(null); setImage(null); setLinkUrl(''); setPrice(''); setEditedYear(''); setTastingYear('');
+  };
+
+  const openTasting = () => { setTastingRating(0); setTastingNotes(''); setTastingEvent(readEvent()); setTastingOpen(true); };
+
+  const saveTasting = async () => {
+      if (!analysis || !onSaveTasting) return;
+      if (!tastingRating) { alert(t('tasting_rate_required')); return; }
+      setTastingSaving(true);
+      try {
+          try { localStorage.setItem(EVENT_KEY, tastingEvent.trim()); } catch {}
+          await onSaveTasting({
+              name: analysis.wineDetails?.name || 'Vino',
+              producer: analysis.wineDetails?.producer || '',
+              year: editedYear || 'N/A',
+              type: analysis.wineDetails?.type || 'Altro',
+              price: Number(price) || 0,
+              imageUrl: image || undefined,
+              rating: tastingRating,
+              notes: tastingNotes.trim(),
+              location: tastingEvent.trim(),
+          });
+          setTastingOpen(false);
+          resetAll();
+          setSavedToast(true);
+          setTimeout(() => setSavedToast(false), 3500);
+      } catch {
+          alert(t('error'));
+      } finally {
+          setTastingSaving(false);
+      }
+  };
+
   const getDealColor = (rating: string) => {
       switch(rating) {
           case 'Excellent': return 'bg-green-100 text-green-800 border-green-200';
@@ -211,8 +264,8 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
         />
       )}
 
-      {yearPromptVisible && (
-        <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
+      {yearPromptVisible && createPortal(
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-sm animate-in slide-in-from-bottom duration-300">
             <p className="text-sm font-bold text-amber-700 mb-1">Annata non rilevata</p>
             <p className="text-sm text-gray-600 mb-4">Non riesco a leggere l'annata dall'etichetta. Indicala per completare la valutazione.</p>
@@ -230,16 +283,66 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
               <button onClick={confirmPendingYear} disabled={!pendingYear} className="flex-1 py-3 bg-wine-700 text-white hover:bg-wine-800 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed">Continua</button>
             </div>
           </div>
+        </div>,
+        document.body
+      )}
+
+      {tastingOpen && analysis && createPortal(
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-end sm:items-center justify-center sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[92vh] flex flex-col">
+            <div className="p-5 border-b border-gray-100 flex gap-3 items-center">
+              {image && <img src={image} alt="" className="w-12 h-16 object-cover rounded-lg border border-gray-100" />}
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-wine-600">{t('tasting_title')}</p>
+                <p className="font-serif font-bold text-gray-900 leading-tight truncate">{analysis.wineDetails?.name}</p>
+                <p className="text-xs text-gray-500 truncate">{analysis.wineDetails?.producer}{editedYear ? ` · ${editedYear}` : ''}</p>
+              </div>
+              <button onClick={() => setTastingOpen(false)} disabled={tastingSaving} className="text-gray-400 hover:text-gray-600 p-1">✕</button>
+            </div>
+            <div className="p-5 space-y-5 overflow-y-auto">
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-xs font-bold uppercase text-gray-500 tracking-wider">{t('rating_label')}</span>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button key={star} type="button" onClick={() => setTastingRating(star)} className={`w-10 h-10 transition-transform active:scale-90 ${star <= tastingRating ? 'text-yellow-400' : 'text-gray-200'}`} aria-label={`${star}`}>
+                      <StarIcon filled={star <= tastingRating} className="w-full h-full" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-2 flex items-center gap-1.5"><MapPinIcon className="w-3 h-3" /> {t('tasting_event_label')}</label>
+                <input value={tastingEvent} onChange={e => setTastingEvent(e.target.value)} placeholder={t('tasting_event_placeholder')} className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-wine-500 outline-none bg-gray-50" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-2">{t('notes_comments_label')}</label>
+                <textarea value={tastingNotes} onChange={e => setTastingNotes(e.target.value)} placeholder={t('notes_placeholder')} className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-wine-500 outline-none h-28 resize-none bg-gray-50" />
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-100 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <button onClick={saveTasting} disabled={tastingSaving} className="w-full py-3.5 bg-wine-700 hover:bg-wine-800 text-white font-bold rounded-xl shadow-lg shadow-wine-200 disabled:opacity-60 flex items-center justify-center gap-2">
+                {tastingSaving && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                {t('tasting_save')}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {savedToast && (
+        <div className="absolute top-24 inset-x-0 z-[60] flex justify-center pointer-events-none animate-in fade-in slide-in-from-top-2 duration-300">
+          <span className="bg-gray-900 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-xl flex items-center gap-2"><span className="text-emerald-400">✓</span> {t('tasting_saved')} · {t('tasting_next')}</span>
         </div>
       )}
 
       <div className="bg-white border-b border-gray-200 p-6 shadow-sm z-10 flex justify-between items-start">
         <div>
             <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
-                <ShopIcon className="w-8 h-8 text-wine-600" filled />
-                {t('shop_title')}
+                {isTasting ? <GlassIcon className="w-8 h-8 text-wine-600" /> : <ShopIcon className="w-8 h-8 text-wine-600" filled />}
+                {isTasting ? t('tasting_title') : t('shop_title')}
             </h1>
-            <p className="text-sm text-gray-500 mt-1">{t('shop_desc')}</p>
+            <p className="text-sm text-gray-500 mt-1">{isTasting ? t('tasting_desc') : t('shop_desc')}</p>
         </div>
         <button onClick={onLogout} className="text-gray-400 hover:text-wine-700 p-2"><LogoutIcon className="w-6 h-6" /></button>
       </div>
@@ -247,14 +350,14 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
       <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24">
         {!analysis && (
             <div className="space-y-6 lg:max-w-2xl lg:mx-auto">
-                <div className="flex p-1 bg-gray-200 rounded-xl">
+                {!isTasting && <div className="flex p-1 bg-gray-200 rounded-xl">
                     <button onClick={() => setMode('camera')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${mode === 'camera' ? 'bg-white shadow-sm text-wine-700' : 'text-gray-500 hover:text-gray-700'}`}>
                         <CameraIcon className="w-4 h-4" /> {t('photo_mode')}
                     </button>
                     <button onClick={() => setMode('link')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${mode === 'link' ? 'bg-white shadow-sm text-wine-700' : 'text-gray-500 hover:text-gray-700'}`}>
                         <ExternalLinkIcon className="w-4 h-4" /> {t('link_mode')}
                     </button>
-                </div>
+                </div>}
 
                 {mode === 'camera' ? (
                     <div onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all cursor-pointer ${image ? 'border-wine-500 bg-wine-50' : 'border-gray-300 hover:bg-gray-50'}`}>
@@ -268,9 +371,21 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                     </div>
                 )}
 
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">{t('offer_price')} (€) <span className="text-red-500">*</span></label>
-                    <input type="number" required value={price} onChange={(e) => setPrice(Number(e.target.value))} className="w-full p-3 text-lg border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none" />
+                <div className={isTasting ? 'grid grid-cols-2 gap-3' : ''}>
+                  {isTasting && (
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">{t('tasting_year_label')}</label>
+                        <select value={tastingYear} onChange={e => setTastingYear(e.target.value)} className="w-full p-3 text-lg border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-wine-600 outline-none">
+                            <option value="">—</option>
+                            {years.map(y => (<option key={y} value={y.toString()}>{y}</option>))}
+                        </select>
+                        <p className="text-[11px] text-gray-400 mt-1.5 leading-snug">{t('tasting_year_hint')}</p>
+                    </div>
+                  )}
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">{isTasting ? t('tasting_price') : t('offer_price')} (€) <span className="text-red-500">*</span></label>
+                    <input type="number" inputMode="decimal" required value={price} onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))} className="w-full p-3 text-lg border border-gray-300 rounded-xl focus:ring-2 focus:ring-wine-600 outline-none" />
+                  </div>
                 </div>
 
                 <button onClick={handleAnalyze} disabled={loading} className="w-full py-4 bg-wine-700 text-white font-bold rounded-xl shadow-lg hover:bg-wine-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
@@ -394,10 +509,24 @@ const ShopView: React.FC<ShopViewProps> = ({ inventory, onLogout, onAddToInvento
                     <p className="text-sm text-indigo-800 leading-relaxed mt-2">{analysis.cellarFit?.reasoning || 'N/A'}</p>
                 </div>
 
+                {isTasting ? (
+                  <div className="pt-2 space-y-3">
+                    <div className="flex gap-3">
+                      <button onClick={resetAll} className="flex-1 py-3 text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl font-medium">{t('new_analysis')}</button>
+                      <button onClick={openTasting} className="flex-[1.4] py-3 bg-wine-700 text-white hover:bg-wine-800 rounded-xl font-bold shadow-lg shadow-wine-200 flex items-center justify-center gap-2">
+                        <GlassIcon className="w-5 h-5" /> {t('tasting_btn')}
+                      </button>
+                    </div>
+                    <button onClick={handleBuy} disabled={!editedYear} className="w-full py-2.5 text-sm font-bold text-wine-700 hover:bg-wine-50 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed">
+                      {t('tasting_also_buy')} →
+                    </button>
+                  </div>
+                ) : (
                 <div className="flex gap-3 pt-2">
-                    <button onClick={() => { setAnalysis(null); setImage(null); setLinkUrl(''); setPrice(''); setEditedYear(''); }} className="flex-1 py-3 text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl font-medium">{t('new_analysis')}</button>
+                    <button onClick={resetAll} className="flex-1 py-3 text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl font-medium">{t('new_analysis')}</button>
                     <button onClick={handleBuy} disabled={!editedYear} className="flex-1 py-3 bg-wine-700 text-white hover:bg-wine-800 rounded-xl font-bold shadow-lg shadow-wine-200 disabled:opacity-50 disabled:cursor-not-allowed">{t('buy_add')}</button>
                 </div>
+                )}
             </div>
         )}
       </div>

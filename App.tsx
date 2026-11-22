@@ -22,7 +22,7 @@ import SharedPairingModal from './components/SharedPairingModal';
 import LoadingScreen from './components/LoadingScreen';
 import InstallPwaPrompt from './components/InstallPwaPrompt';
 import { Logo } from './components/Logo';
-import { WineIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon, ChefIcon, CogIcon } from './components/Icons';
+import { WineIcon, HistoryIcon, ShopIcon, ChartBarIcon, RestaurantIcon, ShieldCheckIcon, ChefIcon, CogIcon, GlassIcon } from './components/Icons';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { AnalysisStyleProvider } from './contexts/AnalysisStyleContext';
 import { captureVisit } from './services/acquisition';
@@ -55,7 +55,7 @@ const AppContent: React.FC = () => {
   
   const { t, setLanguage, language } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState<'inventory' | 'shop' | 'sommelier' | 'restaurant' | 'analytics' | 'history' | 'admin' | 'manage-restaurant'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'shop' | 'tasting' | 'sommelier' | 'restaurant' | 'analytics' | 'history' | 'admin' | 'manage-restaurant'>('inventory');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('vinovault_sidebar_collapsed') === 'true');
 
   useEffect(() => {
@@ -319,6 +319,19 @@ const AppContent: React.FC = () => {
       } catch (e) { alert("Errore registrazione bevuta."); }
   };
 
+  // Modalità Degustazione: l'assaggio arriva già con voto, note e luogo
+  const handleSaveTasting = async (entryData: Partial<HistoryEntry>) => {
+      const entry: HistoryEntry = {
+          id: generateId(), wineId: 'ext_' + generateId(), name: entryData.name || '?',
+          producer: entryData.producer || '', year: entryData.year || 'N/A', type: entryData.type || 'Altro',
+          price: entryData.price || 0, consumedDate: new Date().toISOString(), imageUrl: entryData.imageUrl,
+          rating: entryData.rating || 0, notes: entryData.notes || '', location: entryData.location || '',
+      };
+      const res = await authFetch('/api/history', { method: 'POST', body: JSON.stringify(entry) });
+      if (!res.ok) throw new Error('save failed');
+      setHistory(prev => [entry, ...prev]);
+  };
+
   const handleUpdateHistoryEntry = async (id: string, rating: number, notes: string, location?: string) => {
     setHistory(prev => prev.map(h => h.id === id ? { ...h, rating, notes, location: location !== undefined ? location : h.location } : h));
     try { await authFetch(`/api/history/${id}`, { method: 'PUT', body: JSON.stringify({ rating, notes, location }) }); } catch (e) {}
@@ -419,6 +432,7 @@ const AppContent: React.FC = () => {
   const navItems = [
     { id: 'inventory', icon: WineIcon, label: t('nav_cellar') },
     { id: 'shop', icon: ShopIcon, label: t('nav_shop') },
+    { id: 'tasting', icon: GlassIcon, label: t('nav_tasting') },
     { id: 'sommelier', icon: ChefIcon, label: t('nav_sommelier') },
     { id: 'restaurant', icon: RestaurantIcon, label: t('nav_restaurant') },
     { id: 'analytics', icon: ChartBarIcon, label: t('nav_data') },
@@ -475,6 +489,7 @@ const AppContent: React.FC = () => {
         <main className="flex-1 overflow-hidden relative">
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'inventory' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><InventoryView wines={wines} locations={locations} onAddWine={handleAddWine} onUpdateWine={handleUpdateWine} onConsume={handleConsume} onDelete={handleDelete} onAddLocation={handleAddLocation} onUpdateLocation={handleUpdateLocation} onDeleteLocation={handleDeleteLocation} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} /></div>
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'shop' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><ShopView inventory={wines} onLogout={handleLogout} onAddToInventory={handleAddWine} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} /></div>
+          <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'tasting' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><ShopView variant="tasting" onSaveTasting={handleSaveTasting} inventory={wines} onLogout={handleLogout} onAddToInventory={handleAddWine} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} isPremium={userPremium} /></div>
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'sommelier' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><SommelierView inventory={wines} onLogout={handleLogout} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onConsume={handleConsume} /></div>
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'restaurant' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><RestaurantView onLogout={handleLogout} onAddToHistory={handleAddToHistory} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} onClearRestaurant={() => { setRestaurantData(null); window.history.replaceState({}, '', '/'); }} restaurantData={restaurantData} /></div>
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}><HistoryView wines={wines} history={history} onClearHistory={() => setHistory([])} onLogout={handleLogout} onUpdateHistoryEntry={handleUpdateHistoryEntry} onDeleteHistoryEntry={handleDeleteHistoryEntry} onWinesRevalued={handleWinesRevalued} isPremium={userPremium} onAiUsed={() => authFetch('/api/users/track-ai', { method: 'POST' })} /></div>
